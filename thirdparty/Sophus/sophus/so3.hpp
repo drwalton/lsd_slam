@@ -766,7 +766,7 @@ public:
   /** \brief scalar type */
   typedef typename internal::traits<Map>::Scalar Scalar;
   /** \brief quaternion const reference type */
-  typedef const typename internal::traits<Map>::QuaternionType &
+  typedef typename internal::traits<Map>::QuaternionType&
   ConstQuaternionReference;
 
   /** \brief degree of freedom of group */
@@ -798,7 +798,7 @@ public:
    * No direct write access is given to ensure the quaternion stays normalized.
    */
   EIGEN_STRONG_INLINE
-  const ConstQuaternionReference unit_quaternion() const {
+  ConstQuaternionReference unit_quaternion() const {
     return unit_quaternion_;
   }
 

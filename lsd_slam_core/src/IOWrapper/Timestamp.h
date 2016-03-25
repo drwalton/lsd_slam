@@ -30,7 +30,7 @@
 // TODO: remove this hack
 namespace std {
 	namespace chrono {
-		#if (__GNUC__ > 4) || (__GNUC_MINOR__ >= 8)
+		#if (__GNUC__ > 4) || (__GNUC_MINOR__ >= 8) || __clang__
 			#define monotonic_clock steady_clock
 		#endif
 	}
@@ -75,10 +75,10 @@ public:
 	static Timestamp now();
 	
 private:
-	std::chrono::monotonic_clock::time_point timePoint;
+	std::chrono::steady_clock::time_point timePoint;
 	std::chrono::system_clock::time_point systemTimePoint;
 	
-	static const std::chrono::monotonic_clock::time_point startupTimePoint;
+	static const std::chrono::steady_clock::time_point startupTimePoint;
 	static boost::mutex localtimeMutex;
 
 	double externalStamp;

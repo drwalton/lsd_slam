@@ -25,8 +25,6 @@
 #include <sstream>
 #include <fstream>
 
-#include "ros/package.h"
-
 KeyFrameGraphDisplay::KeyFrameGraphDisplay()
 {
 	flushPointcloud = false;
@@ -60,8 +58,8 @@ void KeyFrameGraphDisplay::draw()
 	if(flushPointcloud)
 	{
 
-		printf("Flushing Pointcloud to %s!\n", (ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
-		std::ofstream f((ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+		printf("Flushing Pointcloud to %s!\n", "./pc_tmp.ply");
+		std::ofstream f("./pc_tmp.ply");
 		int numpts = 0;
 		for(unsigned int i=0;i<keyframes.size();i++)
 		{
@@ -71,7 +69,7 @@ void KeyFrameGraphDisplay::draw()
 		f.flush();
 		f.close();
 
-		std::ofstream f2((ros::package::getPath("lsd_slam_viewer")+"/pc.ply").c_str());
+		std::ofstream f2("./pc.ply");
 		f2 << std::string("ply\n");
 		f2 << std::string("format binary_little_endian 1.0\n");
 		f2 << std::string("element vertex ") << numpts << std::string("\n");
@@ -81,13 +79,13 @@ void KeyFrameGraphDisplay::draw()
 		f2 << std::string("property float intensity\n");
 		f2 << std::string("end_header\n");
 
-		std::ifstream f3((ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+		std::ifstream f3("/pc_tmp.ply");
 		while(!f3.eof()) f2.put(f3.get());
 
 		f2.close();
 		f3.close();
 
-		system(("rm "+ros::package::getPath("lsd_slam_viewer")+"/pc_tmp.ply").c_str());
+		system("./pc_tmp.ply");
 		flushPointcloud = false;
 		printf("Done Flushing Pointcloud with %d points!\n", numpts);
 
@@ -139,7 +137,7 @@ void KeyFrameGraphDisplay::draw()
 	dataMutex.unlock();
 }
 
-void KeyFrameGraphDisplay::addMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
+void KeyFrameGraphDisplay::addMsg(const keyframeMsg *msg)
 {
 	dataMutex.lock();
 	if(keyframesByID.count(msg->id) == 0)
@@ -155,7 +153,7 @@ void KeyFrameGraphDisplay::addMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
 	dataMutex.unlock();
 }
 
-void KeyFrameGraphDisplay::addGraphMsg(lsd_slam_viewer::keyframeGraphMsgConstPtr msg)
+void KeyFrameGraphDisplay::addGraphMsg(const keyframeGraphMsg *msg)
 {
 	dataMutex.lock();
 

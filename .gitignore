@@ -29,4 +29,9 @@ lsd_slam_viewer/thirdparty/Sophus/SophusConfig.cmake
 cmake_install.cmake
 *.cfgc
 
+*.tmp
+*.swp
+build/
+xcode/
+
 

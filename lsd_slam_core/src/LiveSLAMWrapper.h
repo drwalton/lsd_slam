@@ -44,7 +44,7 @@ class InputImageStream;
 class Output3DWrapper;
 
 
-struct LiveSLAMWrapper : public Notifiable
+class LiveSLAMWrapper : public Notifiable
 {
 friend class LiveSLAMWrapperROS;
 public:

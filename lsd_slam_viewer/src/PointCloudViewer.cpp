@@ -24,15 +24,18 @@
 #include "qcoreapplication.h"
 #include <stdio.h>
 #include "settings.h"
-#include "ros/package.h"
 
 #include <zlib.h>
 #include <iostream>
 
-
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
 #include <GL/glx.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
 
 #include "QGLViewer/manipulatedCameraFrame.h"
 
@@ -41,6 +44,14 @@
 
 #include <iostream>
 #include <fstream>
+
+float timenow()
+{
+	auto n = std::chrono::system_clock::now();
+	std::chrono::nanoseconds ns = std::chrono::duration_cast<std::chrono::nanoseconds>(n.time_since_epoch());
+	float now = float(ns.count()) * 10e-9f;
+	return now;
+}
 
 PointCloudViewer::PointCloudViewer()
 {
@@ -97,7 +108,7 @@ void PointCloudViewer::reset()
 
 	resetRequested=false;
 
-	save_folder = ros::package::getPath("lsd_slam_viewer")+"/save/";
+	save_folder = "/save/";
 	localMsBetweenSaves = 1;
 	simMsBetweenSaves = 1;
 	lastCamID = -1;
@@ -118,7 +129,7 @@ void PointCloudViewer::reset()
 	animationPlaybackEnabled = false;
 }
 
-void PointCloudViewer::addFrameMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
+void PointCloudViewer::addFrameMsg(const keyframeMsg *msg)
 {
 	meddleMutex.lock();
 
@@ -139,7 +150,7 @@ void PointCloudViewer::addFrameMsg(lsd_slam_viewer::keyframeMsgConstPtr msg)
 	meddleMutex.unlock();
 }
 
-void PointCloudViewer::addGraphMsg(lsd_slam_viewer::keyframeGraphMsgConstPtr msg)
+void PointCloudViewer::addGraphMsg(const keyframeGraphMsg *msg)
 {
 	meddleMutex.lock();
 
@@ -177,7 +188,7 @@ void PointCloudViewer::draw()
 
 	if(animationPlaybackEnabled)
 	{
-		double tm = ros::Time::now().toSec() - animationPlaybackTime;
+		double tm = timenow() - animationPlaybackTime;
 
 		if(tm > kfInt->lastTime())
 		{
@@ -250,7 +261,7 @@ void PointCloudViewer::draw()
 
 	if(saveAllVideo)
 	{
-		double span = ros::Time::now().toSec() - lastRealSaveTime;
+		double span = timenow() - lastRealSaveTime;
 		if(span > 0.4)
 		{
 			setSnapshotQuality(100);
@@ -258,9 +269,9 @@ void PointCloudViewer::draw()
 			printf("saved (img %d @ time %lf, saveHZ %f)!\n", lastCamID, lastAnimTime, 1.0/localMsBetweenSaves);
 
 			char buf[500];
-			snprintf(buf,500,"%s%lf.png",save_folder.c_str(),  ros::Time::now().toSec());
+			snprintf(buf,500,"%s%lf.png",save_folder.c_str(), timenow());
 			saveSnapshot(QString(buf));
-			lastRealSaveTime = ros::Time::now().toSec();
+			lastRealSaveTime = timenow();
 		}
 
 
@@ -323,7 +334,7 @@ void PointCloudViewer::keyPressEvent(QKeyEvent *e)
     	  meddleMutex.lock();
 
 
-    	  float x,y,z;
+    	  qreal x,y,z;
     	  camera()->frame()->getPosition(x,y,z);
     	  animationList.push_back(AnimationObject(false, lastAnimTime, 2, qglviewer::Frame(qglviewer::Vec(0,0,0), camera()->frame()->orientation())));
     	  animationList.back().frame.setPosition(x,y,z);
@@ -409,7 +420,7 @@ void PointCloudViewer::keyPressEvent(QKeyEvent *e)
     	  else
     	  {
     		  animationPlaybackEnabled = true;
-    		  animationPlaybackTime = ros::Time::now().toSec();
+    		  animationPlaybackTime = timenow();
     	  }
       	  break;
 

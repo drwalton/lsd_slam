@@ -33,8 +33,8 @@
 // static assertion failure.
 
 
-template class Eigen::Quaternion<float>;
-template class Eigen::Quaternion<double>;
+//template class Eigen::Quaternion<float>;
+//template class Eigen::Quaternion<double>;
 
 template class Sophus::SE3Group<float, 0>;
 template class Sophus::SE3Group<double, 0>;

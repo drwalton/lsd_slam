@@ -24,11 +24,13 @@
 #include <Eigen/Core>
 
 #include "QGLViewer/qglviewer.h"
-#include "lsd_slam_viewer/keyframeMsg.h"
 #include "sophus/sim3.hpp"
 
 #include <sstream>
 #include <fstream>
+#include "keyframeMsg.h"
+
+
 
 struct MyVertex
 {
@@ -54,7 +56,7 @@ public:
 	~KeyFrameDisplay();
 
 
-	void setFrom(lsd_slam_viewer::keyframeMsgConstPtr msg);
+	void setFrom(const keyframeMsg *msg);
 	void drawCam(float lineWidth = 1, float* color = 0);
 	void drawPC(float pointSize = 1, float alpha = 1);
 	void refreshPC();

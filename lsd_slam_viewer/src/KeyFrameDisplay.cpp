@@ -24,13 +24,15 @@
 #include <stdio.h>
 #include "settings.h"
 
-#include <GL/glx.h>
+#ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
+#include <OpenGL/glu.h>
+#else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
 
 #include "opencv2/opencv.hpp"
-
-#include "ros/package.h"
 
 KeyFrameDisplay::KeyFrameDisplay()
 {
@@ -62,7 +64,7 @@ KeyFrameDisplay::~KeyFrameDisplay()
 }
 
 
-void KeyFrameDisplay::setFrom(lsd_slam_viewer::keyframeMsgConstPtr msg)
+void KeyFrameDisplay::setFrom(const keyframeMsg *msg)
 {
 	// copy over campose.
 	memcpy(camToWorld.data(), msg->camToWorld.data(), 7*sizeof(float));
@@ -90,7 +92,7 @@ void KeyFrameDisplay::setFrom(lsd_slam_viewer::keyframeMsgConstPtr msg)
 	{
 		if(msg->pointcloud.size() != 0)
 		{
-			printf("WARNING: PC with points, but number of points not right! (is %zu, should be %u*%dx%d=%u)\n",
+			printf("WARNING: PC with points, but number of points not right! (is %lu, should be %lu*%dx%d=%u)\n",
 					msg->pointcloud.size(), sizeof(InputPointDense), width, height, width*height*sizeof(InputPointDense));
 		}
 	}
@@ -333,7 +335,7 @@ int KeyFrameDisplay::flushPC(std::ofstream* f)
 	}
 	//	*f << tmpBuffer[i].point[0] << " " << tmpBuffer[i].point[1] << " " << tmpBuffer[i].point[2] << " " << (tmpBuffer[i].color[0] / 255.0) << "\n";
 
-	delete tmpBuffer;
+	delete[] tmpBuffer;
 
 	printf("Done flushing frame %d (%d points)!\n", this->id, num);
 	return num;
