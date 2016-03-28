@@ -19,6 +19,7 @@
 */
 
 #pragma once
+#include "Win32Compatibility.hpp"
 
 #include <iostream>
 #include <fstream>

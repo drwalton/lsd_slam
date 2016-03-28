@@ -18,6 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "Win32Compatibility.hpp"
 #include "GlobalMapping/TrackableKeyFrameSearch.h"
 
 
@@ -79,11 +80,11 @@ std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > Tra
 		float distFac = graph->keyframesAll[i]->meanIdepth / graph->keyframesAll[i]->getScaledCamToWorld().scale();
 		if(checkBothScales && distFacReciprocal < distFac) distFac = distFacReciprocal;
 		Eigen::Vector3d dist = (pos - otherPos) * distFac;
-		float dNorm2 = dist.dot(dist);
+		float dNorm2 = static_cast<float>(dist.dot(dist));
 		if(dNorm2 > distanceTH) continue;
 
 		Eigen::Vector3d otherViewingDir = graph->keyframesAll[i]->getScaledCamToWorld().rotationMatrix().rightCols<1>();
-		float dirDotProd = otherViewingDir.dot(viewingDir);
+		float dirDotProd = static_cast<float>(otherViewingDir.dot(viewingDir));
 		if(dirDotProd < cosAngleTH) continue;
 
 		potentialReferenceFrames.push_back(TrackableKFStruct());
@@ -121,11 +122,11 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 		if(potentialReferenceFrames[i].ref->idxInKeyframes < INITIALIZATION_PHASE_COUNT)
 			continue;
 
-		struct timeval tv_start, tv_end;
+		struct g2o::timeval tv_start, tv_end;
 		gettimeofday(&tv_start, NULL);
 		tracker->checkPermaRefOverlap(potentialReferenceFrames[i].ref, potentialReferenceFrames[i].refToFrame);
 		gettimeofday(&tv_end, NULL);
-		msTrackPermaRef = 0.9*msTrackPermaRef + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		msTrackPermaRef = 0.9f*msTrackPermaRef + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nTrackPermaRef++;
 
 		float score = getRefFrameScore(potentialReferenceFrames[i].dist, tracker->pointUsage);
@@ -135,7 +136,7 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 			SE3 RefToFrame_tracked = tracker->trackFrameOnPermaref(potentialReferenceFrames[i].ref, frame, potentialReferenceFrames[i].refToFrame);
 			Sophus::Vector3d dist = RefToFrame_tracked.translation() * potentialReferenceFrames[i].ref->meanIdepth;
 
-			float newScore = getRefFrameScore(dist.dot(dist), tracker->pointUsage);
+			float newScore = getRefFrameScore(float(dist.dot(dist)), tracker->pointUsage);
 			float poseDiscrepancy = (potentialReferenceFrames[i].refToFrame * RefToFrame_tracked.inverse()).log().norm();
 			float goodVal = tracker->pointUsage * tracker->lastGoodCount / (tracker->lastGoodCount+tracker->lastBadCount);
 			checkedSecondary++;
@@ -147,7 +148,7 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 				bestFrame = potentialReferenceFrames[i].ref;
 				bestRefToFrame = potentialReferenceFrames[i].refToFrame;
 				bestRefToFrame_tracked = RefToFrame_tracked;
-				bestDist = dist.dot(dist);
+				bestDist = float(dist.dot(dist));
 				bestUsage = tracker->pointUsage;
 			}
 		}
@@ -177,7 +178,7 @@ std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>, Eigen::alig
 
 	// Add all candidates that are similar in an euclidean sense.
     std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > potentialReferenceFrames =
-            findEuclideanOverlapFrames(keyframe, closenessTH * 15 / (KFDistWeight*KFDistWeight), 1.0 - 0.25 * closenessTH, true);
+            findEuclideanOverlapFrames(keyframe, closenessTH * 15 / (KFDistWeight*KFDistWeight), 1.0f - 0.25f * closenessTH, true);
 	for(unsigned int i=0;i<potentialReferenceFrames.size();i++)
 		results.insert(potentialReferenceFrames[i].ref);
 

@@ -56,7 +56,7 @@ FramePoseStruct::~FramePoseStruct()
 		printf("DELETED pose %d, now there are %d\n", frameID, privateFramePoseStructAllocCount);
 }
 
-void FramePoseStruct::setPoseGraphOptResult(Sim3 camToWorld)
+void FramePoseStruct::setPoseGraphOptResult(const Sim3 &camToWorld)
 {
 	if(!isInGraph)
 		return;

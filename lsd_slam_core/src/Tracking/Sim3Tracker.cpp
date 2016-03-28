@@ -25,6 +25,7 @@
 #include "util/globalFuncs.h"
 #include "IOWrapper/ImageDisplay.h"
 #include "Tracking/LGSX.h"
+#include "Win32Compatibility.hpp"
 
 namespace lsd_slam
 {
@@ -1097,7 +1098,7 @@ void Sim3Tracker::calcResidualAndBuffers_debugFinish(int w)
 	if(saveAllTrackingStagesInternal)
 	{
 		char charbuf[500];
-
+ 
 		snprintf(charbuf,500,"save/%sresidual-%d-%d.png",packagePath.c_str(),w,iterationNumber);
 		cv::imwrite(charbuf,debugImageResiduals);
 

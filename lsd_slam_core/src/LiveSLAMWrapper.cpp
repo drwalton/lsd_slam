@@ -30,6 +30,9 @@
 #include "util/globalFuncs.h"
 
 #include <iostream>
+#include <cstdio>
+#include "Win32Compatibility.hpp"
+
 
 namespace lsd_slam
 {
@@ -144,6 +147,7 @@ void LiveSLAMWrapper::logCameraPose(const SE3& camToWorld, double time)
 	Eigen::Vector3f trans = camToWorld.translation().cast<float>();
 
 	char buffer[1000];
+
 	int num = snprintf(buffer, 1000, "%f %f %f %f %f %f %f %f\n",
 			time,
 			trans[0],

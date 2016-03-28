@@ -46,10 +46,11 @@ struct Sim3ResidualStruct
 	
 	inline Sim3ResidualStruct()
 	{
-		meanD = 0;
-		meanP = 0;
-		mean = 0;
-		numTermsD = numTermsP = sumResD = sumResP = 0;
+		meanD = 0.f;
+		meanP = 0.f;
+		mean = 0.f;
+		numTermsD = numTermsP = 0;
+		sumResD = sumResP = 0.f;
 	}
 };
 

@@ -28,6 +28,10 @@
 
 #include <Eigen/Core>
 
+#if _WIN32
+#define snprintf _snprintf_s
+#endif 
+
 namespace lsd_slam
 {
 
@@ -120,7 +124,7 @@ SE3Tracker::~SE3Tracker()
 // first_frame has depth, second_frame DOES NOT have depth.
 float SE3Tracker::checkPermaRefOverlap(
 		Frame* reference,
-		SE3 referenceToFrameOrg)
+		const SE3 &referenceToFrameOrg)
 {
 	Sophus::SE3f referenceToFrame = referenceToFrameOrg.cast<float>();
 	boost::unique_lock<boost::mutex> lock2 = boost::unique_lock<boost::mutex>(reference->permaRef_mutex);
@@ -162,7 +166,7 @@ float SE3Tracker::checkPermaRefOverlap(
 SE3 SE3Tracker::trackFrameOnPermaref(
 		Frame* reference,
 		Frame* frame,
-		SE3 referenceToFrameOrg)
+		const SE3 &referenceToFrameOrg)
 {
 
 	Sophus::SE3f referenceToFrame = referenceToFrameOrg.cast<float>();

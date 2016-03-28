@@ -19,13 +19,14 @@
 */
 
 #pragma once
+#include <memory>
 #include "util/EigenCoreInclude.h"
 #include "opencv2/core/core.hpp"
 #include "util/settings.h"
 #include "util/IndexThreadReduce.h"
 #include "util/SophusUtil.h"
-
-
+#include "g2o/stuff/timeutil.h"
+using g2o::timeval;
 
 namespace lsd_slam
 {
@@ -55,7 +56,7 @@ public:
 	/**
 	 * does obervation and regularization only.
 	 **/
-	void updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFrames);
+	void updateKeyframe(std::deque< std::shared_ptr<Frame>, std::allocator<std::shared_ptr<Frame> > > referenceFrames);
 
 	/**
 	 * does propagation and whole-filling-regularization (no observation, for that need to call updateKeyframe()!)
