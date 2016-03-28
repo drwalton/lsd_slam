@@ -176,16 +176,16 @@ UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 		// current camera parameters
 		float fx = inputCalibration[0] * in_width;
 		float fy = inputCalibration[1] * in_height;
-		float cx = inputCalibration[2] * in_width - 0.5;
-		float cy = inputCalibration[3] * in_height - 0.5;
+		float cx = inputCalibration[2] * in_width - 0.5f;
+		float cy = inputCalibration[3] * in_height - 0.5f;
 		
 		// scale calibration parameters to input size
 		double xfactor = in_width / (1.0 * in_width);
 		double yfactor = in_height / (1.0 * in_height);
-		fx = fx * xfactor;
-		fy = fy * yfactor;
-		cx = (cx + 0.5) * xfactor - 0.5;
-		cy = (cy + 0.5) * yfactor - 0.5;
+		fx = float(fx * xfactor);
+		fy = float(fy * yfactor);
+		cx = float((cx + 0.5) * xfactor - 0.5);
+		cy = float((cy + 0.5) * yfactor - 0.5);
 
 		// output camera parameters
 		float ofx, ofy, ocx, ocy;
@@ -195,8 +195,8 @@ UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 		{
 			ofx = inputCalibration[0] * out_width;
 			ofy = inputCalibration[1] * out_height;
-			ocx = (inputCalibration[2] * out_width) - 0.5;
-			ocy = (inputCalibration[3] * out_height) - 0.5;
+			ocx = (inputCalibration[2] * out_width) - 0.5f;
+			ocy = (inputCalibration[3] * out_height) - 0.5f;
 		}
 		else if(outputCalibration[0] == -1)	// "crop"
 		{
@@ -269,14 +269,14 @@ UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 		{
 			ofx = outputCalibration[0] * out_width;
 			ofy = outputCalibration[1] * out_height;
-			ocx = outputCalibration[2] * out_width-0.5;	// TODO: -0.5 here or not?
-			ocy = outputCalibration[3] * out_height-0.5;
+			ocx = outputCalibration[2] * out_width-0.5f;	// TODO: -0.5 here or not?
+			ocy = outputCalibration[3] * out_height-0.5f;
 		}
 
 		outputCalibration[0] = ofx / out_width;
 		outputCalibration[1] = ofy / out_height;
-		outputCalibration[2] = (ocx+0.5) / out_width;
-		outputCalibration[3] = (ocy+0.5) / out_height;
+		outputCalibration[2] = (ocx+0.5f) / out_width;
+		outputCalibration[3] = (ocy+0.5f) / out_height;
 		outputCalibration[4] = 0;
 
 		remapX = (float*)Eigen::internal::aligned_malloc(out_width * out_height *sizeof(float));
@@ -296,10 +296,10 @@ UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 				iy = fy*fac*iy+cy;
 
 				// make rounding resistant.
-				if(ix == 0) ix = 0.01;
-				if(iy == 0) iy = 0.01;
-				if(ix == in_width-1) ix = in_width-1.01;
-				if(iy == in_height-1) ix = in_height-1.01;
+				if(ix == 0) ix = 0.01f;
+				if(iy == 0) iy = 0.01f;
+				if(ix == in_width-1) ix = in_width-1.01f;
+				if(iy == in_height-1) ix = in_height-1.01f;
 
 				if(ix > 0 && iy > 0 && ix < in_width-1 &&  iy < in_height-1)
 				{
@@ -392,8 +392,8 @@ void UndistorterPTAM::undistort(const cv::Mat& image, cv::OutputArray result) co
 		else
 		{
 			// get integer and rational parts
-			int xxi = xx;
-			int yyi = yy;
+			int xxi = int(xx);
+			int yyi = int(yy);
 			xx -= xxi;
 			yy -= yyi;
 			float xxyy = xx*yy;
@@ -402,10 +402,11 @@ void UndistorterPTAM::undistort(const cv::Mat& image, cv::OutputArray result) co
 			const uchar* src = (uchar*)image.data + xxi + yyi * in_width;
 
 			// interpolate (bilinear)
-			data[idx] =  xxyy * src[1+in_width]
+			data[idx] =  static_cast<uchar>(
+							xxyy * src[1+in_width]
 			                    + (yy-xxyy) * src[in_width]
 			                    + (xx-xxyy) * src[1]
-			                    + (1-xx-yy+xxyy) * src[0];
+			                    + (1-xx-yy+xxyy) * src[0]);
 		}
 	}
 }

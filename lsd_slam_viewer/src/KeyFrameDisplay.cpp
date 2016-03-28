@@ -27,6 +27,8 @@
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/glu.h>
+#elif defined _WIN32
+#include <GL/glew.h>
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>

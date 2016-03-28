@@ -18,24 +18,25 @@
 * along with dvo. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define GL_GLEXT_PROTOTYPES 1
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#elif defined _WIN32
+#include <GL/glew.h>
+#else
+#include <GL/glx.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
+
 #include "PointCloudViewer.h"
 #include "qfiledialog.h"
 #include "qcoreapplication.h"
 #include <stdio.h>
 #include "settings.h"
 
-#include <zlib.h>
+//#include <zlib.h>
 #include <iostream>
-
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#include <GL/glx.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
 
 #include "QGLViewer/manipulatedCameraFrame.h"
 
@@ -44,11 +45,18 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
+
+#if _WIN32
+#define snprintf _snprintf_s
+#endif 
 
 float timenow()
 {
 	auto n = std::chrono::system_clock::now();
-	std::chrono::nanoseconds ns = std::chrono::duration_cast<std::chrono::nanoseconds>(n.time_since_epoch());
+	std::chrono::nanoseconds ns = 
+		std::chrono::duration_cast<std::chrono::nanoseconds>(
+		n.time_since_epoch());
 	float now = float(ns.count()) * 10e-9f;
 	return now;
 }

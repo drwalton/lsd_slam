@@ -321,7 +321,7 @@ void SlamSystem::constraintSearchThreadLoop()
 			findConstraintsForNewKeyFrames(newKF, true, true, 1.0);
 			failedToRetrack=0;
 			gettimeofday(&tv_end, NULL);
-			msFindConstraintsItaration = 0.9*msFindConstraintsItaration + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+			msFindConstraintsItaration = 0.9f*msFindConstraintsItaration + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 			nFindConstraintsItaration++;
 
 			FrameMemory::getInstance().pruneActiveFrames();
@@ -371,10 +371,10 @@ void SlamSystem::optimizationThreadLoop()
 		if(doFinalOptimization)
 		{
 			printf("doing final optimization iteration!\n");
-			optimizationIteration(50, 0.001);
+			optimizationIteration(50, 0.001f);
 			doFinalOptimization = false;
 		}
-		while(optimizationIteration(5, 0.02));
+		while(optimizationIteration(5, 0.02f));
 	}
 
 	printf("Exited optimization thread \n");
@@ -514,7 +514,7 @@ void SlamSystem::changeKeyframe(bool noCreate, bool force, float maxScore)
 		gettimeofday(&tv_start, NULL);
 		newReferenceKF = trackableKeyFrameSearch->findRePositionCandidate(newKeyframeCandidate.get(), maxScore);
 		gettimeofday(&tv_end, NULL);
-		msFindReferences = 0.9*msFindReferences + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		msFindReferences = 0.9f*msFindReferences + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nFindReferences++;
 	}
 
@@ -584,23 +584,23 @@ bool SlamSystem::updateKeyframe()
 	{
 		Eigen::Matrix<float, 20, 1> data;
 		data.setZero();
-		data[0] = runningStats.num_reg_created;
-		data[2] = runningStats.num_reg_smeared;
-		data[3] = runningStats.num_reg_deleted_secondary;
-		data[4] = runningStats.num_reg_deleted_occluded;
-		data[5] = runningStats.num_reg_blacklisted;
+		data[0] = static_cast<float>(runningStats.num_reg_created);
+		data[2] = static_cast<float>(runningStats.num_reg_smeared);
+		data[3] = static_cast<float>(runningStats.num_reg_deleted_secondary);
+		data[4] = static_cast<float>(runningStats.num_reg_deleted_occluded);
+		data[5] = static_cast<float>(runningStats.num_reg_blacklisted);
 
-		data[6] = runningStats.num_observe_created;
-		data[7] = runningStats.num_observe_create_attempted;
-		data[8] = runningStats.num_observe_updated;
-		data[9] = runningStats.num_observe_update_attempted;
+		data[6] = static_cast<float>(runningStats.num_observe_created);
+		data[7] = static_cast<float>(runningStats.num_observe_create_attempted);
+		data[8] = static_cast<float>(runningStats.num_observe_updated);
+		data[9] = static_cast<float>(runningStats.num_observe_update_attempted);
 
 
-		data[10] = runningStats.num_observe_good;
-		data[11] = runningStats.num_observe_inconsistent;
-		data[12] = runningStats.num_observe_notfound;
-		data[13] = runningStats.num_observe_skip_oob;
-		data[14] = runningStats.num_observe_skip_fail;
+		data[10] = static_cast<float>(runningStats.num_observe_good);
+		data[11] = static_cast<float>(runningStats.num_observe_inconsistent);
+		data[12] = static_cast<float>(runningStats.num_observe_notfound);
+		data[13] = static_cast<float>(runningStats.num_observe_skip_oob);
+		data[14] = static_cast<float>(runningStats.num_observe_skip_fail);
 
 		outputWrapper->publishDebugInfo(data);
 	}
@@ -622,16 +622,16 @@ void SlamSystem::addTimingSamples()
 	float sPassed = ((now.tv_sec-lastHzUpdate.tv_sec) + (now.tv_usec-lastHzUpdate.tv_usec)/1000000.0f);
 	if(sPassed > 1.0f)
 	{
-		nAvgTrackFrame = 0.8*nAvgTrackFrame + 0.2*(nTrackFrame / sPassed); nTrackFrame = 0;
-		nAvgOptimizationIteration = 0.8*nAvgOptimizationIteration + 0.2*(nOptimizationIteration / sPassed); nOptimizationIteration = 0;
-		nAvgFindReferences = 0.8*nAvgFindReferences + 0.2*(nFindReferences / sPassed); nFindReferences = 0;
+		nAvgTrackFrame = 0.8f*nAvgTrackFrame + 0.2f*(nTrackFrame / sPassed); nTrackFrame = 0;
+		nAvgOptimizationIteration = 0.8f*nAvgOptimizationIteration + 0.2f*(nOptimizationIteration / sPassed); nOptimizationIteration = 0;
+		nAvgFindReferences = 0.8f*nAvgFindReferences + 0.2f*(nFindReferences / sPassed); nFindReferences = 0;
 
 		if(trackableKeyFrameSearch != 0)
 		{
-			trackableKeyFrameSearch->nAvgTrackPermaRef = 0.8*trackableKeyFrameSearch->nAvgTrackPermaRef + 0.2*(trackableKeyFrameSearch->nTrackPermaRef / sPassed); trackableKeyFrameSearch->nTrackPermaRef = 0;
+			trackableKeyFrameSearch->nAvgTrackPermaRef = 0.8f*trackableKeyFrameSearch->nAvgTrackPermaRef + 0.2f*(trackableKeyFrameSearch->nTrackPermaRef / sPassed); trackableKeyFrameSearch->nTrackPermaRef = 0;
 		}
-		nAvgFindConstraintsItaration = 0.8*nAvgFindConstraintsItaration + 0.2*(nFindConstraintsItaration / sPassed); nFindConstraintsItaration = 0;
-		nAvgOptimizationIteration = 0.8*nAvgOptimizationIteration + 0.2*(nOptimizationIteration / sPassed); nOptimizationIteration = 0;
+		nAvgFindConstraintsItaration = 0.8f*nAvgFindConstraintsItaration + 0.2f*(nFindConstraintsItaration / sPassed); nFindConstraintsItaration = 0;
+		nAvgOptimizationIteration = 0.8f*nAvgOptimizationIteration + 0.2f*(nOptimizationIteration / sPassed); nOptimizationIteration = 0;
 
 		lastHzUpdate = now;
 
@@ -771,7 +771,7 @@ bool SlamSystem::doMappingIteration()
 		{
 			//printf("tryToChange refframe, lastScore %f!\n", lastTrackingClosenessScore);
 			if(lastTrackingClosenessScore > 1)
-				changeKeyframe(true, false, lastTrackingClosenessScore * 0.75);
+				changeKeyframe(true, false, lastTrackingClosenessScore * 0.75f);
 
 			if (displayDepthMap || depthMapScreenshotFlag)
 				debugDisplayDepthMap();
@@ -936,7 +936,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 
 
 	gettimeofday(&tv_end, NULL);
-	msTrackFrame = 0.9*msTrackFrame + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msTrackFrame = 0.9f*msTrackFrame + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nTrackFrame++;
 
 	tracking_lastResidual = tracker->lastResidual;
@@ -1000,21 +1000,28 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 		Sophus::Vector3d dist = newRefToFrame_poseUpdate.translation() * currentKeyFrame->meanIdepth;
 		float minVal = fmin(0.2f + keyFrameGraph->keyframesAll.size() * 0.8f / INITIALIZATION_PHASE_COUNT,1.0f);
 
-		if(keyFrameGraph->keyframesAll.size() < INITIALIZATION_PHASE_COUNT)	minVal *= 0.7;
+		if(keyFrameGraph->keyframesAll.size() < INITIALIZATION_PHASE_COUNT)	minVal *= 0.7f;
 
-		lastTrackingClosenessScore = trackableKeyFrameSearch->getRefFrameScore(dist.dot(dist), tracker->pointUsage);
+		lastTrackingClosenessScore = trackableKeyFrameSearch->getRefFrameScore(float(dist.dot(dist)), tracker->pointUsage);
 
 		if (lastTrackingClosenessScore > minVal)
 		{
 			createNewKeyFrame = true;
 
 			if(enablePrintDebugInfo && printKeyframeSelectionInfo)
-				printf("SELECT %d on %d! dist %.3f + usage %.3f = %.3f > 1\n",trackingNewFrame->id(),trackingNewFrame->getTrackingParent()->id(), dist.dot(dist), tracker->pointUsage, trackableKeyFrameSearch->getRefFrameScore(dist.dot(dist), tracker->pointUsage));
+				printf("SELECT %d on %d! dist %.3f + usage %.3f = %.3f > 1\n",
+					trackingNewFrame->id(),trackingNewFrame->getTrackingParent()->id(), 
+					float(dist.dot(dist)), tracker->pointUsage, 
+					trackableKeyFrameSearch->getRefFrameScore(float(dist.dot(dist)), tracker->pointUsage));
 		}
 		else
 		{
 			if(enablePrintDebugInfo && printKeyframeSelectionInfo)
-				printf("SKIPPD %d on %d! dist %.3f + usage %.3f = %.3f > 1\n",trackingNewFrame->id(),trackingNewFrame->getTrackingParent()->id(), dist.dot(dist), tracker->pointUsage, trackableKeyFrameSearch->getRefFrameScore(dist.dot(dist), tracker->pointUsage));
+				printf("SKIPPD %d on %d! dist %.3f + usage %.3f = %.3f > 1\n",
+					trackingNewFrame->id(),trackingNewFrame->getTrackingParent()->id(), 
+					float(dist.dot(dist)), tracker->pointUsage, 
+					trackableKeyFrameSearch->getRefFrameScore(float(dist.dot(dist)), 
+					tracker->pointUsage));
 
 		}
 	}
@@ -1065,7 +1072,7 @@ float SlamSystem::tryTrackSim3(
 		BtoAInfo(0,0) == 0 ||
 		BtoAInfo(6,6) == 0)
 	{
-		return 1e20;
+		return 1e20f;
 	}
 
 
@@ -1087,7 +1094,7 @@ float SlamSystem::tryTrackSim3(
 		AtoBInfo(0,0) == 0 ||
 		AtoBInfo(6,6) == 0)
 	{
-		return 1e20;
+		return 1e20f;
 	}
 
 	// Propagate uncertainty (with d(a * b) / d(b) = Adj_a) and calculate Mahalanobis norm
@@ -1129,7 +1136,7 @@ float SlamSystem::tryTrackSim3(
 void SlamSystem::testConstraint(
 		Frame* candidate,
 		KFConstraintStruct* &e1_out, KFConstraintStruct* &e2_out,
-		Sim3 candidateToFrame_initialEstimate,
+		const Sim3 &candidateToFrame_initialEstimate,
 		float strictness)
 {
 	candidateTrackingReference->importFrame(candidate);
@@ -1234,10 +1241,10 @@ int SlamSystem::findConstraintsForNewKeyFrames(Frame* newKeyFrame, bool forcePar
 	newKeyFrame->lastConstraintTrackedCamToWorld = newKeyFrame->getScaledCamToWorld();
 
 	// =============== get all potential candidates and their initial relative pose. =================
-	std::vector<KFConstraintStruct*, Eigen::aligned_allocator<KFConstraintStruct*> > constraints;
+	std::vector<KFConstraintStruct*> constraints;
 	Frame* fabMapResult = 0;
 	std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>,
-		Eigen::aligned_allocator< Frame* > > candidates = trackableKeyFrameSearch->findCandidates(newKeyFrame, fabMapResult, useFABMAP, closeCandidatesTH);
+		Eigen::aligned_allocator< Frame* > > candidates = trackableKeyFrameSearch->findCandidates(newKeyFrame, fabMapResult, useFABMAP, closeCandidatesTH != 0.f);
 	std::map< Frame*, Sim3, std::less<Frame*>, Eigen::aligned_allocator<std::pair<Frame*, Sim3> > > candidateToFrame_initialEstimateMap;
 
 
@@ -1274,7 +1281,7 @@ int SlamSystem::findConstraintsForNewKeyFrames(Frame* newKeyFrame, bool forcePar
 	// Do a first check on trackability of close candidates.
 	std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>,
 		Eigen::aligned_allocator< Frame* > > closeCandidates;
-	std::vector<Frame*, Eigen::aligned_allocator<Frame*> > farCandidates;
+	std::vector<Frame*> farCandidates;
 	Frame* parent = newKeyFrame->hasTrackingParent() ? newKeyFrame->getTrackingParent() : 0;
 
 	int closeFailed = 0;
@@ -1541,7 +1548,7 @@ int SlamSystem::findConstraintsForNewKeyFrames(Frame* newKeyFrame, bool forcePar
 
 			poseConsistencyMutex.lock_shared();
 			constraints.push_back(new KFConstraintStruct());
-			constraints.back()->firstFrame = newKeyFrame;
+			(constraints.back())->firstFrame = newKeyFrame;
 			constraints.back()->secondFrame = newKeyFrame->getTrackingParent();
 			constraints.back()->secondToFirst = constraints.back()->firstFrame->getScaledCamToWorld().inverse() * constraints.back()->secondFrame->getScaledCamToWorld();
 			constraints.back()->information  <<
@@ -1645,7 +1652,7 @@ bool SlamSystem::optimizationIteration(int itsPerTry, float minChange)
 		// add error
 		for(auto edge : keyFrameGraph->keyframesAll[i]->pose->graphVertex->edges())
 		{
-			keyFrameGraph->keyframesAll[i]->edgeErrorSum += ((EdgeSim3*)(edge))->chi2();
+			keyFrameGraph->keyframesAll[i]->edgeErrorSum += float(((EdgeSim3*)(edge))->chi2());
 			keyFrameGraph->keyframesAll[i]->edgesNum++;
 		}
 	}
@@ -1662,7 +1669,7 @@ bool SlamSystem::optimizationIteration(int itsPerTry, float minChange)
 
 
 	gettimeofday(&tv_end, NULL);
-	msOptimizationIteration = 0.9*msOptimizationIteration + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msOptimizationIteration = 0.9f*msOptimizationIteration + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nOptimizationIteration++;
 
 
@@ -1688,7 +1695,7 @@ SE3 SlamSystem::getCurrentPoseEstimate()
 	return camToWorld;
 }
 
-std::vector<FramePoseStruct*, Eigen::aligned_allocator<FramePoseStruct*> > SlamSystem::getAllPoses()
+std::vector<FramePoseStruct*> SlamSystem::getAllPoses()
 {
 	return keyFrameGraph->allFramePoses;
 }

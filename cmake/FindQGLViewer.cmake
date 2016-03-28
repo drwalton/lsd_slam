@@ -3,10 +3,13 @@ FIND_PACKAGE(Qt4 COMPONENTS QtCore QtXml QtOpenGL QtGui)
 include(${QT_USE_FILE})
 
 FIND_PATH(QGLVIEWER_INCLUDE_DIR qglviewer.h
+	NAMES QGLViewer/qglviewer.h
+	PATHS
     /usr/include/QGLViewer
     /opt/local/include/QGLViewer
     /usr/local/include/QGLViewer
     /sw/include/QGLViewer
+    "C:/local/libQGLViewer/libQGLViewer-2.6.3"
     ENV QGLVIEWERROOT
   )
 
@@ -19,6 +22,7 @@ find_library(QGLVIEWER_LIBRARY_RELEASE
         ENV QGLVIEWERROOT
         ENV LD_LIBRARY_PATH
         ENV LIBRARY_PATH
+        "C:/local/libQGLViewer/libQGLViewer-2.6.3/QGLViewer"
   PATH_SUFFIXES QGLViewer QGLViewer/release
 )
 find_library(QGLVIEWER_LIBRARY_DEBUG
@@ -30,6 +34,7 @@ find_library(QGLVIEWER_LIBRARY_DEBUG
         ENV QGLVIEWERROOT
         ENV LD_LIBRARY_PATH
         ENV LIBRARY_PATH
+        "C:/local/libQGLViewer/libQGLViewer-2.6.3/QGLViewer"
   PATH_SUFFIXES QGLViewer QGLViewer/release
 )
 

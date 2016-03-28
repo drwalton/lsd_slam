@@ -19,11 +19,16 @@
 */
 
 
+#ifdef _WIN32
+#define NOMINMAX
+#endif
+
 #include "KeyFrameGraphDisplay.h"
 #include "KeyFrameDisplay.h"
 #include "settings.h"
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 KeyFrameGraphDisplay::KeyFrameGraphDisplay()
 {
@@ -120,7 +125,8 @@ void KeyFrameGraphDisplay::draw()
 			if(constraints[i].from == 0 || constraints[i].to == 0)
 				continue;
 
-			double colorScalar = std::max(0.0, std::min(1.0, constraints[i].err / 0.05));
+			double m = std::min(1.0, constraints[i].err / 0.05);
+			double colorScalar = std::max(0.0, m);
 			glColor3f(colorScalar, 1 - colorScalar, 0);
 
 

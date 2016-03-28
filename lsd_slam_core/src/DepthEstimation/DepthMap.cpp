@@ -257,8 +257,8 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 
 	if(enablePrintDebugInfo) stats->num_observe_create_attempted++;
 
-	float new_u = x;
-	float new_v = y;
+	float new_u = float(x);
+	float new_v = float(y);
 	float result_idepth, result_var, result_eplLength;
 	float error = doLineStereo(
 			new_u,new_v,epx,epy,
@@ -344,7 +344,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 	float result_idepth, result_var, result_eplLength;
 
 	float error = doLineStereo(
-			x,y,epx,epy,
+			float(x),float(y),epx,epy,
 			min_idepth, target->idepth_smoothed ,max_idepth,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
@@ -446,7 +446,8 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		target->validity_counter += VALIDITY_COUNTER_INC;
 		float absGrad = keyFrameMaxGradBuf[idx];
 		if(target->validity_counter > VALIDITY_COUNTER_MAX+absGrad*(VALIDITY_COUNTER_MAX_VARIABLE)/255.0f)
-			target->validity_counter = VALIDITY_COUNTER_MAX+absGrad*(VALIDITY_COUNTER_MAX_VARIABLE)/255.0f;
+			target->validity_counter = static_cast<int>(
+				VALIDITY_COUNTER_MAX+absGrad*(VALIDITY_COUNTER_MAX_VARIABLE)/255.0f);
 
 		// increase Skip!
 		if(result_eplLength < MIN_EPL_LENGTH_CROP)
@@ -624,7 +625,8 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 				// merge validity
 				int merged_validity = source->validity_counter + targetBest->validity_counter;
 				if(merged_validity > VALIDITY_COUNTER_MAX+(VALIDITY_COUNTER_MAX_VARIABLE))
-					merged_validity = VALIDITY_COUNTER_MAX+(VALIDITY_COUNTER_MAX_VARIABLE);
+					merged_validity = static_cast<int>(
+						VALIDITY_COUNTER_MAX+(VALIDITY_COUNTER_MAX_VARIABLE));
 
 				*targetBest = DepthMapPixelHypothesis(
 						merged_new_idepth,
@@ -1126,7 +1128,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	gettimeofday(&tv_start, NULL);
 	observeDepth();
 	gettimeofday(&tv_end, NULL);
-	msObserve = 0.9*msObserve + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msObserve = 0.9f*msObserve + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nObserve++;
 
 	//if(rand()%10==0)
@@ -1134,7 +1136,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 		gettimeofday(&tv_start, NULL);
 		regularizeDepthMapFillHoles();
 		gettimeofday(&tv_end, NULL);
-		msFillHoles = 0.9*msFillHoles + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		msFillHoles = 0.9f*msFillHoles + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nFillHoles++;
 	}
 
@@ -1142,7 +1144,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMap(false, VAL_SUM_MIN_FOR_KEEP);
 	gettimeofday(&tv_end, NULL);
-	msRegularize = 0.9*msRegularize + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msRegularize = 0.9f*msRegularize + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nRegularize++;
 
 	
@@ -1152,13 +1154,13 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 		gettimeofday(&tv_start, NULL);
 		activeKeyFrame->setDepth(currentDepthMap);
 		gettimeofday(&tv_end, NULL);
-		msSetDepth = 0.9*msSetDepth + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nSetDepth++;
 	}
 
 
 	gettimeofday(&tv_end_all, NULL);
-	msUpdate = 0.9*msUpdate + 0.1*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
+	msUpdate = 0.9f*msUpdate + 0.1f*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
 	nUpdate++;
 
 
@@ -1249,7 +1251,7 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 	gettimeofday(&tv_start, NULL);
 	propagateDepth(new_keyframe);
 	gettimeofday(&tv_end, NULL);
-	msPropagate = 0.9*msPropagate + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msPropagate = 0.9f*msPropagate + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nPropagate++;
 
 	activeKeyFrame = new_keyframe;
@@ -1262,21 +1264,21 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMap(true, VAL_SUM_MIN_FOR_KEEP);
 	gettimeofday(&tv_end, NULL);
-	msRegularize = 0.9*msRegularize + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msRegularize = 0.9f*msRegularize + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nRegularize++;
 
 
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMapFillHoles();
 	gettimeofday(&tv_end, NULL);
-	msFillHoles = 0.9*msFillHoles + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msFillHoles = 0.9f*msFillHoles + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nFillHoles++;
 
 
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMap(false, VAL_SUM_MIN_FOR_KEEP);
 	gettimeofday(&tv_end, NULL);
-	msRegularize = 0.9*msRegularize + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msRegularize = 0.9f*msRegularize + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nRegularize++;
 
 
@@ -1310,11 +1312,11 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 	gettimeofday(&tv_start, NULL);
 	activeKeyFrame->setDepth(currentDepthMap);
 	gettimeofday(&tv_end, NULL);
-	msSetDepth = 0.9*msSetDepth + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nSetDepth++;
 
 	gettimeofday(&tv_end_all, NULL);
-	msCreate = 0.9*msCreate + 0.1*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
+	msCreate = 0.9f*msCreate + 0.1f*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
 	nCreate++;
 
 
@@ -1333,14 +1335,14 @@ void DepthMap::addTimingSample()
 	float sPassed = ((now.tv_sec-lastHzUpdate.tv_sec) + (now.tv_usec-lastHzUpdate.tv_usec)/1000000.0f);
 	if(sPassed > 1.0f)
 	{
-		nAvgUpdate = 0.8*nAvgUpdate + 0.2*(nUpdate / sPassed); nUpdate = 0;
-		nAvgCreate = 0.8*nAvgCreate + 0.2*(nCreate / sPassed); nCreate = 0;
-		nAvgFinalize = 0.8*nAvgFinalize + 0.2*(nFinalize / sPassed); nFinalize = 0;
-		nAvgObserve = 0.8*nAvgObserve + 0.2*(nObserve / sPassed); nObserve = 0;
-		nAvgRegularize = 0.8*nAvgRegularize + 0.2*(nRegularize / sPassed); nRegularize = 0;
-		nAvgPropagate = 0.8*nAvgPropagate + 0.2*(nPropagate / sPassed); nPropagate = 0;
-		nAvgFillHoles = 0.8*nAvgFillHoles + 0.2*(nFillHoles / sPassed); nFillHoles = 0;
-		nAvgSetDepth = 0.8*nAvgSetDepth + 0.2*(nSetDepth / sPassed); nSetDepth = 0;
+		nAvgUpdate = 0.8f*nAvgUpdate + 0.2f*(nUpdate / sPassed); nUpdate = 0;
+		nAvgCreate = 0.8f*nAvgCreate + 0.2f*(nCreate / sPassed); nCreate = 0;
+		nAvgFinalize = 0.8f*nAvgFinalize + 0.2f*(nFinalize / sPassed); nFinalize = 0;
+		nAvgObserve = 0.8f*nAvgObserve + 0.2f*(nObserve / sPassed); nObserve = 0;
+		nAvgRegularize = 0.8f*nAvgRegularize + 0.2f*(nRegularize / sPassed); nRegularize = 0;
+		nAvgPropagate = 0.8f*nAvgPropagate + 0.2f*(nPropagate / sPassed); nPropagate = 0;
+		nAvgFillHoles = 0.8f*nAvgFillHoles + 0.2f*(nFillHoles / sPassed); nFillHoles = 0;
+		nAvgSetDepth = 0.8f*nAvgSetDepth + 0.2f*(nSetDepth / sPassed); nSetDepth = 0;
 		lastHzUpdate = now;
 
 		if(enablePrintDebugInfo && printMappingTiming)
@@ -1372,13 +1374,13 @@ void DepthMap::finalizeKeyFrame()
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMapFillHoles();
 	gettimeofday(&tv_end, NULL);
-	msFillHoles = 0.9*msFillHoles + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msFillHoles = 0.9f*msFillHoles + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nFillHoles++;
 
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMap(false, VAL_SUM_MIN_FOR_KEEP);
 	gettimeofday(&tv_end, NULL);
-	msRegularize = 0.9*msRegularize + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msRegularize = 0.9f*msRegularize + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nRegularize++;
 
 	gettimeofday(&tv_start, NULL);
@@ -1386,11 +1388,11 @@ void DepthMap::finalizeKeyFrame()
 	activeKeyFrame->calculateMeanInformation();
 	activeKeyFrame->takeReActivationData(currentDepthMap);
 	gettimeofday(&tv_end, NULL);
-	msSetDepth = 0.9*msSetDepth + 0.1*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nSetDepth++;
 
 	gettimeofday(&tv_end_all, NULL);
-	msFinalize = 0.9*msFinalize + 0.1*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
+	msFinalize = 0.9f*msFinalize + 0.1f*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
 	nFinalize++;
 }
 
@@ -1515,7 +1517,9 @@ inline float DepthMap::doLineStereo(
 	float incx = pClose[0] - pFar[0];
 	float incy = pClose[1] - pFar[1];
 	float eplLength = sqrt(incx*incx+incy*incy);
-	if(!eplLength > 0 || std::isinf(eplLength)) return -4;
+	if (!(eplLength > 0) || std::isinf(eplLength)) {
+		return -4;
+	}
 
 	if(eplLength > MAX_EPL_LENGTH_CROP)
 	{
@@ -1655,8 +1659,8 @@ inline float DepthMap::doLineStereo(
 	int loopCounter = 0;
 	float best_match_x = -1;
 	float best_match_y = -1;
-	float best_match_err = 1e50;
-	float second_best_match_err = 1e50;
+	float best_match_err = FLT_MAX;
+	float second_best_match_err = FLT_MAX;
 
 	// best pre and post errors.
 	float best_match_errPre=NAN, best_match_errPost=NAN, best_match_DiffErrPre=NAN, best_match_DiffErrPost=NAN;

@@ -143,7 +143,7 @@ public:
 	// contains ALL keyframes, as soon as they are "finished".
 	// does NOT yet contain the keyframe that is currently being created.
 	boost::shared_mutex keyframesAllMutex;
-	std::vector< Frame*, Eigen::aligned_allocator<Frame*> > keyframesAll;
+	std::vector< Frame* > keyframesAll;
 
 
 	/** Maps frame ids to keyframes. Contains ALL Keyframes allocated, including the one that currently being created. */
@@ -155,7 +155,7 @@ public:
 
 	// contains ALL edges, as soon as they are created
 	boost::shared_mutex edgesListsMutex;
-	std::vector< KFConstraintStruct*, Eigen::aligned_allocator<KFConstraintStruct*> > edgesAll;
+	std::vector< KFConstraintStruct* > edgesAll;
 
 
 
@@ -163,7 +163,7 @@ public:
 	// the corresponding frame may have been removed / deleted in the meantime.
 	// these are the ones that are also referenced by the corresponding Frame / Keyframe object
 	boost::shared_mutex allFramePosesMutex;
-	std::vector<FramePoseStruct*, Eigen::aligned_allocator<FramePoseStruct*> > allFramePoses;
+	std::vector<FramePoseStruct* > allFramePoses;
 
 
 	// contains all keyframes in graph, in some arbitrary (random) order. if a frame is re-tracked,
@@ -179,8 +179,8 @@ private:
 	/** Pose graph representation in g2o */
 	g2o::SparseOptimizer graph;
 	
-	std::vector< Frame*, Eigen::aligned_allocator<Frame*> > newKeyframesBuffer;
-	std::vector< KFConstraintStruct*, Eigen::aligned_allocator<KFConstraintStruct*> > newEdgeBuffer;
+	std::vector< Frame* > newKeyframesBuffer;
+	std::vector< KFConstraintStruct* > newEdgeBuffer;
 
 
 	int nextEdgeId;

@@ -364,7 +364,7 @@ public:
 		lambdaSuccessFac = 0.5f;
 		lambdaFailFac = 2.0f;
 
-		const float stepSizeMinc[6] = {1e-8, 1e-8, 1e-8, 1e-8, 1e-8, 1e-8};
+		const float stepSizeMinc[6] = {1e-8f, 1e-8f, 1e-8f, 1e-8f, 1e-8f, 1e-8f};
 		const int maxIterations[6] = {5, 20, 50, 100, 100, 100};
 
 
@@ -377,8 +377,8 @@ public:
 		}
 
 		lambdaInitialTestTrack = 0;
-		stepSizeMinTestTrack = 1e-3;
-		convergenceEpsTestTrack = 0.98;
+		stepSizeMinTestTrack = 1e-3f;
+		convergenceEpsTestTrack = 0.98f;
 		maxItsTestTrack = 5;
 
 		var_weight = 1.0;

@@ -34,10 +34,10 @@ SE3 SE3CV2Sophus(const cv::Mat &R, const cv::Mat &t)
 
 	for(int i=0;i<3;i++)
 	{
-		sR(0,i) = R.at<double>(0,i);
-		sR(1,i) = R.at<double>(1,i);
-		sR(2,i) = R.at<double>(2,i);
-		st[i] = t.at<double>(i);
+		sR(0,i) = static_cast<float>(R.at<double>(0,i));
+		sR(1,i) = static_cast<float>(R.at<double>(1,i));
+		sR(2,i) = static_cast<float>(R.at<double>(2,i));
+		st[i] = static_cast<float>(t.at<double>(i));
 	}
 
 	return SE3(toSophus(sR.inverse()), toSophus(st));
@@ -85,13 +85,13 @@ cv::Mat getDepthRainbowPlot(const float* idepth, const float* idepthVar, const f
 			{
 
 				// rainbow between 0 and 4
-				float r = (0-id) * 255 / 1.0; if(r < 0) r = -r;
-				float g = (1-id) * 255 / 1.0; if(g < 0) g = -g;
-				float b = (2-id) * 255 / 1.0; if(b < 0) b = -b;
+				float r = (0-id) * 255 / 1.0f; if(r < 0) r = -r;
+				float g = (1-id) * 255 / 1.0f; if(g < 0) g = -g;
+				float b = (2-id) * 255 / 1.0f; if(b < 0) b = -b;
 
-				uchar rc = r < 0 ? 0 : (r > 255 ? 255 : r);
-				uchar gc = g < 0 ? 0 : (g > 255 ? 255 : g);
-				uchar bc = b < 0 ? 0 : (b > 255 ? 255 : b);
+				uchar rc = uchar(r < 0 ? 0 : (r > 255 ? 255 : r));
+				uchar gc = uchar(g < 0 ? 0 : (g > 255 ? 255 : g));
+				uchar bc = uchar(b < 0 ? 0 : (b > 255 ? 255 : b));
 
 				res.at<cv::Vec3b>(j,i) = cv::Vec3b(255-rc,255-gc,255-bc);
 			}
@@ -118,7 +118,7 @@ cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width,
 					{
 						if(idepthVar[(i+dx) + width*(j+dy)] > 0)
 						{
-							float distFac = (float)(dx*dx+dy*dy)*(0.075*0.075)*0.02;
+							float distFac = (float)(dx*dx+dy*dy)*(0.075f*0.075f)*0.02f;
 							float ivar = 1.0f/(idepthVar[(i+dx) + width*(j+dy)] + distFac);
 							sumIvar += ivar;
 							numIvar += 1;
@@ -150,11 +150,11 @@ cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width,
 			{
 				float var= sqrt(idv);
 
-				var = var*60*255*0.5 - 20;
+				var = var*60*255*0.5f - 20;
 				if(var > 255) var = 255;
 				if(var < 0) var = 0;
 
-				res.at<cv::Vec3b>(j,i) = cv::Vec3b(0,255-var, var);
+				res.at<cv::Vec3b>(j,i) = cv::Vec3b(0,uchar(255-var), uchar(var));
 			}
 		}
 

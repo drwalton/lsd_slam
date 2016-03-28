@@ -18,6 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "Win32Compatibility.hpp"
 #include "GlobalMapping/KeyFrameGraph.h"
 #include "DataStructures/Frame.h"
 
@@ -44,13 +45,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 // for iterating over files in a directory
-#include <dirent.h>
+//#include <dirent.h>
 #include <queue>
 
 #include <iostream>
 #include <fstream>
 
 #include "util/globalFuncs.h"
+#include "Win32Compatibility.hpp"
+ 
 
 namespace lsd_slam
 {
@@ -181,8 +184,8 @@ void KeyFrameGraph::dumpMap(std::string folder)
 		resP(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = e->meanResidualP;
 		usage(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = e->usage;
 		consistency(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = e->reciprocalConsistency;
-		distance(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = e->secondToFirst.translation().norm();
-		error(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = e->edge->chi2();
+		distance(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = static_cast<float>(e->secondToFirst.translation().norm());
+		error(e->firstFrame->idxInKeyframes, e->secondFrame->idxInKeyframes) = static_cast<float>(e->edge->chi2());
 	}
 	edgesListsMutex.unlock_shared();
 	keyframesAllMutex.unlock_shared();

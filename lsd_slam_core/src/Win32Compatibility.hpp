@@ -1,0 +1,14 @@
+#ifndef WIN32_COMPATIBILITY_HPP_INCLUDED
+#define WIN32_COMPATIBILITY_HPP_INCLUDED
+#ifdef _WIN32
+#define NOMINMAX
+
+#include <g2o/stuff/timeutil.h>
+
+#define snprintf _snprintf_s
+
+void usleep(__int64 usec);
+
+#endif
+
+#endif

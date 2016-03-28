@@ -23,6 +23,10 @@
 #undef Success
 #include <Eigen/Core>
 
+#ifdef _WIN32
+#include <GL/glew.h>
+#endif _WIN32
+
 #include "QGLViewer/qglviewer.h"
 #include "sophus/sim3.hpp"
 

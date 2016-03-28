@@ -40,9 +40,9 @@ cv::Vec3b DepthMapPixelHypothesis::getVisualizationColor(int lastFrameID) const
 			return cv::Vec3b(255,255,255);
 
 		// rainbow between 0 and 4
-		float r = (0-id) * 255 / 1.0; if(r < 0) r = -r;
-		float g = (1-id) * 255 / 1.0; if(g < 0) g = -g;
-		float b = (2-id) * 255 / 1.0; if(b < 0) b = -b;
+		float r = (0-id) * 255 / 1.0f; if(r < 0) r = -r;
+		float g = (1-id) * 255 / 1.0f; if(g < 0) g = -g;
+		float b = (2-id) * 255 / 1.0f; if(b < 0) b = -b;
 
 		uchar rc = r < 0 ? 0 : (r > 255 ? 255 : r);
 		uchar gc = g < 0 ? 0 : (g > 255 ? 255 : g);

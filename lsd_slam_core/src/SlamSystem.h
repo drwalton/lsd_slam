@@ -20,6 +20,8 @@
 
 #pragma once
 #include <vector>
+#include <deque>
+#include <memory>
 #include <boost/thread.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -31,8 +33,8 @@
 #include "util/SophusUtil.h"
 
 #include "Tracking/Relocalizer.h"
-
-
+#include "g2o/stuff/timeutil.h"
+using g2o::timeval;
 
 namespace lsd_slam
 {
@@ -108,7 +110,7 @@ public:
 	
 	void publishKeyframeGraph();
 	
-	std::vector<FramePoseStruct*, Eigen::aligned_allocator<lsd_slam::FramePoseStruct*> > getAllPoses();
+	std::vector<FramePoseStruct*> getAllPoses();
 
 
 
@@ -182,13 +184,13 @@ private:
 
 
 	// PUSHED in tracking, READ & CLEARED in mapping
-	std::deque< std::shared_ptr<Frame> > unmappedTrackedFrames;
+	std::deque< std::shared_ptr<Frame>, std::allocator<std::shared_ptr<Frame> > > unmappedTrackedFrames;
 	boost::mutex unmappedTrackedFramesMutex;
 	boost::condition_variable  unmappedTrackedFramesSignal;
 
 
 	// PUSHED by Mapping, READ & CLEARED by constraintFinder
-	std::deque< Frame* > newKeyFrames;
+	std::deque< Frame*, std::allocator<Frame*> > newKeyFrames;
 	boost::mutex newKeyFrameMutex;
 	boost::condition_variable newKeyFrameCreatedSignal;
 
@@ -264,7 +266,7 @@ private:
 	void testConstraint(
 			Frame* candidate,
 			KFConstraintStruct* &e1_out, KFConstraintStruct* &e2_out,
-			Sim3 candidateToFrame_initialEstimate,
+			const Sim3 &candidateToFrame_initialEstimate,
 			float strictness);
 
 	void optimizationThreadLoop();

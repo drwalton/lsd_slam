@@ -292,7 +292,7 @@ void Frame::setDepthFromGroundTruth(const float* depth, float cov_scale)
 	data.hasIDepthBeenSet = true;
 }
 
-void Frame::prepareForStereoWith(Frame* other, Sim3 thisToOther, const Eigen::Matrix3f& K, const int level)
+void Frame::prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const Eigen::Matrix3f& K, const int level)
 {
 	Sim3 otherToThis = thisToOther.inverse();
 
@@ -305,12 +305,12 @@ void Frame::prepareForStereoWith(Frame* other, Sim3 thisToOther, const Eigen::Ma
 
 	thisToOther_t = thisToOther.translation().cast<float>();
 	K_thisToOther_t = K * thisToOther_t;
-	thisToOther_R = thisToOther.rotationMatrix().cast<float>() * thisToOther.scale();
+	thisToOther_R = (thisToOther.rotationMatrix().cast<float>() * thisToOther.scale()).cast<float>();
 	otherToThis_R_row0 = thisToOther_R.col(0);
 	otherToThis_R_row1 = thisToOther_R.col(1);
 	otherToThis_R_row2 = thisToOther_R.col(2);
 
-	distSquared = otherToThis.translation().dot(otherToThis.translation());
+	distSquared = float(otherToThis.translation().dot(otherToThis.translation()));
 
 	referenceID = other->id();
 	referenceLevel = level;
@@ -444,12 +444,12 @@ void Frame::initialize(int id, int width, int height, const Eigen::Matrix3f& K, 
 		
 		if (level > 0)
 		{
-			data.fx[level] = data.fx[level-1] * 0.5;
-			data.fy[level] = data.fy[level-1] * 0.5;
-			data.cx[level] = (data.cx[0] + 0.5) / ((int)1<<level) - 0.5;
-			data.cy[level] = (data.cy[0] + 0.5) / ((int)1<<level) - 0.5;
+			data.fx[level] = data.fx[level-1] * 0.5f;
+			data.fy[level] = data.fy[level-1] * 0.5f;
+			data.cx[level] = (data.cx[0] + 0.5f) / ((int)1<<level) - 0.5f;
+			data.cy[level] = (data.cy[0] + 0.5f) / ((int)1<<level) - 0.5f;
 
-			data.K[level]  << data.fx[level], 0.0, data.cx[level], 0.0, data.fy[level], data.cy[level], 0.0, 0.0, 1.0;	// synthetic
+			data.K[level]  << data.fx[level], 0.0f, data.cx[level], 0.0f, data.fy[level], data.cy[level], 0.0f, 0.0f, 1.0f;	// synthetic
 			data.KInv[level] = (data.K[level]).inverse();
 
 			data.fxInv[level] = data.KInv[level](0,0);
@@ -759,7 +759,7 @@ void Frame::buildMaxGradients(int level)
 	}
 
 	if(level==0)
-		this->numMappablePixels = numMappablePixels;
+		this->numMappablePixels = static_cast<int>(numMappablePixels);
 
 	FrameMemory::getInstance().returnBuffer(maxGradTemp);
 
