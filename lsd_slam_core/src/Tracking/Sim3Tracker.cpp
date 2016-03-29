@@ -23,7 +23,7 @@
 #include "DataStructures/Frame.h"
 #include "Tracking/TrackingReference.h"
 #include "util/globalFuncs.h"
-#include "IOWrapper/ImageDisplay.h"
+#include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.h"
 #include "Win32Compatibility.hpp"
 
@@ -219,8 +219,8 @@ Sim3 Sim3Tracker::trackFrameSim3(
 			while(true)
 			{
 				// solve LS system with current lambda
-				Vector7 b = - ls7.b / ls7.num_constraints;
-				Matrix7x7 A = ls7.A / ls7.num_constraints;
+				Vector7 b = - ls7.b / static_cast<float>(ls7.num_constraints);
+				Matrix7x7 A = ls7.A / static_cast<float>(ls7.num_constraints);
 				for(int i=0;i<7;i++) A(i,i) *= 1+LM_lambda;
 				Vector7 inc = A.ldlt().solve(b);
 				incTry++;
@@ -316,7 +316,7 @@ Sim3 Sim3Tracker::trackFrameSim3(
 					}
 
 					if(LM_lambda == 0)
-						LM_lambda = 0.2;
+						LM_lambda = 0.2f;
 					else
 						LM_lambda *= std::pow(settings.lambdaFailFac, incTry);
 				}
@@ -548,8 +548,8 @@ void Sim3Tracker::calcSim3Buffers(
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
 			Eigen::Vector3f point = KLvl * (*refPoint);
-			int x = point[0] / point[2] + 0.5f;
-			int y = point[1] / point[2] + 0.5f;
+			int x = static_cast<int>(point[0] / point[2] + 0.5f);
+			int y = static_cast<int>(point[1] / point[2] + 0.5f);
 
 			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),u_new+0.5,v_new+0.5,(width/w));
 			setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(width/w));
@@ -749,9 +749,9 @@ Sim3ResidualStruct Sim3Tracker::calcSim3WeightsAndResidualNEON(
 Sim3ResidualStruct Sim3Tracker::calcSim3WeightsAndResidual(
 		const Sim3& referenceToFrame)
 {
-	float tx = referenceToFrame.translation()[0];
-	float ty = referenceToFrame.translation()[1];
-	float tz = referenceToFrame.translation()[2];
+	float tx = float(referenceToFrame.translation()[0]);
+	float ty = float(referenceToFrame.translation()[1]);
+	float tz = float(referenceToFrame.translation()[2]);
 
 	Sim3ResidualStruct sumRes;
 	memset(&sumRes, 0, sizeof(Sim3ResidualStruct));
@@ -1022,8 +1022,8 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 		v[2] = (-px * z_sqr) * gx +
 			  (-py * z_sqr) * gy;
 		v[3] = (-px * py * z_sqr) * gx +
-			  (-(1.0 + py * py * z_sqr)) * gy;
-		v[4] = (1.0 + px * px * z_sqr) * gx +
+			  (-(1.0f + py * py * z_sqr)) * gy;
+		v[4] = (1.0f + px * px * z_sqr) * gx +
 			  (px * py * z_sqr) * gy;
 		v[5] = (-py * z) * gx +
 			  (px * z) * gy;

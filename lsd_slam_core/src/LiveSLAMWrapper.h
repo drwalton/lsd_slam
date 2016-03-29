@@ -25,9 +25,9 @@
 #include <fstream>
 #include <chrono>
 
-#include "IOWrapper/Timestamp.h"
-#include "IOWrapper/NotifyBuffer.h"
-#include "IOWrapper/TimestampedObject.h"
+#include "IOWrapper/Timestamp.hpp"
+#include "IOWrapper/NotifyBuffer.hpp"
+#include "IOWrapper/TimestampedObject.hpp"
 #include "util/SophusUtil.h"
 
 namespace cv {

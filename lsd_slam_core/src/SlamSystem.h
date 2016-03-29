@@ -27,7 +27,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include "util/settings.h"
-#include "IOWrapper/Timestamp.h"
+#include "IOWrapper/Timestamp.hpp"
 #include "opencv2/core/core.hpp"
 
 #include "util/SophusUtil.h"

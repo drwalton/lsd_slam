@@ -30,8 +30,8 @@
 #include "GlobalMapping/KeyFrameGraph.h"
 #include "GlobalMapping/TrackableKeyFrameSearch.h"
 #include "GlobalMapping/g2oTypeSim3Sophus.h"
-#include "IOWrapper/ImageDisplay.h"
-#include "IOWrapper/Output3DWrapper.h"
+#include "IOWrapper/ImageDisplay.hpp"
+#include "IOWrapper/Output3DWrapper.hpp"
 #include <g2o/core/robust_kernel_impl.h>
 #include "DataStructures/FrameMemory.h"
 #include "deque"

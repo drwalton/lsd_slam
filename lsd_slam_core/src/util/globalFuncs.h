@@ -21,7 +21,7 @@
 #pragma once
 #include <opencv2/core/core.hpp>
 #include "util/settings.h"
-#include "IOWrapper/TimestampedObject.h"
+#include "IOWrapper/TimestampedObject.hpp"
 #include "util/SophusUtil.h"
 
 

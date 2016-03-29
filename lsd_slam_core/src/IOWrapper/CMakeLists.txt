@@ -1,11 +1,13 @@
 add_library(lsd_slam_IOWrapper
-	ImageDisplay.h
-	InputImageStream.h
-	NotifyBuffer.h
+	ImageDisplay.hpp
+	InputImageStream.hpp
+	NotifyBuffer.hpp
 	OpenCV/ImageDisplay_OpenCV.cpp
-	Output3DWrapper.h
+	Output3DWrapper.hpp
 	Timestamp.cpp
-	Timestamp.h
-	TimestampedObject.h
+	Timestamp.hpp
+	TimestampedObject.hpp
+	OpenCVImageStream.hpp
+	OpenCVImageStream.cpp
 )
 

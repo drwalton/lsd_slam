@@ -24,9 +24,9 @@
 
 #include "SlamSystem.h"
 
-#include "IOWrapper/ImageDisplay.h"
-#include "IOWrapper/Output3DWrapper.h"
-#include "IOWrapper/InputImageStream.h"
+#include "IOWrapper/ImageDisplay.hpp"
+#include "IOWrapper/Output3DWrapper.hpp"
+#include "IOWrapper/InputImageStream.hpp"
 #include "util/globalFuncs.h"
 
 #include <iostream>

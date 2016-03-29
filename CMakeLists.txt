@@ -4,7 +4,9 @@ project(lsd_slam)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+if(NOT WIN32)
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=c++14)
+endif(NOT WIN32)
 
 find_package(GLEW REQUIRED)
 find_package(Eigen3 REQUIRED)

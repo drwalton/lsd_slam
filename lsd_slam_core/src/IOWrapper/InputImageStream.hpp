@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "IOWrapper/NotifyBuffer.h"
-#include "IOWrapper/TimestampedObject.h"
-
+#include <string>
+#include "IOWrapper/NotifyBuffer.hpp"
+#include "IOWrapper/TimestampedObject.hpp"
 
 
 namespace lsd_slam
@@ -44,7 +44,7 @@ public:
 	virtual void run() {};
 
 
-	virtual void setCalibration(std::string file) {};
+	virtual void setCalibration(const std::string &file) {};
 
 	/**
 	 * Gets the NotifyBuffer to which incoming images are stored.

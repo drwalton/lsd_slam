@@ -39,7 +39,7 @@
 #include "GlobalMapping/g2oTypeSim3Sophus.h"
 
 
-#include "IOWrapper/ImageDisplay.h"
+#include "IOWrapper/ImageDisplay.hpp"
 
 // for mkdir
 #include <sys/types.h>

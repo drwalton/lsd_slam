@@ -29,7 +29,7 @@
 #include "DepthEstimation/DepthMapPixelHypothesis.h"
 #include "DataStructures/Frame.h"
 #include "util/globalFuncs.h"
-#include "IOWrapper/ImageDisplay.h"
+#include "IOWrapper/ImageDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.h"
 
 

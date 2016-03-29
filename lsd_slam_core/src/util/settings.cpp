@@ -97,8 +97,8 @@ bool doMapping = true;
 int maxLoopClosureCandidates = 10;
 int maxOptimizationIterations = 100;
 int propagateKeyFrameDepthCount = 0;
-float loopclosureStrictness = 1.5;
-float relocalizationTH = 0.7;
+float loopclosureStrictness = 1.5f;
+float relocalizationTH = 0.7f;
 
 
 bool saveKeyframes =  false;

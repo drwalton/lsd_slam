@@ -246,25 +246,25 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color)
 		glLineWidth(lineWidth);
 		glBegin(GL_LINES);
 		glVertex3f(0,0,0);
-		glVertex3f(0.05*(0-cx)/fx,0.05*(0-cy)/fy,0.05);
+		glVertex3f(0.05f*(0-cx)/fx,0.05f*(0-cy)/fy,0.05f);
 		glVertex3f(0,0,0);
-		glVertex3f(0.05*(0-cx)/fx,0.05*(height-1-cy)/fy,0.05);
+		glVertex3f(0.05f*(0-cx)/fx,0.05*(height-1-cy)/fy,0.05f);
 		glVertex3f(0,0,0);
-		glVertex3f(0.05*(width-1-cx)/fx,0.05*(height-1-cy)/fy,0.05);
+		glVertex3f(0.05f*(width-1-cx)/fx,0.05f*(height-1-cy)/fy,0.05f);
 		glVertex3f(0,0,0);
-		glVertex3f(0.05*(width-1-cx)/fx,0.05*(0-cy)/fy,0.05);
+		glVertex3f(0.05f*(width-1-cx)/fx,0.05f*(0-cy)/fy,0.05f);
 
-		glVertex3f(0.05*(width-1-cx)/fx,0.05*(0-cy)/fy,0.05);
-		glVertex3f(0.05*(width-1-cx)/fx,0.05*(height-1-cy)/fy,0.05);
+		glVertex3f(0.05f*(width-1-cx)/fx,0.05f*(0-cy)/fy,0.05f);
+		glVertex3f(0.05f*(width-1-cx)/fx,0.05f*(height-1-cy)/fy,0.05f);
 
-		glVertex3f(0.05*(width-1-cx)/fx,0.05*(height-1-cy)/fy,0.05);
-		glVertex3f(0.05*(0-cx)/fx,0.05*(height-1-cy)/fy,0.05);
+		glVertex3f(0.05f*(width-1-cx)/fx,0.05f*(height-1-cy)/fy,0.05f);
+		glVertex3f(0.05f*(0-cx)/fx,0.05f*(height-1-cy)/fy,0.05f);
 
-		glVertex3f(0.05*(0-cx)/fx,0.05*(height-1-cy)/fy,0.05);
-		glVertex3f(0.05*(0-cx)/fx,0.05*(0-cy)/fy,0.05);
+		glVertex3f(0.05f*(0-cx)/fx,0.05f*(height-1-cy)/fy,0.05f);
+		glVertex3f(0.05f*(0-cx)/fx,0.05f*(0-cy)/fy,0.05f);
 
-		glVertex3f(0.05*(0-cx)/fx,0.05*(0-cy)/fy,0.05);
-		glVertex3f(0.05*(width-1-cx)/fx,0.05*(0-cy)/fy,0.05);
+		glVertex3f(0.05f*(0-cx)/fx,0.05f*(0-cy)/fy,0.05f);
+		glVertex3f(0.05f*(width-1-cx)/fx,0.05f*(0-cy)/fy,0.05f);
 
 		glEnd();
 	glPopMatrix();

@@ -23,7 +23,7 @@
 #include "DepthEstimation/DepthMapPixelHypothesis.h"
 #include "GlobalMapping/KeyFrameGraph.h"
 #include "util/globalFuncs.h"
-#include "IOWrapper/ImageDisplay.h"
+#include "IOWrapper/ImageDisplay.hpp"
 
 namespace lsd_slam
 {

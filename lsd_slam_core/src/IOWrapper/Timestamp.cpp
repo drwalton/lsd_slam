@@ -18,12 +18,10 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "IOWrapper/Timestamp.h"
+#include "IOWrapper/Timestamp.hpp"
 
 #include <sstream>
 #include <iostream>
-#include <iomanip>
-#include <ctime>
 
 namespace lsd_slam
 {

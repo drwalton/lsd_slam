@@ -21,7 +21,7 @@
 #include "Relocalizer.h"
 #include "DataStructures/Frame.h"
 #include "Tracking/SE3Tracker.h"
-#include "IOWrapper/ImageDisplay.h"
+#include "IOWrapper/ImageDisplay.hpp"
 
 namespace lsd_slam
 {

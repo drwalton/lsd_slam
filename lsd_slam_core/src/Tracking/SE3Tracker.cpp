@@ -23,7 +23,7 @@
 #include "DataStructures/Frame.h"
 #include "Tracking/TrackingReference.h"
 #include "util/globalFuncs.h"
-#include "IOWrapper/ImageDisplay.h"
+#include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.h"
 
 #include <Eigen/Core>
