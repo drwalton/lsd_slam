@@ -44,5 +44,16 @@ include_directories(
 add_subdirectory(lsd_slam_core)
 add_subdirectory(lsd_slam_viewer)
 
+set(LSD_SLAM_LIBS
+	lsd_slam_System
+	lsd_slam_DataStructures
+	lsd_slam_DepthEstimation
+	lsd_slam_GlobalMapping
+	lsd_slam_IOWrapper
+	lsd_slam_Tracking
+	lsd_slam_util
+	lsd_slam_viewer
+)
+
 add_subdirectory(demos)
 
