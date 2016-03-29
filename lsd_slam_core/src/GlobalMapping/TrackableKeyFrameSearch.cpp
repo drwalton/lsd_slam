@@ -21,7 +21,6 @@
 #include "Win32Compatibility.hpp"
 #include "GlobalMapping/TrackableKeyFrameSearch.hpp"
 
-
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "DataStructures/Frame.hpp"
 #include "Tracking/SE3Tracker.hpp"
@@ -68,7 +67,8 @@ std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > Tra
 
 	float distFacReciprocal = 1;
 	if(checkBothScales)
-		distFacReciprocal = frame->meanIdepth / frame->getScaledCamToWorld().scale();
+		distFacReciprocal = static_cast<float>(
+			frame->meanIdepth / frame->getScaledCamToWorld().scale());
 
 	// for each frame, calculate the rough score, consisting of pose, scale and angle overlap.
 	graph->keyframesAllMutex.lock_shared();
@@ -77,7 +77,8 @@ std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > Tra
 		Eigen::Vector3d otherPos = graph->keyframesAll[i]->getScaledCamToWorld().translation();
 
 		// get distance between the frames, scaled to fit the potential reference frame.
-		float distFac = graph->keyframesAll[i]->meanIdepth / graph->keyframesAll[i]->getScaledCamToWorld().scale();
+		float distFac = static_cast<float>(
+			graph->keyframesAll[i]->meanIdepth / graph->keyframesAll[i]->getScaledCamToWorld().scale());
 		if(checkBothScales && distFacReciprocal < distFac) distFac = distFacReciprocal;
 		Eigen::Vector3d dist = (pos - otherPos) * distFac;
 		float dNorm2 = static_cast<float>(dist.dot(dist));
@@ -122,7 +123,11 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 		if(potentialReferenceFrames[i].ref->idxInKeyframes < INITIALIZATION_PHASE_COUNT)
 			continue;
 
+#ifdef _WIN32
+		g2o::timeval tv_start, tv_end;
+#else
 		struct timeval tv_start, tv_end;
+#endif
 		gettimeofday(&tv_start, NULL);
 		tracker->checkPermaRefOverlap(potentialReferenceFrames[i].ref, potentialReferenceFrames[i].refToFrame);
 		gettimeofday(&tv_end, NULL);
@@ -137,7 +142,8 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 			Sophus::Vector3d dist = RefToFrame_tracked.translation() * potentialReferenceFrames[i].ref->meanIdepth;
 
 			float newScore = getRefFrameScore(float(dist.dot(dist)), tracker->pointUsage);
-			float poseDiscrepancy = (potentialReferenceFrames[i].refToFrame * RefToFrame_tracked.inverse()).log().norm();
+			float poseDiscrepancy = static_cast<float>(
+				(potentialReferenceFrames[i].refToFrame * RefToFrame_tracked.inverse()).log().norm());
 			float goodVal = tracker->pointUsage * tracker->lastGoodCount / (tracker->lastGoodCount+tracker->lastBadCount);
 			checkedSecondary++;
 
