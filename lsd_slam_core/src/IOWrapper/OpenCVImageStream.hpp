@@ -3,6 +3,7 @@
 
 #include "InputImageStream.hpp"
 #include <opencv2/opencv.hpp>
+#include <thread>
 
 namespace lsd_slam {
 
@@ -15,6 +16,8 @@ public:
 	virtual ~OpenCVImageStream() throw();
 
 	virtual void run();
+	
+	void stop();
 
 	virtual void setCalibration(std::string file);
 
@@ -25,6 +28,8 @@ public:
 private:
 	cv::VideoCapture cap_;
 	std::unique_ptr<Undistorter> undistorter_;
+	std::unique_ptr<std::thread> thread_;
+	bool running;
 };
 
 }
