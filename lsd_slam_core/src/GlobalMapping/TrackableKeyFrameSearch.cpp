@@ -122,7 +122,7 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 		if(potentialReferenceFrames[i].ref->idxInKeyframes < INITIALIZATION_PHASE_COUNT)
 			continue;
 
-		struct g2o::timeval tv_start, tv_end;
+		struct timeval tv_start, tv_end;
 		gettimeofday(&tv_start, NULL);
 		tracker->checkPermaRefOverlap(potentialReferenceFrames[i].ref, potentialReferenceFrames[i].refToFrame);
 		gettimeofday(&tv_end, NULL);

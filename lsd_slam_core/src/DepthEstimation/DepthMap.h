@@ -26,7 +26,9 @@
 #include "util/IndexThreadReduce.h"
 #include "util/SophusUtil.h"
 #include "g2o/stuff/timeutil.h"
+#ifdef _WIN32
 using g2o::timeval;
+#endif
 
 namespace lsd_slam
 {
