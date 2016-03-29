@@ -1,7 +1,7 @@
 add_library(lsd_slam_DepthEstimation
 	DepthMap.cpp
-	DepthMap.h
+	DepthMap.hpp
 	DepthMapPixelHypothesis.cpp
-	DepthMapPixelHypothesis.h
+	DepthMapPixelHypothesis.hpp
 )
 

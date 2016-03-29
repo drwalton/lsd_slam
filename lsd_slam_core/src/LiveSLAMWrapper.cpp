@@ -18,11 +18,11 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "LiveSLAMWrapper.h"
+#include "LiveSLAMWrapper.hpp"
 #include <vector>
 #include "util/SophusUtil.h"
 
-#include "SlamSystem.h"
+#include "SlamSystem.hpp"
 
 #include "IOWrapper/ImageDisplay.hpp"
 #include "IOWrapper/Output3DWrapper.hpp"

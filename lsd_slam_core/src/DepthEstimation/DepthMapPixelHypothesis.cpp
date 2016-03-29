@@ -18,9 +18,9 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "DepthEstimation/DepthMapPixelHypothesis.h"
-#include "GlobalMapping/KeyFrameGraph.h"
-#include "DataStructures/Frame.h"
+#include "DepthEstimation/DepthMapPixelHypothesis.hpp"
+#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "DataStructures/Frame.hpp"
 
 namespace lsd_slam
 {

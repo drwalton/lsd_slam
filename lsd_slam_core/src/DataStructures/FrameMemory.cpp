@@ -18,8 +18,8 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "DataStructures/FrameMemory.h"
-#include "DataStructures/Frame.h"
+#include "DataStructures/FrameMemory.hpp"
+#include "DataStructures/Frame.hpp"
 
 namespace lsd_slam
 {

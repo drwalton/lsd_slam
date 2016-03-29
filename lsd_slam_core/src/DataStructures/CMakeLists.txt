@@ -1,9 +1,9 @@
 add_library(lsd_slam_DataStructures
 	Frame.cpp
-	Frame.h
+	Frame.hpp
 	FrameMemory.cpp
-	FrameMemory.h
+	FrameMemory.hpp
 	FramePoseStruct.cpp
-	FramePoseStruct.h
+	FramePoseStruct.hpp
 )
 

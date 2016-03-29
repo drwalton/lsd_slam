@@ -17,8 +17,8 @@ endif(WIN32)
 add_library(lsd_slam_System
 	${COMPATIBILITY_SOURCES}
 	LiveSLAMWrapper.cpp
-	LiveSLAMWrapper.h
+	LiveSLAMWrapper.hpp
 	SlamSystem.cpp
-	SlamSystem.h
+	SlamSystem.hpp
 )
 

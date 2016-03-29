@@ -20,11 +20,11 @@
 
 #pragma once
 #include <memory>
-#include "util/EigenCoreInclude.h"
+#include "util/EigenCoreInclude.hpp"
 #include "opencv2/core/core.hpp"
-#include "util/settings.h"
-#include "util/IndexThreadReduce.h"
-#include "util/SophusUtil.h"
+#include "util/settings.hpp"
+#include "util/IndexThreadReduce.hpp"
+#include "util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
 #ifdef _WIN32
 using g2o::timeval;

@@ -20,8 +20,8 @@
 
 #pragma once
 #include <opencv2/core/core.hpp>
-#include "util/settings.h"
-#include "util/EigenCoreInclude.h"
+#include "util/settings.hpp"
+#include "util/EigenCoreInclude.hpp"
 
 
 namespace lsd_slam

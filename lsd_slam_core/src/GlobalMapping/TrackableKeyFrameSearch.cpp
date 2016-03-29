@@ -19,12 +19,12 @@
 */
 
 #include "Win32Compatibility.hpp"
-#include "GlobalMapping/TrackableKeyFrameSearch.h"
+#include "GlobalMapping/TrackableKeyFrameSearch.hpp"
 
 
-#include "GlobalMapping/KeyFrameGraph.h"
-#include "DataStructures/Frame.h"
-#include "Tracking/SE3Tracker.h"
+#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "DataStructures/Frame.hpp"
+#include "Tracking/SE3Tracker.hpp"
 
 namespace lsd_slam
 {

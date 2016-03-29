@@ -24,8 +24,8 @@
 #define KEYFRAMEGRAPHDISPLAY_H_
 
 
-#include "keyframeGraphMsg.h"
-#include "keyframeMsg.h"
+#include "keyframeGraphMsg.hpp"
+#include "keyframeMsg.hpp"
 #include "boost/thread.hpp"
 
 class KeyFrameDisplay;

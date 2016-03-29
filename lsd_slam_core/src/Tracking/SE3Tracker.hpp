@@ -20,10 +20,10 @@
 
 #pragma once
 #include <opencv2/core/core.hpp>
-#include "util/settings.h"
-#include "util/EigenCoreInclude.h"
-#include "util/SophusUtil.h"
-#include "Tracking/LGSX.h"
+#include "util/settings.hpp"
+#include "util/EigenCoreInclude.hpp"
+#include "util/SophusUtil.hpp"
+#include "Tracking/LGSX.hpp"
 
 
 namespace lsd_slam

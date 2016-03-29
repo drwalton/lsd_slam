@@ -19,7 +19,7 @@
 */
 
 #pragma once
-#include "util/settings.h"
+#include "util/settings.hpp"
 #include "boost/thread.hpp"
 #include <stdio.h>
 #include <iostream>

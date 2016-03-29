@@ -19,7 +19,7 @@
 */
 
 #pragma once
-#include "util/SophusUtil.h"
+#include "util/SophusUtil.hpp"
 #include "GlobalMapping/g2oTypeSim3Sophus.h"
 
 

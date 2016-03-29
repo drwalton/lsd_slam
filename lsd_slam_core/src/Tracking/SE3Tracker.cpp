@@ -18,13 +18,13 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "SE3Tracker.h"
+#include "SE3Tracker.hpp"
 #include <opencv2/highgui/highgui.hpp>
-#include "DataStructures/Frame.h"
-#include "Tracking/TrackingReference.h"
-#include "util/globalFuncs.h"
+#include "DataStructures/Frame.hpp"
+#include "Tracking/TrackingReference.hpp"
+#include "util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
-#include "Tracking/LGSX.h"
+#include "Tracking/LGSX.hpp"
 
 #include <Eigen/Core>
 

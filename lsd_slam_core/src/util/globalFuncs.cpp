@@ -18,10 +18,10 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/globalFuncs.h"
-#include "util/SophusUtil.h"
+#include "util/globalFuncs.hpp"
+#include "util/SophusUtil.hpp"
 #include "opencv2/opencv.hpp"
-#include "DataStructures/Frame.h"
+#include "DataStructures/Frame.hpp"
 
 namespace lsd_slam
 {

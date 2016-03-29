@@ -1,11 +1,11 @@
 add_library(lsd_slam_GlobalMapping
 	FabMap.cpp
-	FabMap.h
+	FabMap.hpp
 	g2oTypeSim3Sophus.cpp
-	g2oTypeSim3Sophus.h
+	g2oTypeSim3Sophus.hpp
 	KeyFrameGraph.cpp
-	KeyFrameGraph.h
+	KeyFrameGraph.hpp
 	TrackableKeyFrameSearch.cpp
-	TrackableKeyFrameSearch.h
+	TrackableKeyFrameSearch.hpp
 )
 

@@ -27,8 +27,8 @@
 #include <vector>
 #include "boost/thread.hpp"
 #include "qevent.h"
-#include "keyframeMsg.h"
-#include "keyframeGraphMsg.h"
+#include "keyframeMsg.hpp"
+#include "keyframeGraphMsg.hpp"
 
 #include "QGLViewer/keyFrameInterpolator.h"
 #include "Win32Compatibility.hpp"

@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "util/EigenCoreInclude.h"
+#include "util/EigenCoreInclude.hpp"
 #include <opencv2/core/core.hpp>
-#include "util/settings.h"
+#include "util/settings.hpp"
 
 
 

@@ -19,11 +19,11 @@
 */
 
 #pragma once
-#include "util/settings.h"
+#include "util/settings.hpp"
 #include "boost/thread.hpp"
 #include <stdio.h>
 #include <iostream>
-#include "util/SophusUtil.h"
+#include "util/SophusUtil.hpp"
 
 
 namespace lsd_slam

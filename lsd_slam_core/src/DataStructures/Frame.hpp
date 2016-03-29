@@ -19,14 +19,14 @@
 */
 
 #pragma once
-#include "util/SophusUtil.h"
-#include "util/settings.h"
+#include "util/SophusUtil.hpp"
+#include "util/settings.hpp"
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
-#include "DataStructures/FramePoseStruct.h"
-#include "DataStructures/FrameMemory.h"
-#include "unordered_set"
-#include "util/settings.h"
+#include "DataStructures/FramePoseStruct.hpp"
+#include "DataStructures/FrameMemory.hpp"
+#include <unordered_set>
+#include "util/settings.hpp"
 
 
 namespace lsd_slam

@@ -18,7 +18,7 @@
 * along with dvo. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "settings.h"
+#include "settings.hpp"
 
 
 

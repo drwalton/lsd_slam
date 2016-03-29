@@ -20,7 +20,7 @@
 
 #define GL_GLEXT_PROTOTYPES 1
 
-#include "KeyFrameDisplay.h"
+#include "KeyFrameDisplay.hpp"
 #include <stdio.h>
 #include "settings.h"
 

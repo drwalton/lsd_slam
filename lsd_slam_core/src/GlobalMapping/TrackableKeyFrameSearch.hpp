@@ -23,13 +23,13 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <Eigen/StdVector>
-#include "util/SophusUtil.h"
+#include "util/SophusUtil.hpp"
 
 #ifdef HAVE_FABMAP
-	#include "GlobalMapping/FabMap.h"
+	#include "GlobalMapping/FabMap.hpp"
 #endif
 
-#include "util/settings.h"
+#include "util/settings.hpp"
 
 
 

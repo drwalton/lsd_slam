@@ -19,15 +19,15 @@
 */
 
 #ifdef HAVE_FABMAP
-#include "GlobalMapping/FabMap.h"
+#include "GlobalMapping/FabMap.hpp"
 
 #include <fstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 #include "openfabmap.hpp"
 
-#include "util/settings.h"
-#include "DataStructures/Frame.h"
+#include "util/settings.hpp"
+#include "DataStructures/Frame.hpp"
 
 namespace lsd_slam
 {

@@ -1,12 +1,12 @@
 add_library(lsd_slam_Tracking
-	LGSX.h
+	LGSX.hpp
 	Relocalizer.cpp
-	Relocalizer.h
+	Relocalizer.hpp
 	SE3Tracker.cpp
-	SE3Tracker.h
+	SE3Tracker.hpp
 	Sim3Tracker.cpp
-	Sim3Tracker.h
+	Sim3Tracker.hpp
 	TrackingReference.cpp
-	TrackingReference.h
+	TrackingReference.hpp
 )
 

@@ -18,22 +18,22 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "SlamSystem.h"
+#include "SlamSystem.hpp"
 
-#include "DataStructures/Frame.h"
-#include "Tracking/SE3Tracker.h"
-#include "Tracking/Sim3Tracker.h"
-#include "DepthEstimation/DepthMap.h"
-#include "Tracking/TrackingReference.h"
-#include "LiveSLAMWrapper.h"
-#include "util/globalFuncs.h"
-#include "GlobalMapping/KeyFrameGraph.h"
-#include "GlobalMapping/TrackableKeyFrameSearch.h"
-#include "GlobalMapping/g2oTypeSim3Sophus.h"
+#include "DataStructures/Frame.hpp"
+#include "Tracking/SE3Tracker.hpp"
+#include "Tracking/Sim3Tracker.hpp"
+#include "DepthEstimation/DepthMap.hpp"
+#include "Tracking/TrackingReference.hpp"
+#include "LiveSLAMWrapper.hpp"
+#include "util/globalFuncs.hpp"
+#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "GlobalMapping/TrackableKeyFrameSearch.hpp"
+#include "GlobalMapping/g2oTypeSim3Sophus.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "IOWrapper/Output3DWrapper.hpp"
 #include <g2o/core/robust_kernel_impl.h>
-#include "DataStructures/FrameMemory.h"
+#include "DataStructures/FrameMemory.hpp"
 #include "deque"
 
 // for mkdir

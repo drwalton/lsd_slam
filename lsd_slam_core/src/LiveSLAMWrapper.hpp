@@ -28,7 +28,7 @@
 #include "IOWrapper/Timestamp.hpp"
 #include "IOWrapper/NotifyBuffer.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
-#include "util/SophusUtil.h"
+#include "util/SophusUtil.hpp"
 
 namespace cv {
 	class Mat;

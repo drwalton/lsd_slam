@@ -19,8 +19,8 @@
 */
 
 #pragma once
-#include "util/settings.h"
-#include "util/EigenCoreInclude.h"
+#include "util/settings.hpp"
+#include "util/EigenCoreInclude.hpp"
 #include "boost/thread/mutex.hpp"
 #include <boost/thread/shared_mutex.hpp>
 

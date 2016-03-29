@@ -29,19 +29,19 @@
 #include <GL/glu.h>
 #endif
 
-#include "PointCloudViewer.h"
-#include "qfiledialog.h"
-#include "qcoreapplication.h"
+#include "PointCloudViewer.hpp"
+#include "qfiledialog.hpp"
+#include "qcoreapplication.hpp"
 #include <stdio.h>
-#include "settings.h"
+#include "settings.hpp"
 
 //#include <zlib.h>
 #include <iostream>
 
 #include "QGLViewer/manipulatedCameraFrame.h"
 
-#include "KeyFrameDisplay.h"
-#include "KeyFrameGraphDisplay.h"
+#include "KeyFrameDisplay.hpp"
+#include "KeyFrameGraphDisplay.hpp"
 
 #include <iostream>
 #include <fstream>

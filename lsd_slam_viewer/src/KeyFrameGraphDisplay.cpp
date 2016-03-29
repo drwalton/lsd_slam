@@ -23,9 +23,9 @@
 #define NOMINMAX
 #endif
 
-#include "KeyFrameGraphDisplay.h"
-#include "KeyFrameDisplay.h"
-#include "settings.h"
+#include "KeyFrameGraphDisplay.hpp"
+#include "KeyFrameDisplay.hpp"
+#include "settings.hpp"
 #include <sstream>
 #include <fstream>
 #include <algorithm>

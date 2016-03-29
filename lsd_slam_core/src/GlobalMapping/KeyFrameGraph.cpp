@@ -19,8 +19,8 @@
 */
 
 #include "Win32Compatibility.hpp"
-#include "GlobalMapping/KeyFrameGraph.h"
-#include "DataStructures/Frame.h"
+#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "DataStructures/Frame.hpp"
 
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/solvers/pcg/linear_solver_pcg.h>
@@ -36,7 +36,7 @@
 #include "opencv2/opencv.hpp"
 
 #include <g2o/types/sim3/sim3.h>
-#include "GlobalMapping/g2oTypeSim3Sophus.h"
+#include "GlobalMapping/g2oTypeSim3Sophus.hpp"
 
 
 #include "IOWrapper/ImageDisplay.hpp"

@@ -1,13 +1,13 @@
 add_library(lsd_slam_util
-	EigenCoreInclude.h
+	EigenCoreInclude.hpp
 	globalFuncs.cpp
-	globalFuncs.h
-	IndexThreadReduce.h
+	globalFuncs.hpp
+	IndexThreadReduce.hpp
 	settings.cpp
-	settings.h
+	settings.hpp
 	SophusUtil.cpp
-	SophusUtil.h
+	SophusUtil.hpp
 	Undistorter.cpp
-	Undistorter.h
+	Undistorter.hpp
 )
 
