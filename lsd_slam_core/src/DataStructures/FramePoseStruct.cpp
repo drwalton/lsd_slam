@@ -19,7 +19,7 @@
 */
 
 
-#include <DataStructures/FramePoseStruct.h>
+#include "DataStructures/FramePoseStruct.hpp"
 #include "DataStructures/Frame.hpp"
 
 namespace lsd_slam

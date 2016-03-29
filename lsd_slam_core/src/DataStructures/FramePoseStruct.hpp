@@ -20,7 +20,7 @@
 
 #pragma once
 #include "util/SophusUtil.hpp"
-#include "GlobalMapping/g2oTypeSim3Sophus.h"
+#include "GlobalMapping/g2oTypeSim3Sophus.hpp"
 
 
 

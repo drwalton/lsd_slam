@@ -39,7 +39,7 @@ class KeyFrameGraphDisplay;
 class CameraDisplay;
 class KeyFrameDisplay;
 
-#include "settings.h"
+#include "settings.hpp"
 
 class AnimationObject
 {

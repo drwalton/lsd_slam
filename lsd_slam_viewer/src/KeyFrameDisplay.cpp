@@ -22,7 +22,7 @@
 
 #include "KeyFrameDisplay.hpp"
 #include <stdio.h>
-#include "settings.h"
+#include "settings.hpp"
 
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>

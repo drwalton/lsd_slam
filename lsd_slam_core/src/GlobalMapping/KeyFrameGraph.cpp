@@ -51,7 +51,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "util/globalFuncs.h"
+#include "util/globalFuncs.hpp"
 #include "Win32Compatibility.hpp"
  
 
@@ -337,8 +337,6 @@ int KeyFrameGraph::optimize(int num_iterations)
 	return graph.optimize(num_iterations, false);
 
 }
-
-
 
 void KeyFrameGraph::calculateGraphDistancesToFrame(Frame* startFrame, std::unordered_map< Frame*, int >* distanceMap)
 {

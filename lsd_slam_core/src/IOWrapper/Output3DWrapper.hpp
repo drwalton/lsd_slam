@@ -21,7 +21,7 @@
 #pragma once
 #include <string>
 
-#include "util/SophusUtil.h"
+#include "util/SophusUtil.hpp"
 
 namespace cv {
 	class Mat;

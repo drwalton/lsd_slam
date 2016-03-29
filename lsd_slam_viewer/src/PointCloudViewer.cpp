@@ -30,8 +30,8 @@
 #endif
 
 #include "PointCloudViewer.hpp"
-#include "qfiledialog.hpp"
-#include "qcoreapplication.hpp"
+#include <qfiledialog.h>
+#include <qcoreapplication.h>
 #include <stdio.h>
 #include "settings.hpp"
 
