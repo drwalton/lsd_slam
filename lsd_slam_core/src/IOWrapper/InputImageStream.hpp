@@ -43,6 +43,7 @@ public:
 	 */
 	virtual void run() {};
 
+	virtual bool running() { return true; };
 
 	virtual void setCalibration(const std::string &file) {};
 

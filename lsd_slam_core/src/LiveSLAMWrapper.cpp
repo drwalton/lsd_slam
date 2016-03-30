@@ -103,6 +103,7 @@ void LiveSLAMWrapper::Loop()
 				continue;
 		}
 		
+		if (!imageStream->running()) break;
 		TimestampedMat image = imageStream->getBuffer()->first();
 		imageStream->getBuffer()->popFront();
 		
@@ -110,6 +111,7 @@ void LiveSLAMWrapper::Loop()
 		//Util::displayImage("MyVideo", image.data);
 		newImageCallback(image.data, image.timestamp);
 	}
+	std::cout << "Finishing LiveSLAMWrapper Loop()" << std::endl;
 }
 
 

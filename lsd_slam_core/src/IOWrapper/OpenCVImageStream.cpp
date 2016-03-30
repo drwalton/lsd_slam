@@ -27,6 +27,11 @@ void OpenCVImageStream::run()
 	thread_.reset(new std::thread(&OpenCVImageStream::operator(), this));
 }
 
+bool OpenCVImageStream::running()
+{
+	return running_;
+}
+
 void OpenCVImageStream::stop()
 {
 	running_ = false;
@@ -68,6 +73,7 @@ void OpenCVImageStream::operator()()
 			static cv::Mat rawFrame;
 			cap_.retrieve(rawFrame);
 			cv::imshow("OpenCVImageStream", rawFrame);
+			cv::waitKey(1);
 			usleep(33000);
 			if (undistorter_) {
 				undistorter_->undistort(rawFrame, newFrame.data);
@@ -80,7 +86,7 @@ void OpenCVImageStream::operator()()
 		} else {
 			std::cout << "No new frames available; terminating OpenCVImageStream..." << std::endl;
 			cv::destroyWindow("OpenCVImageStream");
-			break;
+			running_ = false;
 		}
 	}
 }

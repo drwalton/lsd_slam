@@ -70,6 +70,7 @@ void displayThreadLoop()
 				}
 			}
 			cv::imshow(displayQueue.back().name, displayQueue.back().img);
+			cv::waitKey(1);
 			displayQueue.pop_back();
 		}
 	}
@@ -110,6 +111,7 @@ void displayImage(const char* windowName, const cv::Mat& image, bool autoSize)
 			}
 		}
 		cv::imshow(windowName, image);
+		cv::waitKey(1);
 	}
 	//cv::waitKey(1);
 }

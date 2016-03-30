@@ -16,6 +16,8 @@ public:
 	virtual ~OpenCVImageStream() throw();
 
 	virtual void run();
+
+	virtual bool running();
 	
 	void stop();
 
