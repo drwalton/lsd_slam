@@ -14,6 +14,46 @@ example-input datasets, and the generated output as rosbag or .ply point cloud.
 * **Semi-Dense Visual Odometry for a Monocular Camera**, *J. Engel, J. Sturm, D. Cremers*, ICCV '13
 
 
+# 0. Building on Windows
+
+## Dependencies
+
+I recommend storing libraries in the following format:
+
+    C:\local\<libname>\<libname>-<version>\
+
+For example:
+
+    C:\local\opencv\opencv-3.0.0\
+
+should contain OpenCV 3.0 (the README.md file should be in this folder). This should allow libraries to be located automatically by CMake.
+
+The following dependencies are required; the listed versions have been used to successfully compile this code.
+
+* OpenCV (3.0.0)
+    * https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.0.0/
+* GLEW (1.13.0)
+    * http://glew.sourceforge.net/index.html
+* Boost (1.59.0)
+    * http://www.boost.org/users/history/version\_1\_59\_0.html
+* FLTK (1.3.3)
+    * Must be built from source.
+* Qt (4.8.6)
+* Eigen (3.2.8)
+* libQGLViewer (2.6.3)
+    * Must be built from source.
+    * I recommend building with Qt Creator.
+* g2o (from repository)
+
+g2o must be built from source, and should ideally be cloned into `C:\local\g2o`. When building, the build folder should be chosen to be `C:\local\g2o\build`.
+
+## Building
+
+Open the CMake GUI application. Set the source code location to the repository directory, and choose where to build the binaries (I recommend a subfolder called `build`).
+
+Generate for your chosen platform (tested for 32-bit using Visual Studio 2013 Pro).
+
+Open the generated `.sln` file and build the solution.
 
 # 1. Quickstart / Minimal Setup
 
