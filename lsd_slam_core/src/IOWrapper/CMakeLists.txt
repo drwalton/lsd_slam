@@ -4,6 +4,8 @@ add_library(lsd_slam_IOWrapper
 	NotifyBuffer.hpp
 	OpenCV/ImageDisplay_OpenCV.cpp
 	Output3DWrapper.hpp
+	ViewerOutput3DWrapper.hpp
+	ViewerOutput3DWrapper.cpp
 	Timestamp.cpp
 	Timestamp.hpp
 	TimestampedObject.hpp

@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include "IOWrapper/OpenCVImageStream.hpp"
-#include "IOWrapper/Output3DWrapper.hpp"
+#include "IOWrapper/ViewerOutput3DWrapper.hpp"
 #include "LiveSLAMWrapper.hpp"
 #include <FL/Fl_Native_File_Chooser.H>
 #include "Win32Compatibility.hpp"
@@ -50,8 +50,9 @@ int main(int argc, char **argv)
 	stream.setCalibration(argv[1]);
 	stream.run();
 
-	lsd_slam::Output3DWrapper outWrapper;
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, &outWrapper);
+	std::unique_ptr<lsd_slam::ViewerOutput3DWrapper> outWrapper(
+		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480));
+	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());
 
 	slamWrapper.Loop();
 	

@@ -34,10 +34,8 @@
 #include "Win32Compatibility.hpp"
 #include <opencv2/opencv.hpp>
 
-
 namespace lsd_slam
 {
-
 
 LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper)
 {

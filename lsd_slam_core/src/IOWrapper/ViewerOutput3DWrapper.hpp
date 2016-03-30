@@ -19,50 +19,36 @@
 */
 
 #pragma once
-#include <string>
-#include <vector>
+#include "Output3DWrapper.hpp"
+#include <thread>
 
-#include "util/SophusUtil.hpp"
+namespace lsd_slam {
 
-namespace cv {
-	class Mat;
-}
-
-namespace lsd_slam
-{
-
-class Frame;
-
-class KeyFrameGraph;
-class Frame;
-
-
-
-/**
- * Virtual 3D display object.
- */
-class Output3DWrapper
+///\brief This implementation of Output3DWrapper generates a 3D point cloud from keyframes, and
+///       optionally displays the output in a viewer window.
+class ViewerOutput3DWrapper : public Output3DWrapper
 {
 public:
-	virtual ~Output3DWrapper() {};
+	ViewerOutput3DWrapper(bool showViewer, int width, int height);
+	virtual ~ViewerOutput3DWrapper();
 
-
-
-
-
-	virtual void publishKeyframeGraph(KeyFrameGraph* graph) {};
+	virtual void publishKeyframeGraph(KeyFrameGraph* graph);
 
 	// publishes a keyframe. if that frame already existis, it is overwritten, otherwise it is added.
-	virtual void publishKeyframe(Frame* kf) {};
+	virtual void publishKeyframe(Frame* kf);
 
 	// published a tracked frame that did not become a keyframe (yet; i.e. has no depth data)
-	virtual void publishTrackedFrame(Frame* kf) {};
+	virtual void publishTrackedFrame(Frame* kf);
 
 	// publishes graph and all constraints, as well as updated KF poses.
-	virtual void publishTrajectory(std::vector<Eigen::Matrix<float, 3, 1>> trajectory, std::string identifier) {};
-	virtual void publishTrajectoryIncrement(Eigen::Matrix<float, 3, 1> pt, std::string identifier) {};
+	virtual void publishTrajectory(std::vector<Eigen::Matrix<float, 3, 1>> trajectory, std::string identifier);
+	virtual void publishTrajectoryIncrement(Eigen::Matrix<float, 3, 1> pt, std::string identifier);
 
-	virtual void publishDebugInfo(const Eigen::Matrix<float, 20, 1> &data) {};
+	virtual void publishDebugInfo(const Eigen::Matrix<float, 20, 1> &data);
+
+private:
+	std::thread viewerThread_;
 
 };
+
 }
