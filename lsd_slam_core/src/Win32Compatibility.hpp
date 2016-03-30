@@ -7,6 +7,7 @@ std::string pathToForwardSlashes(const std::string &p);
 
 #ifdef _WIN32
 #define NOMINMAX
+#include <GL/glew.h>
 
 #include <g2o/stuff/timeutil.h>
 

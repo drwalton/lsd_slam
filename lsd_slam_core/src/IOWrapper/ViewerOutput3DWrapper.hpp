@@ -19,6 +19,7 @@
 */
 
 #pragma once
+#include "Win32Compatibility.hpp"
 #include "Output3DWrapper.hpp"
 #include <thread>
 
@@ -48,6 +49,7 @@ public:
 
 private:
 	std::thread viewerThread_;
+	size_t publishLevel_;
 
 };
 
