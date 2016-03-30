@@ -197,6 +197,7 @@ extern bool printTrackingIterationInfo;
 extern bool printThreadingInfo;
 
 extern bool printKeyframeSelectionInfo;
+extern bool printNonKeyframeInfo;
 extern bool printConstraintSearchInfo;
 extern bool printOptimizationInfo;
 extern bool printRelocalizationInfo;

@@ -237,7 +237,7 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 				}
 				// converged?
 				if(error / lastErr > settings.convergenceEpsTestTrack)
-					iteration = settings.maxItsTestTrack;
+					iteration = static_cast<int>(settings.maxItsTestTrack);
 
 
 				lastErr = error;
@@ -254,12 +254,12 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 			{
 				if(!(inc.dot(inc) > settings.stepSizeMinTestTrack))
 				{
-					iteration = settings.maxItsTestTrack;
+					iteration = static_cast<int>(settings.maxItsTestTrack);
 					break;
 				}
 
-				if(LM_lambda == 0)
-					LM_lambda = 0.2;
+				if(LM_lambda == 0.f)
+					LM_lambda = 0.2f;
 				else
 					LM_lambda *= std::pow(settings.lambdaFailFac, incTry);
 			}
@@ -445,7 +445,7 @@ SE3 SE3Tracker::trackFrame(
 					}
 
 					if(LM_lambda == 0)
-						LM_lambda = 0.2;
+						LM_lambda = 0.2f;
 					else
 						LM_lambda *= std::pow(settings.lambdaFailFac, incTry);
 				}
@@ -1001,12 +1001,13 @@ float SE3Tracker::calcResidualAndBuffers(
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
 			Eigen::Vector3f point = KLvl * (*refPoint);
-			int x = point[0] / point[2] + 0.5f;
-			int y = point[1] / point[2] + 0.5f;
+			int x = static_cast<int>(point[0] / point[2] + 0.5f);
+			int y = static_cast<int>(point[1] / point[2] + 0.5f);
 
 			if(plotTrackingIterationInfo)
 			{
-				setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),u_new+0.5,v_new+0.5,(width/w));
+				setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
+					static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(width/w));
 				setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(width/w));
 			}
 			if(isGood)
@@ -1285,8 +1286,8 @@ void SE3Tracker::calculateWarpUpdate(
 		v[2] = (-px * z_sqr) * gx +
 			  (-py * z_sqr) * gy;
 		v[3] = (-px * py * z_sqr) * gx +
-			  (-(1.0 + py * py * z_sqr)) * gy;
-		v[4] = (1.0 + px * px * z_sqr) * gx +
+			  (-(1.0f + py * py * z_sqr)) * gy;
+		v[4] = (1.0f + px * px * z_sqr) * gx +
 			  (px * py * z_sqr) * gy;
 		v[5] = (-py * z) * gx +
 			  (px * z) * gy;

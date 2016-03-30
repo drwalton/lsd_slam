@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "util/settings.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
@@ -275,7 +275,7 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 	if(error < 0 || result_var > MAX_VAR)
 		return false;
 	
-	result_idepth = UNZERO(result_idepth);
+	result_idepth = static_cast<float>(UNZERO(result_idepth));
 
 	// add hypothesis
 	*target = DepthMapPixelHypothesis(
@@ -435,7 +435,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		// update var with observation
 		float w = result_var / (result_var + id_var);
 		float new_idepth = (1-w)*result_idepth + w*target->idepth;
-		target->idepth = UNZERO(new_idepth);
+		target->idepth = static_cast<float>(UNZERO(new_idepth));
 
 		// variance can only decrease from observation; never increase.
 		id_var = id_var * w;
@@ -690,7 +690,7 @@ void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* 
 					}
 
 				float idepthObs = sumIdepthObs / sumIVarObs;
-				idepthObs = UNZERO(idepthObs);
+				idepthObs = static_cast<float>(UNZERO(idepthObs));
 
 				currentDepthMap[idx] =
 					DepthMapPixelHypothesis(
@@ -837,7 +837,7 @@ template<bool removeOcclusions> void DepthMap::regularizeDepthMapRow(int validit
 			}
 
 			sum = sum / sumIvar;
-			sum = UNZERO(sum);
+			sum = static_cast<float>(UNZERO(sum));
 			
 
 			// update!

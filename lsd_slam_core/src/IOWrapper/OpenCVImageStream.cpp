@@ -1,7 +1,8 @@
 #include "OpenCVImageStream.hpp"
 #include "util/Undistorter.hpp"
+#include "Win32Compatibility.hpp"
 
-const size_t NOTIFY_BUFFER_SIZE = 8;
+const size_t NOTIFY_BUFFER_SIZE = 16;
 
 namespace lsd_slam {
 
@@ -66,16 +67,20 @@ void OpenCVImageStream::operator()()
 		if (cap_.grab()) {
 			static cv::Mat rawFrame;
 			cap_.retrieve(rawFrame);
-			cv::imshow("CVStream", rawFrame);
-			cv::waitKey(1);
+			cv::imshow("OpenCVImageStream", rawFrame);
+			usleep(33000);
 			if (undistorter_) {
 				undistorter_->undistort(rawFrame, newFrame.data);
 			} else {
 				newFrame.data = rawFrame;
 			}
-			imageBuffer->pushBack(newFrame);
+			if(!imageBuffer->pushBack(newFrame)) {
+				std::cout << "Frame dropped!\n";
+			}
 		} else {
-
+			std::cout << "No new frames available; terminating OpenCVImageStream..." << std::endl;
+			cv::destroyWindow("OpenCVImageStream");
+			break;
 		}
 	}
 }

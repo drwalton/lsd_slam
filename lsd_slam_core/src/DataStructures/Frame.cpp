@@ -305,7 +305,7 @@ void Frame::prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const Ei
 
 	thisToOther_t = thisToOther.translation().cast<float>();
 	K_thisToOther_t = K * thisToOther_t;
-	thisToOther_R = (thisToOther.rotationMatrix().cast<float>() * thisToOther.scale()).cast<float>();
+	thisToOther_R = thisToOther.rotationMatrix().cast<float>() * thisToOther.scale();
 	otherToThis_R_row0 = thisToOther_R.col(0);
 	otherToThis_R_row1 = thisToOther_R.col(1);
 	otherToThis_R_row2 = thisToOther_R.col(2);

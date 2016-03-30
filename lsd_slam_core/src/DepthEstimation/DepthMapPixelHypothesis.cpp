@@ -44,9 +44,9 @@ cv::Vec3b DepthMapPixelHypothesis::getVisualizationColor(int lastFrameID) const
 		float g = (1-id) * 255 / 1.0f; if(g < 0) g = -g;
 		float b = (2-id) * 255 / 1.0f; if(b < 0) b = -b;
 
-		uchar rc = r < 0 ? 0 : (r > 255 ? 255 : r);
-		uchar gc = g < 0 ? 0 : (g > 255 ? 255 : g);
-		uchar bc = b < 0 ? 0 : (b > 255 ? 255 : b);
+		uchar rc = r < 0 ? 0 : (r > 255 ? 255 : static_cast<uchar>(r));
+		uchar gc = g < 0 ? 0 : (g > 255 ? 255 : static_cast<uchar>(g));
+		uchar bc = b < 0 ? 0 : (b > 255 ? 255 : static_cast<uchar>(b));
 
 		return cv::Vec3b(255-rc,255-gc,255-bc);
 	}
@@ -54,8 +54,8 @@ cv::Vec3b DepthMapPixelHypothesis::getVisualizationColor(int lastFrameID) const
 	// plot validity counter
 	if(debugDisplay == 2)
 	{
-		float f = validity_counter * (255.0 / (VALIDITY_COUNTER_MAX_VARIABLE+VALIDITY_COUNTER_MAX));
-		uchar v = f < 0 ? 0 : (f > 255 ? 255 : f);
+		float f = validity_counter * (255.0f / (VALIDITY_COUNTER_MAX_VARIABLE+VALIDITY_COUNTER_MAX));
+		uchar v = f < 0 ? 0 : (f > 255 ? 255 : static_cast<uchar>(f));
 		return cv::Vec3b(0,v,v);
 	}
 
@@ -68,21 +68,21 @@ cv::Vec3b DepthMapPixelHypothesis::getVisualizationColor(int lastFrameID) const
 		else
 			idv= idepth_var;
 
-		float var = - 0.5 * log10(idv);
+		float var = - 0.5f * log10(idv);
 
-		var = var*255*0.333;
+		var = var*255*0.333f;
 		if(var > 255) var = 255;
 		if(var < 0)
 			return cv::Vec3b(0,0, 255);
 
-		return cv::Vec3b(255-var,var, 0);// bw
+		return cv::Vec3b(255-static_cast<uchar>(var),static_cast<uchar>(var), 0);// bw
 	}
 
 	// plot skip
 	if(debugDisplay == 5)
 	{
-		float f = (nextStereoFrameMinID - lastFrameID) * (255.0 / 100);
-		uchar v = f < 0.f ? 0 : (f > 255.f ? 255 : uchar(f));
+		float f = (nextStereoFrameMinID - lastFrameID) * (255.f / 100.f);
+		uchar v = f < 0.f ? 0 : (f > 255.f ? 255 : static_cast<uchar>(f));
 		return cv::Vec3b(v,0,v);
 	}
 

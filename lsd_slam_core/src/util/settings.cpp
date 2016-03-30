@@ -53,7 +53,8 @@ bool printTrackingIterationInfo = false;
 bool printFrameBuildDebugInfo = false;
 bool printMemoryDebugInfo = false;
 
-bool printKeyframeSelectionInfo = false;
+bool printKeyframeSelectionInfo = true;
+bool printNonKeyframeInfo = false;
 bool printConstraintSearchInfo = false;
 bool printOptimizationInfo = false;
 bool printRelocalizationInfo = false;

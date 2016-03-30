@@ -1008,7 +1008,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 		{
 			createNewKeyFrame = true;
 
-			if(enablePrintDebugInfo && printKeyframeSelectionInfo)
+			if( printKeyframeSelectionInfo)
 				printf("SELECT %d on %d! dist %.3f + usage %.3f = %.3f > 1\n",
 					trackingNewFrame->id(),trackingNewFrame->getTrackingParent()->id(), 
 					float(dist.dot(dist)), tracker->pointUsage, 
@@ -1016,7 +1016,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 		}
 		else
 		{
-			if(enablePrintDebugInfo && printKeyframeSelectionInfo)
+			if( printKeyframeSelectionInfo && printNonKeyframeInfo)
 				printf("SKIPPD %d on %d! dist %.3f + usage %.3f = %.3f > 1\n",
 					trackingNewFrame->id(),trackingNewFrame->getTrackingParent()->id(), 
 					float(dist.dot(dist)), tracker->pointUsage, 

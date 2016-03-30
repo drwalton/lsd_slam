@@ -55,13 +55,6 @@ int main(int argc, char **argv)
 
 	slamWrapper.Loop();
 	
-	int key = 0;
-	cv::Mat frame;
-	while(key != 27) {
-		cv::imshow("Input", stream.getBuffer()->popFront().data);
-		key = cv::waitKey(1);
-	}
-
 	stream.stop();
 	
 	return 0;

@@ -551,7 +551,8 @@ void Sim3Tracker::calcSim3Buffers(
 			int x = static_cast<int>(point[0] / point[2] + 0.5f);
 			int y = static_cast<int>(point[1] / point[2] + 0.5f);
 
-			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),u_new+0.5,v_new+0.5,(width/w));
+			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
+				static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(width/w));
 			setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(width/w));
 			setPixelInCvMat(&debugImageResiduals,getGrayCvPixel(residual_p+128),x,y,(width/w));
 
