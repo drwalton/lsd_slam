@@ -66,6 +66,8 @@ void OpenCVImageStream::operator()()
 		if (cap_.grab()) {
 			static cv::Mat rawFrame;
 			cap_.retrieve(rawFrame);
+			cv::imshow("CVStream", rawFrame);
+			cv::waitKey(1);
 			if (undistorter_) {
 				undistorter_->undistort(rawFrame, newFrame.data);
 			} else {

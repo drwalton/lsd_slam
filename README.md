@@ -28,6 +28,8 @@ For example:
 
 should contain OpenCV 3.0 (the README.md file should be in this folder). This should allow libraries to be located automatically by CMake.
 
+Aside from direct dependencies, you will also need Visual Studio, CMake and some version of Git (for example, the one included in SourceTree).
+
 The following dependencies are required; the listed versions have been used to successfully compile this code.
 
 * OpenCV (3.0.0)
@@ -35,17 +37,21 @@ The following dependencies are required; the listed versions have been used to s
 * GLEW (1.13.0)
     * http://glew.sourceforge.net/index.html
 * Boost (1.59.0)
-    * http://www.boost.org/users/history/version\_1\_59\_0.html
+    * http://www.boost.org/users/history/version_1_59_0.html
 * FLTK (1.3.3)
+    * http://www.fltk.org/software.php
     * Must be built from source.
 * Qt (4.8.6)
+    * http://download.qt.io/archive/qt/4.8/4.8.6/
 * Eigen (3.2.8)
+    * http://bitbucket.org/eigen/eigen/get/3.2.8.zip
 * libQGLViewer (2.6.3)
+    * http://libqglviewer.com/download.html
     * Must be built from source.
     * I recommend building with Qt Creator.
 * g2o (from repository)
-
-g2o must be built from source, and should ideally be cloned into `C:\local\g2o`. When building, the build folder should be chosen to be `C:\local\g2o\build`.
+    * https://github.com/RainerKuemmerle/g2o
+    * g2o must be built from source, and should ideally be cloned into `C:\local\g2o`. When building, the build folder should be chosen to be `C:\local\g2o\build`.
 
 ## Building
 

@@ -24,20 +24,27 @@ int main(int argc, char **argv)
     		std::cout << "Please enter number of camera (0=default): ";
     		std::cin >> i;
     		stream.capture().open(i);
-    		break;
+			if (stream.capture().isOpened()) {
+    			break;
+			} else {
+				std::cout << "Unable to open video device " << i << std::endl;
+			}
     	} else if(selection[0] == 'F' || selection[0] == 'f') {
 			std::string filename;
 			Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
 			ch.title("Load first image");
 			ch.show();
-			filename = ch.filename();
-			stream.capture().open(pathToForwardSlashes(filename));
-			break;
-//			if (stream.capture().isOpened()) {
-//				break;
-//			}
-    	}
-    	std::cout << "Could not parse response; please try again..." << std::endl;
+			filename = pathToForwardSlashes(ch.filename());
+			stream.capture().open(filename);
+			stream.capture() = cv::VideoCapture(filename);
+			if (stream.capture().isOpened()) {
+				break;
+			} else {
+				std::cout << "Unable to open file \"" << filename << "\"." << std::endl;
+			}
+		} else {
+			std::cout << "Could not parse response; please try again..." << std::endl;
+		}
 	}
 
 	stream.setCalibration(argv[1]);
