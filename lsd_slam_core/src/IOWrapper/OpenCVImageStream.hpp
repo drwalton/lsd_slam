@@ -19,9 +19,9 @@ public:
 	
 	void stop();
 
-	virtual void setCalibration(std::string file);
+	virtual void setCalibration(const std::string &file);
 
-	virtual void setCameraCapture(cv::VideoCapture cap);
+	cv::VideoCapture &capture();
 
 	void operator()();
 
@@ -29,7 +29,7 @@ private:
 	cv::VideoCapture cap_;
 	std::unique_ptr<Undistorter> undistorter_;
 	std::unique_ptr<std::thread> thread_;
-	bool running;
+	bool running_, hasCalib_;
 };
 
 }

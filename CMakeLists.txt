@@ -13,6 +13,11 @@ find_package(Eigen3 REQUIRED)
 find_package(G2O REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED)
+find_package(FLTK REQUIRED)
+
+if(WIN32)
+	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-12.0")
+endif(WIN32)
 
 if(NOT WIN32)
 find_package(SuiteParse REQUIRED)
@@ -39,6 +44,7 @@ include_directories(
 	${Boost_INCLUDE_DIR}
 	${QGLVIEWER_INCLUDE_DIR}
 	${G2O_INCLUDE_DIR}
+	${FLTK_INCLUDE_DIRS}
 )
 
 add_subdirectory(lsd_slam_core)
@@ -54,6 +60,15 @@ set(LSD_SLAM_LIBS
 	lsd_slam_util
 	lsd_slam_viewer
 )
+
+function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)
+	foreach(LIB IN LISTS ${EXEC_LIBS})
+		target_link_libraries(${TARGET} optimized ${LIB})
+	endforeach()
+	foreach(LIB IN LISTS ${DEBUG_LIBS})
+		target_link_libraries(${TARGET} debug ${LIB})
+	endforeach()
+endfunction()
 
 add_subdirectory(demos)
 

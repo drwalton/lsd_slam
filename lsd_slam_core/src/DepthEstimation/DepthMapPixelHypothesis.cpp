@@ -82,7 +82,7 @@ cv::Vec3b DepthMapPixelHypothesis::getVisualizationColor(int lastFrameID) const
 	if(debugDisplay == 5)
 	{
 		float f = (nextStereoFrameMinID - lastFrameID) * (255.0 / 100);
-		uchar v = f < 0 ? 0 : (f > 255 ? 255 : f);
+		uchar v = f < 0.f ? 0 : (f > 255.f ? 255 : uchar(f));
 		return cv::Vec3b(v,0,v);
 	}
 

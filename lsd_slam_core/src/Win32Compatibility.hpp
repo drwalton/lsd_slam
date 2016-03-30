@@ -1,5 +1,10 @@
 #ifndef WIN32_COMPATIBILITY_HPP_INCLUDED
 #define WIN32_COMPATIBILITY_HPP_INCLUDED
+
+#include <string>
+
+std::string pathToForwardSlashes(const std::string &p);
+
 #ifdef _WIN32
 #define NOMINMAX
 

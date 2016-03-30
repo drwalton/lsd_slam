@@ -1020,8 +1020,8 @@ float SE3Tracker::calcResidualAndBuffers(
 	buf_warped_size = idx;
 
 	pointUsage = usageCount / (float)refNum;
-	lastGoodCount = goodCount;
-	lastBadCount = badCount;
+	lastGoodCount = float(goodCount);
+	lastBadCount = float(badCount);
 	lastMeanRes = sumSignedRes / goodCount;
 
 	affineEstimation_a_lastIt = sqrtf((syy - sy*sy/sw) / (sxx - sx*sx/sw));

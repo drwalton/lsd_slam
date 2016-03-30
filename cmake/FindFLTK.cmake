@@ -1,0 +1,158 @@
+IF (APPLE)
+	FIND_LIBRARY(COREAUDIO_LIBRARY CoreAudio)
+	FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation)
+	FIND_LIBRARY(COREGRAPHICS_LIBRARY CoreGraphics)
+	FIND_LIBRARY(CORETEXT_LIBRARY CoreText)
+	FIND_LIBRARY(APPKIT_LIBRARY AppKit)
+	set(CORE_LIBS
+		${COREFOUNDATION_LIBRARY}
+		${COREAUDIO_LIBRARY}
+		${COREGRAPHICS_LIBRARY}
+		${CORETEXT_LIBRARY}
+		${APPKIT_LIBRARY})
+ENDIF (APPLE)
+
+set(FLTK_DIR "C:/local/fltk/fltk-1.3.3" "~/lib/fltk/fltk-1.3.3")
+set(FLTK_LIB_DIR "${FLTK_DIR}/lib")
+
+find_path(FLTK_INCLUDE_DIRS
+	NAMES
+		FL/Fl_File_Chooser.H
+	PATHS
+		${FLTK_DIR}
+)
+
+message("FLTK: ${FLTK_INCLUDE_DIRS}")
+
+find_library(FLTK_LIB_RELEASE
+	NAMES
+		fltkd
+		libfltkd.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_FORMS_LIB_RELEASE
+	NAMES
+		fltk_formsd
+		libfltk_formsd.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_GL_LIB_RELEASE
+	NAMES
+		fltk_gld
+		libfltk_gld.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_IMAGES_LIB_RELEASE
+	NAMES
+		fltk_imagesd
+		libfltk_imagesd.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+set(FLTK_LIBRARIES_RELEASE
+	${FLTK_LIB_RELEASE}
+	${FLTK_FORMS_LIB_RELEASE}
+	${FLTK_GL_LIB_RELEASE}
+	${FLTK_IMAGES_LIB_RELEASE}
+)
+set(FLTK_LIBRARIES ${FLTK_LIBRARIES_RELEASE})
+
+if(WIN32)
+find_library(FLTK_JPEG_LIB_RELEASE
+	NAMES
+		fltk_jpegd
+		libfltk_jpegd.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_PNG_LIB_RELEASE
+	NAMES
+		fltk_pngd
+		libfltk_pngd.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_Z_LIB_RELEASE
+	NAMES
+		fltk_zd
+		libfltk_zd.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+set(FLTK_LIBRARIES_RELEASE
+	${FLTK_LIBRARIES_RELEASE}
+	${FLTK_JPEG_LIB_RELEASE}
+	${FLTK_PNG_LIB_RELEASE}
+	${FLTK_Z_LIB_RELEASE}
+)
+endif(WIN32)
+
+find_library(FLTK_LIB_DEBUG
+	NAMES
+		libfltk.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_FORMS_LIB_DEBUG
+	NAMES
+		libfltk_forms.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_GL_LIB_DEBUG
+	NAMES
+		libfltk_gl.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_IMAGES_LIB_DEBUG
+	NAMES
+		libfltk_images.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+set(FLTK_LIBRARIES_DEBUG
+	${FLTK_LIB_DEBUG}
+	${FLTK_FORMS_LIB_DEBUG}
+	${FLTK_GL_LIB_DEBUG}
+	${FLTK_IMAGES_LIB_DEBUG}
+)
+
+if(WIN32)
+find_library(FLTK_JPEG_LIB_DEBUG
+	NAMES
+		fltk_jpeg
+		libfltk_jpeg.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_PNG_LIB_DEBUG
+	NAMES
+		fltk_png
+		libfltk_png.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+find_library(FLTK_Z_LIB_DEBUG
+	NAMES
+		fltk_z
+		libfltk_z.a
+	PATHS
+		${FLTK_LIB_DIR}
+)
+set(FLTK_LIBRARIES_DEBUG
+	${FLTK_LIBRARIES_DEBUG}
+	${FLTK_JPEG_LIB_DEBUG}
+	${FLTK_PNG_LIB_DEBUG}
+	${FLTK_Z_LIB_DEBUG}
+)
+endif(WIN32)
+
+if(APPLE)
+	set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${CORE_LIBS})
+	set(FLTK_LIBRARIES_DEBUG ${FLTK_LIBRARIES_DEBUG} ${CORE_LIBS})
+endif(APPLE)
+

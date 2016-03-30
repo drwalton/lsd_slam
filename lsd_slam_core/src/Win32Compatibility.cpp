@@ -15,4 +15,20 @@ void usleep(__int64 usec)
 	WaitForSingleObject(timer, INFINITE);
 	CloseHandle(timer);
 }
+
+std::string pathToForwardSlashes(const std::string &p) 
+{
+	std::string p2 = p;
+	for (char &c : p2) {
+		if (c == '\\') {
+			c = '/';
+		}
+	}
+	return p2;
+}
+#else
+std::string pathToForwardSlashes(const std::string &p) 
+{
+	return p;
+}
 #endif
