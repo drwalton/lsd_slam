@@ -22,6 +22,8 @@
 #include "Win32Compatibility.hpp"
 #include "Output3DWrapper.hpp"
 #include <thread>
+#include <memory>
+#include "PointCloudViewer.hpp"
 
 namespace lsd_slam {
 
@@ -50,6 +52,7 @@ public:
 private:
 	std::thread viewerThread_;
 	size_t publishLevel_;
+	std::unique_ptr<PointCloudViewer> viewer_;
 
 };
 

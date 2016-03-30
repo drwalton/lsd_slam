@@ -31,9 +31,11 @@ struct PoseStamped {
 namespace lsd_slam {
 
 ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height)
-	:publishLevel_(0)
+	:publishLevel_(0), viewer_(nullptr)
 {
-
+	if (showViewer) {
+		viewer_.reset(new PointCloudViewer());
+	}
 }
 
 ViewerOutput3DWrapper::~ViewerOutput3DWrapper()

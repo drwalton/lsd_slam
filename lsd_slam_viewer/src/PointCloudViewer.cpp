@@ -131,7 +131,7 @@ void PointCloudViewer::reset()
 	assert(k != -42);
 
 	setSceneRadius(80);
-	setTextIsEnabled(false);
+	//setTextIsEnabled(false);
 	lastAutoplayCheckedSaveTime = -1;
 
 	animationPlaybackEnabled = false;
