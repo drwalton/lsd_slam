@@ -48,7 +48,7 @@ The following dependencies are required; the listed versions have been used to s
 * libQGLViewer (2.6.3)
     * http://libqglviewer.com/download.html
     * Must be built from source.
-    * I recommend building with Qt Creator.
+    * I recommend building with Visual Studio, not Qt Creator (this caused linking problems for me).
 * g2o (from repository)
     * https://github.com/RainerKuemmerle/g2o
     * g2o must be built from source, and should ideally be cloned into `C:\local\g2o`. When building, the build folder should be chosen to be `C:\local\g2o\build`.

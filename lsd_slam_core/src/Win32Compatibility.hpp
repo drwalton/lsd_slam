@@ -6,6 +6,12 @@
 std::string pathToForwardSlashes(const std::string &p);
 
 #ifdef _WIN32
+#define WIN_WAIT_BEFORE_EXIT std::cout << "\nExiting... Please press ENTER..."; std::cin.get();
+#else
+#define WIN_WAIT_BEFORE_EXIT
+#endif
+
+#ifdef _WIN32
 #define NOMINMAX
 #include <GL/glew.h>
 
