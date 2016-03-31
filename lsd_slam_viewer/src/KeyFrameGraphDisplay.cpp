@@ -62,19 +62,18 @@ void KeyFrameGraphDisplay::draw()
 
 	if(flushPointcloud)
 	{
-
-		printf("Flushing Pointcloud to %s!\n", "./pc_tmp.ply");
-		std::ofstream f("./pc_tmp.ply");
 		int numpts = 0;
-		for(unsigned int i=0;i<keyframes.size();i++)
 		{
-			if((int)i > cutFirstNKf)
-				numpts += keyframes[i]->flushPC(&f);
+			printf("Flushing Pointcloud to %s!\n", "./pc_tmp.ply");
+			std::ofstream f("./pc_tmp.ply", std::ios::binary);
+			for (unsigned int i = 0; i < keyframes.size(); i++)
+			{
+				if ((int)i > cutFirstNKf)
+					numpts += keyframes[i]->flushPC(&f);
+			}
 		}
-		f.flush();
-		f.close();
 
-		std::ofstream f2("./pc.ply");
+		std::ofstream f2("./pc.ply", std::ios::binary);
 		f2 << std::string("ply\n");
 		f2 << std::string("format binary_little_endian 1.0\n");
 		f2 << std::string("element vertex ") << numpts << std::string("\n");
@@ -84,13 +83,13 @@ void KeyFrameGraphDisplay::draw()
 		f2 << std::string("property float intensity\n");
 		f2 << std::string("end_header\n");
 
-		std::ifstream f3("/pc_tmp.ply");
+		std::ifstream f3("./pc_tmp.ply", std::ios::binary);
 		while(!f3.eof()) f2.put(f3.get());
 
 		f2.close();
 		f3.close();
 
-		system("./pc_tmp.ply");
+		std::remove("./pc_tmp.ply");
 		flushPointcloud = false;
 		printf("Done Flushing Pointcloud with %d points!\n", numpts);
 

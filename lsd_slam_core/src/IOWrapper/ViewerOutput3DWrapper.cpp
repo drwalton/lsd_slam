@@ -4,6 +4,7 @@
 #include "KeyFrameDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "KeyFrameGraphDisplay.hpp"
+#include <qapplication.h>
 
 struct Position {
 	float x, y, z;
@@ -34,7 +35,21 @@ ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int hei
 	:publishLevel_(0), viewer_(nullptr)
 {
 	if (showViewer) {
-		viewer_.reset(new PointCloudViewer());
+		viewerThread_ = std::thread([this](){
+			std::cout << "Launching viewer thread...\n";
+			int argc = 1; 
+			char* argv = "app";
+			QApplication qapp(argc, &argv);
+			PointCloudViewer viewer;
+			viewer_ = &viewer;
+			viewer.show();
+			if (glewInit() != GLEW_OK) {
+				throw std::runtime_error("GLEW INIT FAILED");
+			}
+			qapp.exec();
+			viewer_ = nullptr;
+			std::cout << "Terminating viewer thread...\n";
+		});
 	}
 }
 
@@ -71,6 +86,7 @@ void ViewerOutput3DWrapper::publishKeyframeGraph(KeyFrameGraph* graph)
 	}
 	graph->keyframesAllMutex.unlock_shared();
 
+	if(viewer_) viewer_->addGraphMsg(&gMsg);
 	//TODO: Process message.
 }
 
@@ -105,7 +121,8 @@ void ViewerOutput3DWrapper::publishKeyframe(Frame* kf)
 		ip[i].color[0] = ip[i].color[1] =
 			ip[i].color[2] = ip[i].color[3] = color[i];
 	}
-
+	
+	if(viewer_) viewer_->addFrameMsg(&msg);
 	//TODO: Process keyframe message.
 }
 

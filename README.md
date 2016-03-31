@@ -49,6 +49,7 @@ The following dependencies are required; the listed versions have been used to s
     * http://libqglviewer.com/download.html
     * Must be built from source.
     * I recommend building with Visual Studio, not Qt Creator (this caused linking problems for me).
+    * If you have multiple versions of Qt, make sure that libQGLViewer and lsd_slam link to the same one, to avoid difficult-to-find problems later.
 * g2o (from repository)
     * https://github.com/RainerKuemmerle/g2o
     * g2o must be built from source, and should ideally be cloned into `C:\local\g2o`. When building, the build folder should be chosen to be `C:\local\g2o\build`.

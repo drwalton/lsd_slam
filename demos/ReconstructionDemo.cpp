@@ -9,8 +9,6 @@
 
 int main(int argc, char **argv)
 {
-	QApplication qapplication(argc, argv);
-
 	if (argc < 2) {
 		std::cout << "Need cailbration file!" << std::endl;
 		WIN_WAIT_BEFORE_EXIT

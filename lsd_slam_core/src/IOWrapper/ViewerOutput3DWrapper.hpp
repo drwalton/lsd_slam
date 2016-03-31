@@ -52,7 +52,7 @@ public:
 private:
 	std::thread viewerThread_;
 	size_t publishLevel_;
-	std::unique_ptr<PointCloudViewer> viewer_;
+	PointCloudViewer *viewer_;
 
 };
 
