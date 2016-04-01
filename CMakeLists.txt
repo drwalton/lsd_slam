@@ -50,6 +50,7 @@ include_directories(
 
 add_subdirectory(lsd_slam_core)
 add_subdirectory(lsd_slam_viewer)
+add_subdirectory(lsd_slam_omni)
 
 set(LSD_SLAM_LIBS
 	lsd_slam_System
@@ -60,6 +61,7 @@ set(LSD_SLAM_LIBS
 	lsd_slam_Tracking
 	lsd_slam_util
 	lsd_slam_viewer
+	lsd_slam_omni
 )
 
 function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)
