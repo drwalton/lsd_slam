@@ -87,7 +87,6 @@ void ViewerOutput3DWrapper::publishKeyframeGraph(KeyFrameGraph* graph)
 	graph->keyframesAllMutex.unlock_shared();
 
 	if(viewer_) viewer_->addGraphMsg(&gMsg);
-	//TODO: Process message.
 }
 
 // publishes a keyframe. if that frame already existis, it is overwritten, otherwise it is added.
@@ -123,7 +122,6 @@ void ViewerOutput3DWrapper::publishKeyframe(Frame* kf)
 	}
 	
 	if(viewer_) viewer_->addFrameMsg(&msg);
-	//TODO: Process keyframe message.
 }
 
 // published a tracked frame that did not become a keyframe (yet; i.e. has no depth data)
@@ -147,7 +145,7 @@ void ViewerOutput3DWrapper::publishTrackedFrame(Frame* kf)
 
 	fMsg.pointcloud.clear();
 
-	//TODO: Process Keyframe Message.
+	if (viewer_) viewer_->addFrameMsg(&fMsg);
 
 	SE3 camToWorld = se3FromSim3(kf->getScaledCamToWorld());
 
@@ -172,7 +170,6 @@ void ViewerOutput3DWrapper::publishTrackedFrame(Frame* kf)
 	pMsg.header.stamp = kf->timestamp();
 	pMsg.header.frame_id = "world";
 
-	//TODO: process pMsg.
 }
 
 // publishes graph and all constraints, as well as updated KF poses.

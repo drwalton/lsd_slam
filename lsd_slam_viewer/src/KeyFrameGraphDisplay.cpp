@@ -42,7 +42,6 @@ KeyFrameGraphDisplay::~KeyFrameGraphDisplay()
 		delete keyframes[i];
 }
 
-
 void KeyFrameGraphDisplay::draw()
 {
 	dataMutex.lock();
@@ -95,7 +94,6 @@ void KeyFrameGraphDisplay::draw()
 
 	}
 
-
 	if(printNumbers)
 	{
 		int totalPoint = 0;
@@ -110,9 +108,6 @@ void KeyFrameGraphDisplay::draw()
 				totalPoint, (int)keyframes.size(), (int)constraints.size(), visPoints);
 		printNumbers = false;
 	}
-
-
-
 
 	if(showConstraints)
 	{

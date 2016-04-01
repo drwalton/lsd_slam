@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 			else if (selection[0] == 'F' || selection[0] == 'f') {
 				std::string filename;
 				Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
-				ch.title("Load first image");
+				ch.title("Select video file");
 				ch.show();
 				filename = pathToForwardSlashes(ch.filename());
 				stream.capture().open(filename);
