@@ -37,6 +37,7 @@ include_directories(
 	${GLEW_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/lsd_slam_core/src
 	${CMAKE_SOURCE_DIR}/lsd_slam_viewer/src
+	${CMAKE_SOURCE_DIR}/lsd_slam_omni/src
 	${EIGEN3_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/thirdparty/Sophus
 	${CSPARSE_INCLUDE_DIR} #Has been set by SuiteParse

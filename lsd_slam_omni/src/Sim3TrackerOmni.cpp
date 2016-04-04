@@ -173,15 +173,15 @@ Sim3 Sim3TrackerOmni::trackFrameSim3(
 		reference->makePointCloud(lvl);
 
 		// evaluate baseline-residual.
-		callOptimized(calcSim3Buffers, (reference, frame, referenceToFrame, lvl));
+		calcSim3Buffers(reference, frame, referenceToFrame, lvl);
 		if(buf_warped_size < 0.5 * MIN_GOODPERALL_PIXEL_ABSMIN * (width>>lvl)*(height>>lvl) || buf_warped_size < 10)
 		{
 			diverged = true;
 			return Sim3();
 		}
 
-		Sim3ResidualStruct lastErr = callOptimized(calcSim3WeightsAndResidual,(referenceToFrame));
-		if(plotSim3TrackingIterationInfo) callOptimized(calcSim3Buffers,(reference, frame, referenceToFrame, lvl, true));
+		Sim3ResidualStruct lastErr = calcSim3WeightsAndResidual(referenceToFrame);
+		if(plotSim3TrackingIterationInfo) calcSim3Buffers(reference, frame, referenceToFrame, lvl, true);
 		numCalcResidualCalls[lvl]++;
 
 		if(useAffineLightningEstimation)
@@ -197,7 +197,7 @@ Sim3 Sim3TrackerOmni::trackFrameSim3(
 		{
 
 			// calculate LS System, result is saved in ls.
-			callOptimized(calcSim3LGS,(ls7));
+			calcSim3LGS(ls7);
 			warp_update_up_to_date = true;
 			numCalcWarpUpdateCalls[lvl]++;
 
@@ -228,15 +228,15 @@ Sim3 Sim3TrackerOmni::trackFrameSim3(
 
 
 				// re-evaluate residual
-				callOptimized(calcSim3Buffers,(reference, frame, new_referenceToFrame, lvl));
+				calcSim3Buffers(reference, frame, new_referenceToFrame, lvl);
 				if(buf_warped_size < 0.5 * MIN_GOODPERALL_PIXEL_ABSMIN * (width>>lvl)*(height>>lvl) || buf_warped_size < 10)
 				{
 					diverged = true;
 					return Sim3();
 				}
 
-				Sim3ResidualStruct error = callOptimized(calcSim3WeightsAndResidual,(new_referenceToFrame));
-				if(plotSim3TrackingIterationInfo) callOptimized(calcSim3Buffers,(reference, frame, new_referenceToFrame, lvl, true));
+				Sim3ResidualStruct error = calcSim3WeightsAndResidual(new_referenceToFrame);
+				if(plotSim3TrackingIterationInfo) calcSim3Buffers(reference, frame, new_referenceToFrame, lvl, true);
 				numCalcResidualCalls[lvl]++;
 
 
@@ -345,9 +345,9 @@ Sim3 Sim3TrackerOmni::trackFrameSim3(
 	if (!warp_update_up_to_date)
 	{
 		reference->makePointCloud(finalLevel);
-		callOptimized(calcSim3Buffers,(reference, frame, referenceToFrame, finalLevel));
-	    finalResidual = callOptimized(calcSim3WeightsAndResidual,(referenceToFrame));
-	    callOptimized(calcSim3LGS,(ls7));
+		calcSim3Buffers(reference, frame, referenceToFrame, finalLevel);
+	    finalResidual = calcSim3WeightsAndResidual(referenceToFrame);
+	    calcSim3LGS(ls7);
 	}
 
 	lastSim3Hessian = ls7.A;

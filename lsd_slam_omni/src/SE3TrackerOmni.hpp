@@ -24,7 +24,7 @@
 #include "util/EigenCoreInclude.hpp"
 #include "util/SophusUtil.hpp"
 #include "Tracking/LGSX.hpp"
-
+#include "OmniCameraModel.hpp"
 
 namespace lsd_slam
 {
@@ -40,10 +40,8 @@ public:
 
 	int width, height;
 
-	// camera matrix
-	Eigen::Matrix3f K, KInv;
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
+	/// Model for current camera.
+	OmniCameraModel camModel;
 
 	DenseDepthTrackerSettings settings;
 
@@ -56,16 +54,18 @@ public:
 	cv::Mat debugImageOldImageWarped;
 
 
-	SE3TrackerOmni(int w, int h, Eigen::Matrix3f K);
-	SE3TrackerOmni(const SE3Tracker&) = delete;
+	SE3TrackerOmni(int w, int h, const OmniCameraModel &model);
+	SE3TrackerOmni(const SE3TrackerOmni&) = delete;
 	SE3TrackerOmni& operator=(const SE3TrackerOmni&) = delete;
 	~SE3TrackerOmni();
 
-	///\briefApply whole tracking procedure to a single frame.
+	///\brief Apply whole tracking procedure to a single frame.
 	///\param reference The keyframe against which to track the new frame.
 	///\param frame The new frame to track
-	///\frameToReference_initialEstimate The initial estimate for the transform
+	///\param frameToReference_initialEstimate The initial estimate for the transform
 	///    from frame to reference.
+	///\note The reference frame has an associated depth, but the tracked frame
+	///      does not.
 	SE3 trackFrame(
 			TrackingReference* reference,
 			Frame* frame,
@@ -97,11 +97,13 @@ public:
 	bool trackingWasGood;
 private:
 
-
-
+	//========================= INTERNAL BUFFERS ==============================
 	float* buf_warped_residual;
 	float* buf_warped_dx;
 	float* buf_warped_dy;
+
+	///These three buffers contain 3D points from the reference frame, to which 
+	///    the transform referenceToFrame has been applied.
 	float* buf_warped_x;
 	float* buf_warped_y;
 	float* buf_warped_z;
@@ -132,9 +134,8 @@ private:
 	void calcResidualAndBuffers_debugFinish(int w);
 
 
-	// used for image saving
+	/// used for image saving
 	int iterationNumber;
-
 
 	float affineEstimation_a_lastIt;
 	float affineEstimation_b_lastIt;

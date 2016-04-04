@@ -1,7 +1,7 @@
 #ifndef LSD_OMNI_OMNICAMERAMODEL_HPP_INCLUDED
 #define LSD_OMNI_OMNICAMERAMODEL_HPP_INCLUDED
 
-#include "VectorTypes.hpp"
+#include "CameraModel.hpp"
 #include <functional>
 
 namespace lsd_slam {
@@ -9,18 +9,20 @@ namespace lsd_slam {
 ///\brief Omnidirectional camera model used in LSD-SLAM.
 ///\note This model does not account for radial tangential distortion - 
 ///      images used should have correction applied already.
-class OmniCameraModel
+class OmniCameraModel : public CameraModel
 {
 public:
-
 	///\brief The default model covers a 180 degree fov in a circle of radius 200.
 	static OmniCameraModel makeDefaultModel();
 
-	float fx, fy, cx, cy, e;
+	float e;
+
+	OmniCameraModel(float fx, float fy, float cx, float cy, size_t w, size_t h, float e);
+	virtual ~OmniCameraModel();
 
 	///\brief Forward projection function, mapping from camera space to
 	///       image space.
-	vec2 worldToPixel(vec3 p) const;
+	virtual vec2 camToPixel(const vec3 &p) const;
 
 	///\brief Inverse projection function, mapping from image space to
 	///       camera space, given a depth value d.
@@ -28,7 +30,10 @@ public:
 	///      direction associated with this pixel.
 	///\note d should be strictly greater than 0 (if not, incorrect values
 	///      or NaNs will be returned).
-	vec3 pixelToWorld(vec2 p, float d = 1.f) const;
+	virtual	vec3 pixelToCam(const vec2 &p, float d = 1.f) const;
+
+	virtual std::vector<std::unique_ptr<CameraModel> >
+		createPyramidCameraModels(int nLevels) const;
 
 	///\brief Given the line segment parameterised by a*p0 + (1-a)*p1 in world space,
 	///       estimates the increment in "a" necessary to move one pixel further along the 

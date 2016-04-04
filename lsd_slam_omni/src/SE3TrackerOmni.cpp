@@ -37,26 +37,11 @@
 namespace lsd_slam
 {
 
-SE3TrackerOmni::SE3TrackerOmni(int w, int h, Eigen::Matrix3f K)
+SE3TrackerOmni::SE3TrackerOmni(int w, int h, const OmniCameraModel &model)
+	:camModel(model), width(w), height(h)
 {
-	width = w;
-	height = h;
-
-	this->K = K;
-	fx = K(0,0);
-	fy = K(1,1);
-	cx = K(0,2);
-	cy = K(1,2);
-
 	settings = DenseDepthTrackerSettings();
 	//settings.maxItsPerLvl[0] = 2;
-
-	KInv = K.inverse();
-	fxi = KInv(0,0);
-	fyi = KInv(1,1);
-	cxi = KInv(0,2);
-	cyi = KInv(1,2);
-
 
 	buf_warped_residual = (float*)Eigen::internal::aligned_malloc(w*h*sizeof(float));
 	buf_warped_dx = (float*)Eigen::internal::aligned_malloc(w*h*sizeof(float));
@@ -170,7 +155,7 @@ SE3 SE3TrackerOmni::trackFrameOnPermaref(
 	diverged = false;
 	trackingWasGood = true;
 
-	callOptimized(calcResidualAndBuffers, (reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, referenceToFrame, QUICK_KF_CHECK_LVL, false));
+	calcResidualAndBuffers(reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, referenceToFrame, QUICK_KF_CHECK_LVL, false);
 	if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>QUICK_KF_CHECK_LVL)*(height>>QUICK_KF_CHECK_LVL))
 	{
 		diverged = true;
@@ -182,13 +167,13 @@ SE3 SE3TrackerOmni::trackFrameOnPermaref(
 		affineEstimation_a = affineEstimation_a_lastIt;
 		affineEstimation_b = affineEstimation_b_lastIt;
 	}
-	float lastErr = callOptimized(calcWeightsAndResidual,(referenceToFrame));
+	float lastErr = calcWeightsAndResidual(referenceToFrame);
 
 	float LM_lambda = settings.lambdaInitialTestTrack;
 
 	for(int iteration=0; iteration < settings.maxItsTestTrack; iteration++)
 	{
-		callOptimized(calculateWarpUpdate,(ls));
+		calculateWarpUpdate(ls);
 
 
 		int incTry=0;
@@ -205,14 +190,14 @@ SE3 SE3TrackerOmni::trackFrameOnPermaref(
 			Sophus::SE3f new_referenceToFrame = Sophus::SE3f::exp((inc)) * referenceToFrame;
 
 			// re-evaluate residual
-			callOptimized(calcResidualAndBuffers, (reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, new_referenceToFrame, QUICK_KF_CHECK_LVL, false));
+			calcResidualAndBuffers(reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, new_referenceToFrame, QUICK_KF_CHECK_LVL, false);
 			if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>QUICK_KF_CHECK_LVL)*(height>>QUICK_KF_CHECK_LVL))
 			{
 				diverged = true;
 				trackingWasGood = false;
 				return SE3();
 			}
-			float error = callOptimized(calcWeightsAndResidual,(new_referenceToFrame));
+			float error = calcWeightsAndResidual(new_referenceToFrame);
 
 
 			// accept inc?
@@ -265,10 +250,6 @@ SE3 SE3TrackerOmni::trackFrameOnPermaref(
 	return toSophus(referenceToFrame);
 }
 
-
-
-
-
 // tracks a frame.
 // first_frame has depth, second_frame DOES NOT have depth.
 SE3 SE3TrackerOmni::trackFrame(
@@ -314,7 +295,7 @@ SE3 SE3TrackerOmni::trackFrame(
 
 		reference->makePointCloud(lvl);
 
-		callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
+		calcResidualAndBuffers(reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL));
 		if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>lvl)*(height>>lvl))
 		{
 			diverged = true;
@@ -327,7 +308,7 @@ SE3 SE3TrackerOmni::trackFrame(
 			affineEstimation_a = affineEstimation_a_lastIt;
 			affineEstimation_b = affineEstimation_b_lastIt;
 		}
-		float lastErr = callOptimized(calcWeightsAndResidual,(referenceToFrame));
+		float lastErr = calcWeightsAndResidual(referenceToFrame);
 
 		numCalcResidualCalls[lvl]++;
 
@@ -338,7 +319,7 @@ SE3 SE3TrackerOmni::trackFrame(
 		for(int iteration=0; iteration < settings.maxItsPerLvl[lvl]; iteration++)
 		{
 
-			callOptimized(calculateWarpUpdate,(ls));
+			calculateWarpUpdate(ls);
 
 			numCalcWarpUpdateCalls[lvl]++;
 
@@ -360,7 +341,7 @@ SE3 SE3TrackerOmni::trackFrame(
 
 
 				// re-evaluate residual
-				callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
+				calcResidualAndBuffers (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL));
 				if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN* (width>>lvl)*(height>>lvl))
 				{
 					diverged = true;
@@ -368,7 +349,7 @@ SE3 SE3TrackerOmni::trackFrame(
 					return SE3();
 				}
 
-				float error = callOptimized(calcWeightsAndResidual,(new_referenceToFrame));
+				float error = calcWeightsAndResidual(new_referenceToFrame);
 				numCalcResidualCalls[lvl]++;
 
 
@@ -382,7 +363,6 @@ SE3 SE3TrackerOmni::trackFrame(
 						affineEstimation_a = affineEstimation_a_lastIt;
 						affineEstimation_b = affineEstimation_b_lastIt;
 					}
-
 
 					if(enablePrintDebugInfo && printTrackingIterationInfo)
 					{
@@ -500,11 +480,9 @@ float SE3TrackerOmni::calcWeightsAndResidual(
 		float gy = *(buf_warped_dy+i);  // \delta_y I
 		float s = settings.var_weight * *(buf_idepthVar+i);	// \sigma_d^2
 
-
 		// calc dw/dd (first 2 components):
 		float g0 = (tx * pz - tz * px) / (pz*pz*d);
 		float g1 = (ty * pz - tz * py) / (pz*pz*d);
-
 
 		// calc w_p
 		float drpdd = gx * g0 + gy * g1;	// ommitting the minus
@@ -603,6 +581,7 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 
 	int w = frame->width(level);
 	int h = frame->height(level);
+	//TODO adapt the OmniCameraModel for levels of the pyramid.
 	Eigen::Matrix3f KLvl = frame->K(level);
 	float fx_l = KLvl(0,0);
 	float fy_l = KLvl(1,1);
@@ -613,7 +592,6 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 	Eigen::Vector3f transVec = referenceToFrame.translation();
 	
 	const Eigen::Vector3f* refPoint_max = refPoint + refNum;
-
 
 	const Eigen::Vector4f* frame_gradients = frame->gradients(level);
 
@@ -627,8 +605,6 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 	int badCount = 0;
 
 	float sumSignedRes = 0;
-
-
 
 	float sxx=0,syy=0,sx=0,sy=0,sw=0;
 

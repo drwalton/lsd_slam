@@ -1280,6 +1280,8 @@ void SE3Tracker::calculateWarpUpdate(
 
 		float z = 1.0f / pz;
 		float z_sqr = 1.0f / (pz*pz);
+		
+		//Calculate Jacobian of residual at this point.
 		Vector6 v;
 		v[0] = z*gx + 0;
 		v[1] = 0 +         z*gy;
@@ -1296,11 +1298,8 @@ void SE3Tracker::calculateWarpUpdate(
 		ls.update(v, r, *(buf_weight_p+i));
 	}
 
-	// solve ls
+	// normalize ls
 	ls.finish();
-	//result = ls.A.ldlt().solve(ls.b);
-
-
 }
 
 

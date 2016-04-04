@@ -32,12 +32,12 @@ int privateFrameAllocCount = 0;
 
 
 
-Frame::Frame(int id, int width, int height, const Eigen::Matrix3f& K, double timestamp, const unsigned char* image)
+Frame::Frame(int id, const CameraModel &model, double timestamp, const unsigned char* image)
 {
-	initialize(id, width, height, K, timestamp);
+	initialize(id, model, timestamp);
 	
-	data.image[0] = FrameMemory::getInstance().getFloatBuffer(data.width[0]*data.height[0]);
-	float* maxPt = data.image[0] + data.width[0]*data.height[0];
+	data.image[0] = FrameMemory::getInstance().getFloatBuffer(width(0)*height(0));
+	float* maxPt = data.image[0] + this->width(0)*height(0);
 
 	for(float* pt = data.image[0]; pt < maxPt; pt++)
 	{
@@ -53,12 +53,12 @@ Frame::Frame(int id, int width, int height, const Eigen::Matrix3f& K, double tim
 		printf("ALLOCATED frame %d, now there are %d\n", this->id(), privateFrameAllocCount);
 }
 
-Frame::Frame(int id, int width, int height, const Eigen::Matrix3f& K, double timestamp, const float* image)
+Frame::Frame(int id, const CameraModel &model, double timestamp, const float* image)
 {
-	initialize(id, width, height, K, timestamp);
+	initialize(id, model, timestamp);
 	
-	data.image[0] = FrameMemory::getInstance().getFloatBuffer(data.width[0]*data.height[0]);
-	memcpy(data.image[0], image, data.width[0]*data.height[0] * sizeof(float));
+	data.image[0] = FrameMemory::getInstance().getFloatBuffer(width(0)*height(0));
+	memcpy(data.image[0], image, width(0)*height(0) * sizeof(float));
 	data.imageValid[0] = true;
 
 	privateFrameAllocCount++;
@@ -109,17 +109,20 @@ void Frame::takeReActivationData(DepthMapPixelHypothesis* depthMap)
 	boost::shared_lock<boost::shared_mutex> lock = getActiveLock();
 
 	if(data.validity_reAct == 0)
-		data.validity_reAct = (unsigned char*) FrameMemory::getInstance().getBuffer(data.width[0]*data.height[0]);
+		data.validity_reAct = (unsigned char*) FrameMemory::getInstance().
+			getBuffer(width(0)*height(0));
 
 	if(data.idepth_reAct == 0)
-		data.idepth_reAct = FrameMemory::getInstance().getFloatBuffer((data.width[0]*data.height[0]));
+		data.idepth_reAct = FrameMemory::getInstance().
+			getFloatBuffer((width(0)*height(0)));
 
 	if(data.idepthVar_reAct == 0)
-		data.idepthVar_reAct = FrameMemory::getInstance().getFloatBuffer((data.width[0]*data.height[0]));
+		data.idepthVar_reAct = FrameMemory::getInstance().
+			getFloatBuffer((width(0)*height(0)));
 
 
 	float* id_pt = data.idepth_reAct;
-	float* id_pt_max = data.idepth_reAct + (data.width[0]*data.height[0]);
+	float* id_pt_max = data.idepth_reAct + (width(0)*height(0));
 	float* idv_pt = data.idepthVar_reAct;
 	unsigned char* val_pt = data.validity_reAct;
 
@@ -203,13 +206,13 @@ void Frame::setDepth(const DepthMapPixelHypothesis* newDepth)
 	boost::unique_lock<boost::mutex> lock2(buildMutex);
 
 	if(data.idepth[0] == 0)
-		data.idepth[0] = FrameMemory::getInstance().getFloatBuffer(data.width[0]*data.height[0]);
+		data.idepth[0] = FrameMemory::getInstance().getFloatBuffer(width(0)*height(0));
 	if(data.idepthVar[0] == 0)
-		data.idepthVar[0] = FrameMemory::getInstance().getFloatBuffer(data.width[0]*data.height[0]);
+		data.idepthVar[0] = FrameMemory::getInstance().getFloatBuffer(width(0)*height(0));
 
 	float* pyrIDepth = data.idepth[0];
 	float* pyrIDepthVar = data.idepthVar[0];
-	float* pyrIDepthMax = pyrIDepth + (data.width[0]*data.height[0]);
+	float* pyrIDepthMax = pyrIDepth + (width(0)*height(0));
 	
 	float sumIdepth=0;
 	int numIdepth=0;
@@ -251,15 +254,15 @@ void Frame::setDepthFromGroundTruth(const float* depth, float cov_scale)
 
 	boost::unique_lock<boost::mutex> lock2(buildMutex);
 	if(data.idepth[0] == 0)
-		data.idepth[0] = FrameMemory::getInstance().getFloatBuffer(data.width[0]*data.height[0]);
+		data.idepth[0] = FrameMemory::getInstance().getFloatBuffer(width(0)*height(0));
 	if(data.idepthVar[0] == 0)
-		data.idepthVar[0] = FrameMemory::getInstance().getFloatBuffer(data.width[0]*data.height[0]);
+		data.idepthVar[0] = FrameMemory::getInstance().getFloatBuffer(width(0)*height(0));
 
 	float* pyrIDepth = data.idepth[0];
 	float* pyrIDepthVar = data.idepthVar[0];
 
-	int width0 = data.width[0];
-	int height0 = data.height[0];
+	int width0 = width(0);
+	int height0 = height(0);
 
 	for(int y=0;y<height0;y++)
 	{
@@ -394,24 +397,14 @@ bool Frame::minimizeInMemory()
 	return false;
 }
 
-void Frame::initialize(int id, int width, int height, const Eigen::Matrix3f& K, double timestamp)
+void Frame::initialize(int id, const CameraModel &model, double timestamp)
 {
 	data.id = id;
 	
 	pose = new FramePoseStruct(this);
 
-	data.K[0] = K;
-	data.fx[0] = K(0,0);
-	data.fy[0] = K(1,1);
-	data.cx[0] = K(0,2);
-	data.cy[0] = K(1,2);
-	
-	data.KInv[0] = K.inverse();
-	data.fxInv[0] = data.KInv[0](0,0);
-	data.fyInv[0] = data.KInv[0](1,1);
-	data.cxInv[0] = data.KInv[0](0,2);
-	data.cyInv[0] = data.KInv[0](1,2);
-	
+	data.models = model.createPyramidCameraModels(PYRAMID_LEVELS);
+
 	data.timestamp = timestamp;
 
 	data.hasIDepthBeenSet = false;
@@ -424,9 +417,6 @@ void Frame::initialize(int id, int width, int height, const Eigen::Matrix3f& K, 
 
 	for (int level = 0; level < PYRAMID_LEVELS; ++ level)
 	{
-		data.width[level] = width >> level;
-		data.height[level] = height >> level;
-
 		data.imageValid[level] = false;
 		data.gradientsValid[level] = false;
 		data.maxGradientsValid[level] = false;
@@ -439,24 +429,6 @@ void Frame::initialize(int id, int width, int height, const Eigen::Matrix3f& K, 
 		data.idepth[level] = 0;
 		data.idepthVar[level] = 0;
 		data.reActivationDataValid = false;
-
-// 		data.refIDValid[level] = false;
-		
-		if (level > 0)
-		{
-			data.fx[level] = data.fx[level-1] * 0.5f;
-			data.fy[level] = data.fy[level-1] * 0.5f;
-			data.cx[level] = (data.cx[0] + 0.5f) / ((int)1<<level) - 0.5f;
-			data.cy[level] = (data.cy[0] + 0.5f) / ((int)1<<level) - 0.5f;
-
-			data.K[level]  << data.fx[level], 0.0f, data.cx[level], 0.0f, data.fy[level], data.cy[level], 0.0f, 0.0f, 1.0f;	// synthetic
-			data.KInv[level] = (data.K[level]).inverse();
-
-			data.fxInv[level] = data.KInv[level](0,0);
-			data.fyInv[level] = data.KInv[level](1,1);
-			data.cxInv[level] = data.KInv[level](0,2);
-			data.cyInv[level] = data.KInv[level](1,2);
-		}
 	}
 
 	data.validity_reAct = 0;
@@ -505,12 +477,13 @@ void Frame::buildImage(int level)
 	if(enablePrintDebugInfo && printFrameBuildDebugInfo)
 		printf("CREATE Image lvl %d for frame %d\n", level, id());
 
-	int width = data.width[level - 1];
-	int height = data.height[level - 1];
+	int width = data.models[level - 1]->w;
+	int height = data.models[level - 1]->w;
 	const float* source = data.image[level - 1];
 
 	if (data.image[level] == 0)
-		data.image[level] = FrameMemory::getInstance().getFloatBuffer(data.width[level] * data.height[level]);
+		data.image[level] = FrameMemory::getInstance().getFloatBuffer(
+			this->width(level) * this->height(level));
 	float* dest = data.image[level];
 
 #if defined(ENABLE_SSE)
@@ -651,8 +624,8 @@ void Frame::buildGradients(int level)
 	if(enablePrintDebugInfo && printFrameBuildDebugInfo)
 		printf("CREATE Gradients lvl %d for frame %d\n", level, id());
 
-	int width = data.width[level];
-	int height = data.height[level];
+	int width = this->width(level);
+	int height = this->height(level);
 	if(data.gradients[level] == 0)
 		data.gradients[level] = (Eigen::Vector4f*)FrameMemory::getInstance().getBuffer(sizeof(Eigen::Vector4f) * width * height);
 	const float* img_pt = data.image[level] + width;
@@ -697,8 +670,8 @@ void Frame::buildMaxGradients(int level)
 	if(enablePrintDebugInfo && printFrameBuildDebugInfo)
 		printf("CREATE AbsGrad lvl %d for frame %d\n", level, id());
 
-	int width = data.width[level];
-	int height = data.height[level];
+	int width = this->width(level);
+	int height = this->height(level);
 	if (data.maxGradients[level] == 0)
 		data.maxGradients[level] = FrameMemory::getInstance().getFloatBuffer(width * height);
 	
@@ -794,15 +767,15 @@ void Frame::buildIDepthAndIDepthVar(int level)
 	if(enablePrintDebugInfo && printFrameBuildDebugInfo)
 		printf("CREATE IDepth lvl %d for frame %d\n", level, id());
 	
-	int width = data.width[level];
-	int height = data.height[level];
+	int width = this->width(level);
+	int height = this->height(level);
 	
 	if (data.idepth[level] == 0)
 		data.idepth[level] = FrameMemory::getInstance().getFloatBuffer(width * height);
 	if (data.idepthVar[level] == 0)
 		data.idepthVar[level] = FrameMemory::getInstance().getFloatBuffer(width * height);
 
-	int sw = data.width[level - 1];
+	int sw = this->width(level - 1);
 
 	const float* idepthSource = data.idepth[level - 1];
 	const float* idepthVarSource = data.idepthVar[level - 1];
