@@ -394,11 +394,7 @@ void Sim3TrackerOmni::calcSim3Buffers(
 	// get static values
 	int w = frame->width(level);
 	int h = frame->height(level);
-	Eigen::Matrix3f KLvl = frame->K(level);
-	float fx_l = KLvl(0,0);
-	float fy_l = KLvl(1,1);
-	float cx_l = KLvl(0,2);
-	float cy_l = KLvl(1,2);
+	const CameraModel &m = frame->model(level);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rxso3().matrix().cast<float>();
 	Eigen::Matrix3f rotMatUnscaled = referenceToFrame.rotationMatrix().cast<float>();
@@ -434,8 +430,9 @@ void Sim3TrackerOmni::calcSim3Buffers(
 	for(;refPoint<refPoint_max; refPoint++, refGrad++, refColVar++)
 	{
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
-		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
-		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
+		vec2 uv = m.camToPixel(Wxp);
+		float u_new = uv[0];
+		float v_new = uv[1];
 
 		// step 1a: coordinates have to be in image:
 		// (inverse test to exclude NANs)
@@ -455,6 +452,7 @@ void Sim3TrackerOmni::calcSim3Buffers(
 		float rotatedGradX = xRoll0 * (*refGrad)[0] + xRoll1 * (*refGrad)[1];
 		float rotatedGradY = yRoll0 * (*refGrad)[0] + yRoll1 * (*refGrad)[1];
 
+		//TODO work out how to get this value
 		*(buf_warped_dx+idx) = fx_l * 0.5f * (resInterp[0] + rotatedGradX);
 		*(buf_warped_dy+idx) = fy_l * 0.5f * (resInterp[1] + rotatedGradY);
 #else
@@ -502,9 +500,9 @@ void Sim3TrackerOmni::calcSim3Buffers(
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			Eigen::Vector3f point = KLvl * (*refPoint);
-			int x = static_cast<int>(point[0] / point[2] + 0.5f);
-			int y = static_cast<int>(point[1] / point[2] + 0.5f);
+			vec2 pt = m.camToPixel(*refPoint);
+			int x = pt[0];
+			int y = pt[1];
 
 			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
 				static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(width/w));

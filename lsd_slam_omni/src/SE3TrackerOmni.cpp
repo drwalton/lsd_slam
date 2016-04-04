@@ -94,9 +94,6 @@ SE3TrackerOmni::~SE3TrackerOmni()
 }
 
 
-
-// tracks a frame.
-// first_frame has depth, second_frame DOES NOT have depth.
 float SE3TrackerOmni::checkPermaRefOverlap(
 		Frame* reference,
 		const SE3 &referenceToFrameOrg)
@@ -106,11 +103,7 @@ float SE3TrackerOmni::checkPermaRefOverlap(
 
 	int w2 = reference->width(QUICK_KF_CHECK_LVL)-1;
 	int h2 = reference->height(QUICK_KF_CHECK_LVL)-1;
-	Eigen::Matrix3f KLvl = reference->K(QUICK_KF_CHECK_LVL);
-	float fx_l = KLvl(0,0);
-	float fy_l = KLvl(1,1);
-	float cx_l = KLvl(0,2);
-	float cy_l = KLvl(1,2);
+	const CameraModel &m = reference->model(QUICK_KF_CHECK_LVL);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
 	Eigen::Vector3f transVec = referenceToFrame.translation();
@@ -122,8 +115,9 @@ float SE3TrackerOmni::checkPermaRefOverlap(
 	for(;refPoint<refPoint_max; refPoint++)
 	{
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
-		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
-		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
+		vec2 uv = m.camToPixel(Wxp);
+		float u_new = uv[0];
+		float v_new = uv[1];
 		if((u_new > 0 && v_new > 0 && u_new < w2 && v_new < h2))
 		{
 			float depthChange = (*refPoint)[2] / Wxp[2];
@@ -582,11 +576,7 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 	int w = frame->width(level);
 	int h = frame->height(level);
 	//TODO adapt the OmniCameraModel for levels of the pyramid.
-	Eigen::Matrix3f KLvl = frame->K(level);
-	float fx_l = KLvl(0,0);
-	float fy_l = KLvl(1,1);
-	float cx_l = KLvl(0,2);
-	float cy_l = KLvl(1,2);
+	const CameraModel &m = frame->model(level);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
 	Eigen::Vector3f transVec = referenceToFrame.translation();
@@ -614,8 +604,9 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 	{
 
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
-		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
-		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
+		vec2 uv = m.camToPixel(Wxp);
+		float u_new = uv[0];
+		float v_new = uv[1];
 
 		// step 1a: coordinates have to be in image:
 		// (inverse test to exclude NANs)
@@ -648,6 +639,7 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 		*(buf_warped_y+idx) = Wxp(1);
 		*(buf_warped_z+idx) = Wxp(2);
 
+		//TODO work out what to change this to.
 		*(buf_warped_dx+idx) = fx_l * resInterp[0];
 		*(buf_warped_dy+idx) = fy_l * resInterp[1];
 		*(buf_warped_residual+idx) = residual;
@@ -675,9 +667,9 @@ float SE3TrackerOmni::calcResidualAndBuffers(
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			Eigen::Vector3f point = KLvl * (*refPoint);
-			int x = static_cast<int>(point[0] / point[2] + 0.5f);
-			int y = static_cast<int>(point[1] / point[2] + 0.5f);
+			Eigen::Vector2f point = m.camToPixel((*refPoint));
+			int x = static_cast<int>(point[0]);
+			int y = static_cast<int>(point[1]);
 
 			if(plotTrackingIterationInfo)
 			{

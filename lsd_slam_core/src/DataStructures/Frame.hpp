@@ -118,7 +118,6 @@ public:
 		return FrameMemory::getInstance().activateFrame(this);
 	}
 
-
 	/*
 	 * ==================================================================================
 	 * Here are ALL central pose and scale informations.
