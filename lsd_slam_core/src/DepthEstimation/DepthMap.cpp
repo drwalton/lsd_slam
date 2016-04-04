@@ -92,14 +92,14 @@ void DepthMap::reset()
 }
 
 
-void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
+void DepthMap::observeDepthRow(size_t yMin, size_t yMax, RunningStats* stats)
 {
 	const float* keyFrameMaxGradBuf = activeKeyFrame->maxGradients(0);
 
 	int successes = 0;
 
-	for(int y=yMin;y<yMax; y++)
-		for(int x=3;x<width-3;x++)
+	for(size_t y=yMin;y<yMax; y++)
+		for(size_t x=3;x<width-3;x++)
 		{
 			int idx = x+y*width;
 			DepthMapPixelHypothesis* target = currentDepthMap+idx;
@@ -502,8 +502,8 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 
 	// go through all pixels of OLD image, propagating forwards.
-	for(int y=0;y<height;y++)
-		for(int x=0;x<width;x++)
+	for(size_t y=0;y<height;y++)
+		for(size_t x=0;x<width;x++)
 		{
 			DepthMapPixelHypothesis* source = currentDepthMap + x + y*width;
 
@@ -514,7 +514,7 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 
 			Eigen::Vector3f pn = (trafoInv_R * 
-				model->pixelToCam(vec3(x, y, 1.f))) / source->idepth_smoothed + trafoInv_t;
+				model->pixelToCam(vec3(x, y))) / source->idepth_smoothed + trafoInv_t;
 
 			float new_idepth = 1.0f / pn[2];
 
@@ -646,14 +646,14 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 }
 
 
-void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* stats)
+void DepthMap::regularizeDepthMapFillHolesRow(size_t yMin, size_t yMax, RunningStats* stats)
 {
 	// =========== regularize fill holes
 	const float* keyFrameMaxGradBuf = activeKeyFrame->maxGradients(0);
 
-	for(int y=yMin; y<yMax; y++)
+	for(size_t y=yMin; y<yMax; y++)
 	{
-		for(int x=3;x<width-2;x++)
+		for(size_t x=3;x<width-2;x++)
 		{
 			int idx = x+y*width;
 			DepthMapPixelHypothesis* dest = otherDepthMap + idx;
@@ -715,16 +715,16 @@ void DepthMap::regularizeDepthMapFillHoles()
 
 
 
-void DepthMap::buildRegIntegralBufferRow1(int yMin, int yMax, RunningStats* stats)
+void DepthMap::buildRegIntegralBufferRow1(size_t yMin, size_t yMax, RunningStats* stats)
 {
 	// ============ build inegral buffers
 	int* validityIntegralBufferPT = validityIntegralBuffer+yMin*width;
 	DepthMapPixelHypothesis* ptSrc = currentDepthMap+yMin*width;
-	for(int y=yMin;y<yMax;y++)
+	for(size_t y=yMin;y<yMax;y++)
 	{
 		int validityIntegralBufferSUM = 0;
 
-		for(int x=0;x<width;x++)
+		for(size_t x=0;x<width;x++)
 		{
 			if(ptSrc->isValid)
 				validityIntegralBufferSUM += ptSrc->validity_counter;
@@ -885,9 +885,9 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 
 	const float* maxGradients = new_frame->maxGradients();
 
-	for(int y=1;y<height-1;y++)
+	for(size_t y=1;y<height-1;y++)
 	{
-		for(int x=1;x<width-1;x++)
+		for(size_t x=1;x<width-1;x++)
 		{
 			if(maxGradients[x+y*width] > MIN_ABS_GRAD_CREATE)
 			{
@@ -1405,8 +1405,8 @@ int DepthMap::debugPlotDepthMap()
 	int refID = referenceFrameByID_offset;
 
 
-	for(int y=0;y<height;y++)
-		for(int x=0;x<width;x++)
+	for(size_t y=0;y<height;y++)
+		for(size_t x=0;x<width;x++)
 		{
 			int idx = x + y*width;
 

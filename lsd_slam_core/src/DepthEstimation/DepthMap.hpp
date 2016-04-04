@@ -142,7 +142,7 @@ private:
 	
 
 	void observeDepth();
-	void observeDepthRow(int yMin, int yMax, RunningStats* stats);
+	void observeDepthRow(size_t yMin, size_t yMax, RunningStats* stats);
 	bool observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats);
 	bool observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats);
 	bool makeAndCheckEPL(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
@@ -153,9 +153,9 @@ private:
 
 
 	void buildRegIntegralBuffer();
-	void buildRegIntegralBufferRow1(int yMin, int yMax, RunningStats* stats);
+	void buildRegIntegralBufferRow1(size_t yMin, size_t yMax, RunningStats* stats);
 	void regularizeDepthMapFillHoles();
-	void regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* stats);
+	void regularizeDepthMapFillHolesRow(size_t yMin, size_t yMax, RunningStats* stats);
 
 
 	void resetCounters();

@@ -129,9 +129,7 @@ void TrackingReference::makePointCloud(int level)
 
 			if(pyrIdepthVarSource[idx] <= 0 || pyrIdepthSource[idx] == 0) continue;
 
-			//TODO work out how to correct this.
-			*posDataPT = (1.0f / pyrIdepthSource[idx]) * 
-				Eigen::Vector3f(fxInvLevel*x+cxInvLevel,fyInvLevel*y+cyInvLevel,1);
+			*posDataPT = (1.0f / pyrIdepthSource[idx]) * model.pixelToCam(vec2(x, y));
 			*gradDataPT = pyrGradSource[idx].head<2>();
 			*colorAndVarDataPT = Eigen::Vector2f(pyrColorSource[idx], pyrIdepthVarSource[idx]);
 			*idxPT = idx;
