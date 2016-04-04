@@ -7,6 +7,8 @@
 
 namespace lsd_slam {
 
+enum class CameraModelType { OMNI, PROJ };
+
 class CameraModel {
 public:
 	CameraModel(float fx, float fy, float cx, float cy, size_t w, size_t h);
@@ -33,6 +35,10 @@ public:
 	///       and height of the image halved.
 	virtual std::vector<std::unique_ptr<CameraModel> >
 		createPyramidCameraModels(int nLevels) const = 0;
+
+	virtual CameraModelType getType() const = 0;
+
+	virtual std::unique_ptr<CameraModel> clone() const = 0;
 };
 
 }

@@ -32,7 +32,6 @@
 namespace lsd_slam
 {
 
-
 class DepthMapPixelHypothesis;
 class TrackingReference;
 /**
@@ -60,7 +59,7 @@ public:
 	void setDepthFromGroundTruth(const float* depth, float cov_scale = 1.0f);
 	
 	/** Prepares this frame for stereo comparisons with the other frame (computes some intermediate values that will be needed) */
-	void prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const Eigen::Matrix3f& K, const int level);
+	void prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const CameraModel &m, const int level);
 
 	// Accessors
 	/** Returns the unique frame id. */

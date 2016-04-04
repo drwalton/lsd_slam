@@ -49,5 +49,14 @@ std::vector<std::unique_ptr<CameraModel> >
 	return models;
 }
 
+CameraModelType ProjCameraModel::getType() const
+{
+	return CameraModelType::PROJ;
+}
+
+std::unique_ptr<CameraModel> ProjCameraModel::clone() const
+{
+	return std::unique_ptr<CameraModel>(new ProjCameraModel(*this));
+}
 
 }

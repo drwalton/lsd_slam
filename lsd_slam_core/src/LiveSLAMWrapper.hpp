@@ -29,6 +29,7 @@
 #include "IOWrapper/NotifyBuffer.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
 #include "util/SophusUtil.hpp"
+#include "CameraModel.hpp"
 
 namespace cv {
 	class Mat;
@@ -91,9 +92,7 @@ private:
 	std::string outFileName;
 	std::ofstream* outFile;
 	
-	float fx, fy, cx, cy;
-	int width, height;
-
+	std::unique_ptr<CameraModel> model;
 
 	int imageSeqNumber;
 

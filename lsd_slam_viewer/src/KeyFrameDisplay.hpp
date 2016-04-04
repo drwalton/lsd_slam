@@ -35,6 +35,7 @@
 #include "keyframeMsg.hpp"
 
 
+namespace lsd_slam {
 
 struct MyVertex
 {
@@ -56,7 +57,7 @@ class KeyFrameDisplay
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	KeyFrameDisplay();
+		KeyFrameDisplay();
 	~KeyFrameDisplay();
 
 
@@ -82,8 +83,8 @@ public:
 private:
 	// camera parameter
 	// fixed.
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
+	float fx, fy, cx, cy;
+	float fxi, fyi, cxi, cyi;
 	int width, height;
 
 	float my_scaledTH, my_absTH, my_scale;
@@ -105,5 +106,4 @@ private:
 
 };
 
-
-
+}

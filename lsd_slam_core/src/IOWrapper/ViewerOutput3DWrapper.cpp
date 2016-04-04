@@ -100,10 +100,14 @@ void ViewerOutput3DWrapper::publishKeyframe(Frame* kf)
 	size_t w = kf->width(), h = kf->height();
 	msg.width = w;
 	msg.height = h;
-	msg.fx = kf->fx(publishLevel_);
-	msg.fy = kf->fy(publishLevel_);
-	msg.cx = kf->cx(publishLevel_);
-	msg.cy = kf->cy(publishLevel_);
+	msg.modelType = kf->model().getType();
+	msg.fx = kf->model(publishLevel_).fx;
+	msg.fy = kf->model(publishLevel_).fy;
+	msg.cx = kf->model(publishLevel_).cx;
+	msg.cy = kf->model(publishLevel_).cy;
+	if (msg.modelType == CameraModelType::OMNI) {
+		msg.e = static_cast<const OmniCameraModel&>(kf->model(publishLevel_)).e;
+	}
 	auto ctw = kf->getScaledCamToWorld().cast<float>();
 	memcpy(&(msg.camToWorld), ctw.data(), 7 * sizeof(float));
 
@@ -127,25 +131,29 @@ void ViewerOutput3DWrapper::publishKeyframe(Frame* kf)
 // published a tracked frame that did not become a keyframe (yet; i.e. has no depth data)
 void ViewerOutput3DWrapper::publishTrackedFrame(Frame* kf)
 {
-	keyframeMsg fMsg;
+	keyframeMsg msg;
 
 
-	fMsg.id = kf->id();
-	fMsg.time = kf->timestamp();
-	fMsg.isKeyframe = false;
+	msg.id = kf->id();
+	msg.time = kf->timestamp();
+	msg.isKeyframe = false;
 
 
-	memcpy(fMsg.camToWorld.data(), kf->getScaledCamToWorld().cast<float>().data(), sizeof(float) * 7);
-	fMsg.fx = kf->fx(publishLevel_);
-	fMsg.fy = kf->fy(publishLevel_);
-	fMsg.cx = kf->cx(publishLevel_);
-	fMsg.cy = kf->cy(publishLevel_);
-	fMsg.width = kf->width(publishLevel_);
-	fMsg.height = kf->height(publishLevel_);
+	memcpy(msg.camToWorld.data(), kf->getScaledCamToWorld().cast<float>().data(), sizeof(float) * 7);
+	msg.modelType = kf->model().getType();
+	msg.fx = kf->model(publishLevel_).fx;
+	msg.fy = kf->model(publishLevel_).fy;
+	msg.cx = kf->model(publishLevel_).cx;
+	msg.cy = kf->model(publishLevel_).cy;
+	if (msg.modelType == CameraModelType::OMNI) {
+		msg.e = static_cast<const OmniCameraModel&>(kf->model(publishLevel_)).e;
+	}
+	msg.width = kf->width(publishLevel_);
+	msg.height = kf->height(publishLevel_);
 
-	fMsg.pointcloud.clear();
+	msg.pointcloud.clear();
 
-	if (viewer_) viewer_->addFrameMsg(&fMsg);
+	if (viewer_) viewer_->addFrameMsg(&msg);
 
 	SE3 camToWorld = se3FromSim3(kf->getScaledCamToWorld());
 

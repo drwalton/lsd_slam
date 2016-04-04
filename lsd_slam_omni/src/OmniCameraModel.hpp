@@ -50,6 +50,10 @@ public:
 	///\note Efficient, but suitable for relatively short lines only (accumulates errors
 	///      and may skip pixels for longer lines).
 	void traceWorldSpaceLine(vec3 p0, vec3 p1, std::function<void(vec2)> f);
+
+	virtual CameraModelType getType() const;
+
+	virtual std::unique_ptr<CameraModel> clone() const;
 };
 
 }

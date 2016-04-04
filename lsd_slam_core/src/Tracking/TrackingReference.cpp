@@ -104,10 +104,7 @@ void TrackingReference::makePointCloud(int level)
 	int w = keyframe->width(level);
 	int h = keyframe->height(level);
 
-	float fxInvLevel = keyframe->fxInv(level);
-	float fyInvLevel = keyframe->fyInv(level);
-	float cxInvLevel = keyframe->cxInv(level);
-	float cyInvLevel = keyframe->cyInv(level);
+	const CameraModel &model = keyframe->model(level);
 
 	const float* pyrIdepthSource = keyframe->idepth(level);
 	const float* pyrIdepthVarSource = keyframe->idepthVar(level);
@@ -132,7 +129,9 @@ void TrackingReference::makePointCloud(int level)
 
 			if(pyrIdepthVarSource[idx] <= 0 || pyrIdepthSource[idx] == 0) continue;
 
-			*posDataPT = (1.0f / pyrIdepthSource[idx]) * Eigen::Vector3f(fxInvLevel*x+cxInvLevel,fyInvLevel*y+cyInvLevel,1);
+			//TODO work out how to correct this.
+			*posDataPT = (1.0f / pyrIdepthSource[idx]) * 
+				Eigen::Vector3f(fxInvLevel*x+cxInvLevel,fyInvLevel*y+cyInvLevel,1);
 			*gradDataPT = pyrGradSource[idx].head<2>();
 			*colorAndVarDataPT = Eigen::Vector2f(pyrColorSource[idx], pyrIdepthVarSource[idx]);
 			*idxPT = idx;

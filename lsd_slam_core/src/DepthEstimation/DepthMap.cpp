@@ -38,11 +38,10 @@ namespace lsd_slam
 
 
 
-DepthMap::DepthMap(int w, int h, const Eigen::Matrix3f& K)
+DepthMap::DepthMap(const CameraModel &model)
+	:model(model.clone()), width(model.w), height(model.h)
 {
-	width = w;
-	height = h;
-
+	size_t width = model.w, height = model.h;
 	activeKeyFrame = 0;
 	activeKeyFrameIsReactivated = false;
 	otherDepthMap = new DepthMapPixelHypothesis[width*height];
@@ -50,26 +49,10 @@ DepthMap::DepthMap(int w, int h, const Eigen::Matrix3f& K)
 
 	validityIntegralBuffer = (int*)Eigen::internal::aligned_malloc(width*height*sizeof(int));
 
-
-
-
-	debugImageHypothesisHandling = cv::Mat(h,w, CV_8UC3);
-	debugImageHypothesisPropagation = cv::Mat(h,w, CV_8UC3);
-	debugImageStereoLines = cv::Mat(h,w, CV_8UC3);
-	debugImageDepth = cv::Mat(h,w, CV_8UC3);
-
-
-	this->K = K;
-	fx = K(0,0);
-	fy = K(1,1);
-	cx = K(0,2);
-	cy = K(1,2);
-
-	KInv = K.inverse();
-	fxi = KInv(0,0);
-	fyi = KInv(1,1);
-	cxi = KInv(0,2);
-	cyi = KInv(1,2);
+	debugImageHypothesisHandling = cv::Mat(height,width, CV_8UC3);
+	debugImageHypothesisPropagation = cv::Mat(height,width, CV_8UC3);
+	debugImageStereoLines = cv::Mat(height,width, CV_8UC3);
+	debugImageDepth = cv::Mat(height,width, CV_8UC3);
 
 	reset();
 
@@ -101,6 +84,7 @@ DepthMap::~DepthMap()
 
 void DepthMap::reset()
 {
+	size_t width = model->w, height = model->h;
 	for(DepthMapPixelHypothesis* pt = otherDepthMap+width*height-1; pt >= otherDepthMap; pt--)
 		pt->isValid = false;
 	for(DepthMapPixelHypothesis* pt = currentDepthMap+width*height-1; pt >= currentDepthMap; pt--)
@@ -529,12 +513,14 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 			if(enablePrintDebugInfo) runningStats.num_prop_attempts++;
 
 
-			Eigen::Vector3f pn = (trafoInv_R * Eigen::Vector3f(x*fxi + cxi,y*fyi + cyi,1.0f)) / source->idepth_smoothed + trafoInv_t;
+			Eigen::Vector3f pn = (trafoInv_R * 
+				model->pixelToCam(vec3(x, y, 1.f))) / source->idepth_smoothed + trafoInv_t;
 
 			float new_idepth = 1.0f / pn[2];
 
-			float u_new = pn[0]*new_idepth*fx + cx;
-			float v_new = pn[1]*new_idepth*fy + cy;
+			vec2 uv = model->camToPixel(pn);
+			float u_new = uv[0];
+			float v_new = uv[1];
 
 			// check if still within image, if not: DROP.
 			if(!(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f))
@@ -548,7 +534,8 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 			if(trackingWasGood != 0)
 			{
-				if(!trackingWasGood[(x >> SE3TRACKING_MIN_LEVEL) + (width >> SE3TRACKING_MIN_LEVEL)*(y >> SE3TRACKING_MIN_LEVEL)]
+				if(!trackingWasGood[(x >> SE3TRACKING_MIN_LEVEL) + 
+					(width >> SE3TRACKING_MIN_LEVEL)*(y >> SE3TRACKING_MIN_LEVEL)]
 				                    || destAbsGrad < MIN_ABS_GRAD_DECREASE)
 				{
 					if(enablePrintDebugInfo) runningStats.num_prop_removed_colorDiff++;
@@ -563,7 +550,8 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 				float residual = destColor - sourceColor;
 
 
-				if(residual*residual / (MAX_DIFF_CONSTANT + MAX_DIFF_GRAD_MULT*destAbsGrad*destAbsGrad) > 1.0f || destAbsGrad < MIN_ABS_GRAD_DECREASE)
+				if(residual*residual / (MAX_DIFF_CONSTANT + MAX_DIFF_GRAD_MULT*
+					destAbsGrad*destAbsGrad) > 1.0f || destAbsGrad < MIN_ABS_GRAD_DECREASE)
 				{
 					if(enablePrintDebugInfo) runningStats.num_prop_removed_colorDiff++;
 					continue;
@@ -641,9 +629,12 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 	if(enablePrintDebugInfo && printPropagationStatistics)
 	{
-		printf("PROPAGATE: %d: %d drop (%d oob, %d color); %d created; %d merged; %d occluded. %d col-dec, %d grad-dec.\n",
+		printf("PROPAGATE: %d: %d drop (%d oob, %d color); %d created; "
+			"%d merged; %d occluded. %d col-dec, %d grad-dec.\n",
 				runningStats.num_prop_attempts,
-				runningStats.num_prop_removed_validity + runningStats.num_prop_removed_out_of_bounds + runningStats.num_prop_removed_colorDiff,
+				runningStats.num_prop_removed_validity + 
+					runningStats.num_prop_removed_out_of_bounds + 
+					runningStats.num_prop_removed_colorDiff,
 				runningStats.num_prop_removed_out_of_bounds,
 				runningStats.num_prop_removed_colorDiff,
 				runningStats.num_prop_created,
@@ -673,13 +664,15 @@ void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* 
 			int val = io[2+2*width] - io[2-3*width] - io[-3+2*width] + io[-3-3*width];
 
 
-			if((dest->blacklisted >= MIN_BLACKLIST && val > VAL_SUM_MIN_FOR_CREATE) || val > VAL_SUM_MIN_FOR_UNBLACKLIST)
+			if((dest->blacklisted >= MIN_BLACKLIST && val > VAL_SUM_MIN_FOR_CREATE) 
+				|| val > VAL_SUM_MIN_FOR_UNBLACKLIST)
 			{
 				float sumIdepthObs = 0, sumIVarObs = 0;
 				int num = 0;
 
 				DepthMapPixelHypothesis* s1max = otherDepthMap + (x-2) + (y+3)*width;
-				for (DepthMapPixelHypothesis* s1 = otherDepthMap + (x-2) + (y-2)*width; s1 < s1max; s1+=width)
+				for (DepthMapPixelHypothesis* s1 = otherDepthMap + (x-2) + 
+					(y-2)*width; s1 < s1max; s1+=width)
 					for(DepthMapPixelHypothesis* source = s1; source < s1+5; source++)
 					{
 						if(!source->isValid) continue;
@@ -713,7 +706,8 @@ void DepthMap::regularizeDepthMapFillHoles()
 	runningStats.num_reg_created=0;
 
 	memcpy(otherDepthMap,currentDepthMap,width*height*sizeof(DepthMapPixelHypothesis));
-	threadReducer.reduce(boost::bind(&DepthMap::regularizeDepthMapFillHolesRow, this, _1, _2, _3), 3, height-2, 10);
+	threadReducer.reduce(boost::bind(&DepthMap::regularizeDepthMapFillHolesRow,
+		this, _1, _2, _3), 3, height-2, 10);
 	if(enablePrintDebugInfo && printFillHolesStatistics)
 		printf("FillHoles (discreteDepth): %d created\n",
 				runningStats.num_reg_created);
@@ -936,9 +930,9 @@ void DepthMap::setFromExistingKF(Frame* kf)
 	activeKeyFrameImageData = activeKeyFrame->image(0);
 	activeKeyFrameIsReactivated = true;
 
-	for(int y=0;y<height;y++)
+	for(size_t y=0;y<height;y++)
 	{
-		for(int x=0;x<width;x++)
+		for(size_t x=0;x<width;x++)
 		{
 			if(*idepthVar > 0)
 			{
@@ -978,9 +972,9 @@ void DepthMap::initializeFromGTDepth(Frame* new_frame)
 
 	float averageGTIDepthSum = 0;
 	int averageGTIDepthNum = 0;
-	for(int y=0;y<height;y++)
+	for(size_t y=0;y<height;y++)
 	{
-		for(int x=0;x<width;x++)
+		for(size_t x=0;x<width;x++)
 		{
 			float idepthValue = idepth[x+y*width];
 			if(!isnan(idepthValue) && idepthValue > 0)
@@ -992,9 +986,9 @@ void DepthMap::initializeFromGTDepth(Frame* new_frame)
 	}
 	
 
-	for(int y=0;y<height;y++)
+	for(size_t y=0;y<height;y++)
 	{
-		for(int x=0;x<width;x++)
+		for(size_t x=0;x<width;x++)
 		{
 			float idepthValue = idepth[x+y*width];
 			
@@ -1100,7 +1094,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 		else
 			refToKf = activeKeyFrame->getScaledCamToWorld().inverse() *  frame->getScaledCamToWorld();
 
-		frame->prepareForStereoWith(activeKeyFrame, refToKf, K, 0);
+		frame->prepareForStereoWith(activeKeyFrame, refToKf, *model, 0);
 
 		while((int)referenceFrameByID.size() + referenceFrameByID_offset <= frame->id())
 			referenceFrameByID.push_back(frame.get());
@@ -1451,7 +1445,7 @@ inline float DepthMap::doLineStereo(
 	if(enablePrintDebugInfo) stats->num_stereo_calls++;
 
 	// calculate epipolar line start and end point in old image
-	Eigen::Vector3f KinvP = Eigen::Vector3f(fxi*u+cxi,fyi*v+cyi,1.0f);
+	vec3 KinvP = model->pixelToCam(vec2(u, v), 1.0f);
 	Eigen::Vector3f pInf = referenceFrame->K_otherToThis_R * KinvP;
 	Eigen::Vector3f pReal = pInf / prior_idepth + referenceFrame->K_otherToThis_t;
 
@@ -1877,9 +1871,10 @@ inline float DepthMap::doLineStereo(
 
 	float idnew_best_match;	// depth in the new image
 	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
+	vec2 old = model->camToPixel(vec3(best_match_x, best_match_y, 1.f));
 	if(incx*incx>incy*incy)
 	{
-		float oldX = fxi*best_match_x+cxi;
+		float oldX = old[0];
 		float nominator = (oldX*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[0]);
 		float dot0 = KinvP.dot(referenceFrame->otherToThis_R_row0);
 		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
@@ -1890,7 +1885,7 @@ inline float DepthMap::doLineStereo(
 	}
 	else
 	{
-		float oldY = fyi*best_match_y+cyi;
+		float oldY = old[1];
 
 		float nominator = (oldY*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[1]);
 		float dot1 = KinvP.dot(referenceFrame->otherToThis_R_row1);

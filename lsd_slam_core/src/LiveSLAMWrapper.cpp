@@ -38,32 +38,20 @@ namespace lsd_slam
 {
 
 LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper)
+	:model(imageStream->camModel().clone())
 {
 	this->imageStream = imageStream;
 	this->outputWrapper = outputWrapper;
 	imageStream->getBuffer()->setReceiver(this);
 
-	fx = imageStream->fx();
-	fy = imageStream->fy();
-	cx = imageStream->cx();
-	cy = imageStream->cy();
-	width = imageStream->width();
-	height = imageStream->height();
-
 	outFileName = packagePath+"estimated_poses.txt";
-
 
 	isInitialized = false;
 
-
-	Sophus::Matrix3f K_sophus;
-	K_sophus << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
-
 	outFile = nullptr;
 
-
 	// make Odometry
-	monoOdometry = new SlamSystem(width, height, K_sophus, doSlam);
+	monoOdometry = new SlamSystem(*model, doSlam);
 
 	monoOdometry->setVisualization(outputWrapper);
 
@@ -177,9 +165,7 @@ void LiveSLAMWrapper::resetAll()
 		delete monoOdometry;
 		printf("Deleted SlamSystem Object!\n");
 
-		Sophus::Matrix3f K;
-		K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
-		monoOdometry = new SlamSystem(width,height,K, doSlam);
+		monoOdometry = new SlamSystem(*model, doSlam);
 		monoOdometry->setVisualization(outputWrapper);
 
 	}

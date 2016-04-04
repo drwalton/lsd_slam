@@ -20,7 +20,11 @@ public:
 	virtual std::vector<std::unique_ptr<CameraModel> >
 		createPyramidCameraModels(int nLevels) const;
 
+	virtual CameraModelType getType() const;
+
 	const mat3 K, Kinv;
+
+	virtual std::unique_ptr<CameraModel> clone() const;
 };
 
 }

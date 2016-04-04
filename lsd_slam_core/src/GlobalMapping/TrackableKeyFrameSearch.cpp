@@ -29,13 +29,13 @@ namespace lsd_slam
 {
 
 
-TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, int w, int h, Eigen::Matrix3f K)
+TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, const CameraModel &model)
 : graph(graph)
 {
-	tracker = new SE3Tracker(w,h,K);
+	tracker = new SE3Tracker(model);
 
-	fowX = 2 * atanf((float)((w / K(0,0)) / 2.0f));
-	fowY = 2 * atanf((float)((h / K(1,1)) / 2.0f));
+	fowX = 2 * atanf((float)((model.w / K(0,0)) / 2.0f));
+	fowY = 2 * atanf((float)((model.h / K(1,1)) / 2.0f));
 
 	msTrackPermaRef=0;
 	nTrackPermaRef=0;

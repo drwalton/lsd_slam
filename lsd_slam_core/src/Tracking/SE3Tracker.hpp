@@ -24,7 +24,7 @@
 #include "util/EigenCoreInclude.hpp"
 #include "util/SophusUtil.hpp"
 #include "Tracking/LGSX.hpp"
-
+#include "OmniCameraModel.hpp"
 
 namespace lsd_slam
 {
@@ -38,12 +38,8 @@ class SE3Tracker
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	int width, height;
-
-	// camera matrix
-	Eigen::Matrix3f K, KInv;
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
+	/// Model for current camera.
+	std::unique_ptr<CameraModel> model;
 
 	DenseDepthTrackerSettings settings;
 
@@ -56,12 +52,18 @@ public:
 	cv::Mat debugImageOldImageWarped;
 
 
-	SE3Tracker(int w, int h, Eigen::Matrix3f K);
+	SE3Tracker(const CameraModel &model);
 	SE3Tracker(const SE3Tracker&) = delete;
 	SE3Tracker& operator=(const SE3Tracker&) = delete;
 	~SE3Tracker();
 
-
+	///\brief Apply whole tracking procedure to a single frame.
+	///\param reference The keyframe against which to track the new frame.
+	///\param frame The new frame to track
+	///\param frameToReference_initialEstimate The initial estimate for the transform
+	///    from frame to reference.
+	///\note The reference frame has an associated depth, but the tracked frame
+	///      does not.
 	SE3 trackFrame(
 			TrackingReference* reference,
 			Frame* frame,
@@ -93,11 +95,13 @@ public:
 	bool trackingWasGood;
 private:
 
-
-
+	//========================= INTERNAL BUFFERS ==============================
 	float* buf_warped_residual;
 	float* buf_warped_dx;
 	float* buf_warped_dy;
+
+	///These three buffers contain 3D points from the reference frame, to which 
+	///    the transform referenceToFrame has been applied.
 	float* buf_warped_x;
 	float* buf_warped_y;
 	float* buf_warped_z;
@@ -119,71 +123,21 @@ private:
 			int level,
 			bool plotResidual = false);
 
-#if defined(ENABLE_SSE)
-	float calcResidualAndBuffersSSE(
-			const Eigen::Vector3f* refPoint,
-			const Eigen::Vector2f* refColVar,
-			int* idxBuf,
-			int refNum,
-			Frame* frame,
-			const Sophus::SE3f& referenceToFrame,
-			int level,
-			bool plotResidual = false);
-#endif
-#if defined(ENABLE_NEON)
-	float calcResidualAndBuffersNEON(
-			const Eigen::Vector3f* refPoint,
-			const Eigen::Vector2f* refColVar,
-			int* idxBuf,
-			int refNum,
-			Frame* frame,
-			const Sophus::SE3f& referenceToFrame,
-			int level,
-			bool plotResidual = false);
-#endif
-
-
-
-
-
-
 	float calcWeightsAndResidual(
 			const Sophus::SE3f& referenceToFrame);
-#if defined(ENABLE_SSE)
-	float calcWeightsAndResidualSSE(
-			const Sophus::SE3f& referenceToFrame);
-#endif
-#if defined(ENABLE_NEON)
-	float calcWeightsAndResidualNEON(
-			const Sophus::SE3f& referenceToFrame);
-#endif
-
-
-
-
-
-
 	void calculateWarpUpdate(
 			LGS6 &ls);
-#if defined(ENABLE_SSE)
-	void calculateWarpUpdateSSE(
-			LGS6 &ls);
-#endif
-#if defined(ENABLE_NEON)
-	void calculateWarpUpdateNEON(
-			LGS6 &ls);
-#endif
 
 	void calcResidualAndBuffers_debugStart();
 	void calcResidualAndBuffers_debugFinish(int w);
 
 
-	// used for image saving
+	/// used for image saving
 	int iterationNumber;
-
 
 	float affineEstimation_a_lastIt;
 	float affineEstimation_b_lastIt;
 };
 
 }
+

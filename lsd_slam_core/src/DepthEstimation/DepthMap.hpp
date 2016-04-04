@@ -26,6 +26,7 @@
 #include "util/IndexThreadReduce.hpp"
 #include "util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
+#include "CameraModel.hpp"
 #ifdef _WIN32
 using g2o::timeval;
 #endif
@@ -47,7 +48,7 @@ class DepthMap
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	DepthMap(int w, int h, const Eigen::Matrix3f& K);
+	DepthMap(const CameraModel &model);
 	DepthMap(const DepthMap&) = delete;
 	DepthMap& operator=(const DepthMap&) = delete;
 	~DepthMap();
@@ -102,11 +103,8 @@ public:
 
 private:
 	// camera matrix etc.
-	Eigen::Matrix3f K, KInv;
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
-	int width, height;
-
+	std::unique_ptr<CameraModel> model;
+	const size_t width, height;
 
 	// ============= parameter copies for convenience ===========================
 	// these are just copies of the pointers given to this function, for convenience.

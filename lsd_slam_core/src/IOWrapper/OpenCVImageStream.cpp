@@ -1,6 +1,7 @@
 #include "OpenCVImageStream.hpp"
 #include "util/Undistorter.hpp"
 #include "Win32Compatibility.hpp"
+#include "ProjCameraModel.hpp"
 
 const size_t NOTIFY_BUFFER_SIZE = 16;
 
@@ -48,14 +49,18 @@ void OpenCVImageStream::setCalibration(const std::string &file)
 		throw std::runtime_error("Unable to read camera calibration from file!");
 	}
 
-	fx_ = float(undistorter_->getK().at<double>(0, 0));
-	fy_ = float(undistorter_->getK().at<double>(1, 1));
-	cx_ = float(undistorter_->getK().at<double>(2, 0));
-	cy_ = float(undistorter_->getK().at<double>(2, 1));
+	//TODO add omnidirectional calibration.
 
-	width_ = undistorter_->getOutputWidth();
-	height_ = undistorter_->getOutputHeight();
-	
+	model.reset(new ProjCameraModel(
+		float(undistorter_->getK().at<double>(0, 0)),
+		float(undistorter_->getK().at<double>(1, 1)),
+		float(undistorter_->getK().at<double>(2, 0)),
+		float(undistorter_->getK().at<double>(2, 1)),
+
+		undistorter_->getOutputWidth(),
+		undistorter_->getOutputHeight()
+	));
+
 	hasCalib_ = true;
 }
 

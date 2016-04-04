@@ -28,8 +28,9 @@
 #include "keyframeMsg.hpp"
 #include "boost/thread.hpp"
 
-class KeyFrameDisplay;
+namespace lsd_slam {
 
+class KeyFrameDisplay;
 
 struct GraphConstraint
 {
@@ -75,5 +76,7 @@ private:
 	boost::mutex dataMutex;
 
 };
+
+}
 
 #endif /* KEYFRAMEGRAPHDISPLAY_H_ */

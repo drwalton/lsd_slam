@@ -29,6 +29,7 @@
 #include "util/settings.hpp"
 #include "IOWrapper/Timestamp.hpp"
 #include "opencv2/core/core.hpp"
+#include "CameraModel.hpp"
 
 #include "util/SophusUtil.hpp"
 
@@ -64,23 +65,18 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	// settings. Constant from construction onward.
-	int width;
-	int height;
-	Eigen::Matrix3f K;
+	std::unique_ptr<CameraModel> model;
 	const bool SLAMEnabled;
 
 	bool trackingIsGood;
 
-
-	SlamSystem(int w, int h, Eigen::Matrix3f K, bool enableSLAM = true);
+	SlamSystem(const CameraModel &model, bool enableSLAM = true);
 	SlamSystem(const SlamSystem&) = delete;
 	SlamSystem& operator=(const SlamSystem&) = delete;
 	~SlamSystem();
 
 	void randomInit(uchar* image, double timeStamp, int id);
 	void gtDepthInit(uchar* image, float* depth, double timeStamp, int id);
-
-	
 
 	// tracks a frame.
 	// first frame will return Identity = camToWord.

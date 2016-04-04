@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include <Eigen/StdVector>
 #include "util/SophusUtil.hpp"
+#include "CameraModel.hpp"
 
 #ifdef HAVE_FABMAP
 	#include "GlobalMapping/FabMap.hpp"
@@ -61,7 +62,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	/** Constructor. */
-	TrackableKeyFrameSearch(KeyFrameGraph* graph, int w, int h, Eigen::Matrix3f K);
+	TrackableKeyFrameSearch(KeyFrameGraph* graph, const CameraModel &model);
 	~TrackableKeyFrameSearch();
 	
 	/**

@@ -92,4 +92,14 @@ void OmniCameraModel::traceWorldSpaceLine(vec3 p0, vec3 p1, std::function<void(v
 	}
 }
 
+CameraModelType OmniCameraModel::getType() const
+{
+	return CameraModelType::OMNI;
+}
+
+std::unique_ptr<CameraModel> OmniCameraModel::clone() const
+{
+	return std::unique_ptr<CameraModel>(new OmniCameraModel(*this));
+}
+
 }
