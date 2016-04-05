@@ -438,8 +438,8 @@ void Sim3Tracker::calcSim3Buffers(
 		float rotatedGradY = yRoll0 * (*refGrad)[0] + yRoll1 * (*refGrad)[1];
 
 		//TODO work out how to get this value
-		*(buf_warped_dx+idx) = fx_l * 0.5f * (resInterp[0] + rotatedGradX);
-		*(buf_warped_dy+idx) = fy_l * 0.5f * (resInterp[1] + rotatedGradY);
+		*(buf_warped_dx+idx) = m.fx * 0.5f * (resInterp[0] + rotatedGradX);
+		*(buf_warped_dy+idx) = m.fy * 0.5f * (resInterp[1] + rotatedGradY);
 #else
 		*(buf_warped_dx+idx) = fx_l * resInterp[0];
 		*(buf_warped_dy+idx) = fy_l * resInterp[1];

@@ -38,11 +38,10 @@ class DepthMapPixelHypothesis;
 class Frame;
 class KeyFrameGraph;
 
-
-/**
- * Keeps a detailed depth map (consisting of DepthMapPixelHypothesis) and does
- * stereo comparisons and regularization to update it.
- */
+///\brief Maintains a depth map (consisting of DepthMapPixelHypothesis), which
+///       may be updated via stereo comparisons and regularisation.
+///\note A SlamSystem object maintains one DepthMap, which it uses to hold the 
+///      estimated depths for the current keyframe.
 class DepthMap
 {
 public:

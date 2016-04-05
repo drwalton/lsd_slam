@@ -29,17 +29,16 @@ namespace lsd_slam
 
 class KeyFrameGraph;
 
-/** Depth hypothesis used in DepthMap.
- *  
- *  Inverse depths need to be scaled with the DepthMap's internalScaleFactor to
- *  get frame scale. (From that, scale with the current keyframe's scale to
- *  get the current best estimate of absolute scale). */
+///\brief Depth hypothesis used in DepthMap.
+/// Inverse depths need to be scaled with the DepthMap's internalScaleFactor to
+/// get frame scale. (From that, scale with the current keyframe's scale to
+/// get the current best estimate of absolute scale).
 class DepthMapPixelHypothesis
 {
 public:
 
-	/** Flag telling if there is a valid estimate at this point.
-	 * All other values are only valid if this is set to true. */
+	///\brief Flag telling if there is a valid estimate at this point.
+	///       All other values are only valid if this is set to true.
 	bool isValid;
 
 	/** Flag that blacklists a point to never be used - set if stereo fails repeatedly on this pixel. */

@@ -241,7 +241,8 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 	lastResidual = lastErr;
 
 	trackingWasGood = !diverged
-			&& lastGoodCount / (frame->width(QUICK_KF_CHECK_LVL)*frame->height(QUICK_KF_CHECK_LVL)) > MIN_GOODPERALL_PIXEL
+			&& lastGoodCount / (frame->width(QUICK_KF_CHECK_LVL)*frame->
+				height(QUICK_KF_CHECK_LVL)) > MIN_GOODPERALL_PIXEL
 			&& lastGoodCount / (lastGoodCount + lastBadCount) > MIN_GOODPERGOODBAD_PIXEL;
 
 	return toSophus(referenceToFrame);
@@ -269,9 +270,12 @@ SE3 SE3Tracker::trackFrame(
 	if (plotTrackingIterationInfo)
 	{
 		const float* frameImage = frame->image();
-		for (size_t row = 0; row < model->h; ++ row)
-			for (size_t col = 0; col < model->w; ++ col)
-				setPixelInCvMat(&debugImageSecondFrame,getGrayCvPixel(frameImage[col+row*model->w]), col, row, 1);
+		for (size_t row = 0; row < model->h; ++row) {
+			for (size_t col = 0; col < model->w; ++col) {
+				setPixelInCvMat(&debugImageSecondFrame,
+					getGrayCvPixel(frameImage[col + row*model->w]), col, row, 1);
+			}
+		}
 	}
 
 	// ============ BEGIN TRACKING RELATED CODE ============
@@ -292,7 +296,12 @@ SE3 SE3Tracker::trackFrame(
 
 		reference->makePointCloud(lvl);
 
-		calcResidualAndBuffers(reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL));
+		calcResidualAndBuffers(reference->posData[lvl], 
+			reference->colorAndVarData[lvl], 
+			SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, 
+			reference->numData[lvl], frame, referenceToFrame, lvl, 
+			(plotTracking && lvl == SE3TRACKING_MIN_LEVEL));
+
 		if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * 
 			(model->w>>lvl)*(model->h>>lvl))
 		{
@@ -339,7 +348,12 @@ SE3 SE3Tracker::trackFrame(
 
 
 				// re-evaluate residual
-				calcResidualAndBuffers (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL));
+				calcResidualAndBuffers (reference->posData[lvl], 
+					reference->colorAndVarData[lvl], 
+					SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, 
+					reference->numData[lvl], frame, new_referenceToFrame, lvl, 
+					(plotTracking && lvl == SE3TRACKING_MIN_LEVEL));
+
 				if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN* 
 					(model->w>>lvl)*(model->h>>lvl))
 				{
@@ -447,7 +461,8 @@ SE3 SE3Tracker::trackFrame(
 	lastResidual = last_residual;
 
 	trackingWasGood = !diverged
-			&& lastGoodCount / (frame->width(SE3TRACKING_MIN_LEVEL)*frame->height(SE3TRACKING_MIN_LEVEL)) > MIN_GOODPERALL_PIXEL
+			&& lastGoodCount / (frame->width(SE3TRACKING_MIN_LEVEL)*frame->
+				height(SE3TRACKING_MIN_LEVEL)) > MIN_GOODPERALL_PIXEL
 			&& lastGoodCount / (lastGoodCount + lastBadCount) > MIN_GOODPERGOODBAD_PIXEL;
 
 	if(trackingWasGood)
@@ -489,7 +504,8 @@ float SE3Tracker::calcWeightsAndResidual(
 
 		float weighted_rp = fabs(rp*sqrtf(w_p));
 
-		float wh = fabs(weighted_rp < (settings.huber_d/2) ? 1 : (settings.huber_d/2) / weighted_rp);
+		float wh = fabs(weighted_rp < (settings.huber_d/2) ? 
+			1 : (settings.huber_d/2) / weighted_rp);
 
 		sumRes += wh * w_p * rp*rp;
 
@@ -635,7 +651,9 @@ float SE3Tracker::calcResidualAndBuffers(
 		sy += c2*weight;
 		sw += weight;
 
-		bool isGood = residual*residual / (MAX_DIFF_CONSTANT + MAX_DIFF_GRAD_MULT*(resInterp[0]*resInterp[0] + resInterp[1]*resInterp[1])) < 1;
+		bool isGood = residual*residual / 
+			(MAX_DIFF_CONSTANT + MAX_DIFF_GRAD_MULT*(resInterp[0]*resInterp[0] 
+				+ resInterp[1]*resInterp[1])) < 1;
 
 		if(isGoodOutBuffer != 0)
 			isGoodOutBuffer[*idxBuf] = isGood;
@@ -708,42 +726,75 @@ float SE3Tracker::calcResidualAndBuffers(
 void SE3Tracker::calculateWarpUpdate(
 		LGS6 &ls)
 {
-//	weightEstimator.reset();
-//	weightEstimator.estimateDistribution(buf_warped_residual, buf_warped_size);
-//	weightEstimator.calcWeights(buf_warped_residual, buf_warped_weights, buf_warped_size);
-//
 	ls.initialize(model->w*model->h);
-	for(int i=0;i<buf_warped_size;i++)
-	{
-		float px = *(buf_warped_x+i);
-		float py = *(buf_warped_y+i);
-		float pz = *(buf_warped_z+i);
-		float r =  *(buf_warped_residual+i);
-		float gx = *(buf_warped_dx+i);
-		float gy = *(buf_warped_dy+i);
-		// step 3 + step 5 comp 6d error vector
 
-		float z = 1.0f / pz;
-		float z_sqr = 1.0f / (pz*pz);
-		Vector6 v;
-		v[0] = z*gx + 0;
-		v[1] = 0 +         z*gy;
-		v[2] = (-px * z_sqr) * gx +
-			  (-py * z_sqr) * gy;
-		v[3] = (-px * py * z_sqr) * gx +
-			  (-(1.0f + py * py * z_sqr)) * gy;
-		v[4] = (1.0f + px * px * z_sqr) * gx +
-			  (px * py * z_sqr) * gy;
-		v[5] = (-py * z) * gx +
-			  (px * z) * gy;
+	if (model->getType == CameraModelType::PROJ) {
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);
+			float py = *(buf_warped_y + i);
+			float pz = *(buf_warped_z + i);
+			float r = *(buf_warped_residual + i);
+			float gx = *(buf_warped_dx + i);
+			float gy = *(buf_warped_dy + i);
+			// step 3 + step 5 comp 6d error vector
 
-		// step 6: integrate into A and b:
-		ls.update(v, r, *(buf_weight_p+i));
+			float z = 1.0f / pz;
+			float z_sqr = 1.0f / (pz*pz);
+			Vector6 v;
+			v[0] = z*gx + 0;
+			v[1] = 0 + z*gy;
+			v[2] = (-px * z_sqr) * gx +
+				(-py * z_sqr) * gy;
+			v[3] = (-px * py * z_sqr) * gx +
+				(-(1.0f + py * py * z_sqr)) * gy;
+			v[4] = (1.0f + px * px * z_sqr) * gx +
+				(px * py * z_sqr) * gy;
+			v[5] = (-py * z) * gx +
+				(px * z) * gy;
+
+			// step 6: integrate into A and b:
+			ls.update(v, r, *(buf_weight_p + i));
+		}
+	} else /* CameraModelType::OMNI */ {
+		const OmniCameraModel *m = static_cast<const OmniCameraModel*>(model.get());
+		float e = m->e;
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);
+			float py = *(buf_warped_y + i);
+			float pz = *(buf_warped_z + i);
+			float r = *(buf_warped_residual + i);
+			float gx = *(buf_warped_dx + i);
+			float gy = *(buf_warped_dy + i);
+			// step 3 + step 5 comp 6d error vector
+
+			float z = 1.0f / pz;
+			float z_sqr = 1.0f / (pz*pz);
+			float n = vec3(px, py, z).norm();
+			float den = 1.f / ((z + n*e)*(z + n*e));
+			Vector6 v;
+
+			v[0] = gx*den*(z + e*(n - (px*px) / n))
+				- (gy*den*e*px*py / n);
+
+			v[1] = -(gx*den*e*px*py / n) +
+				gy*den*(z + e*(n - py*py / n));
+
+			v[2] = -gx*den*px*(1 + z*e / n)
+				- gy*den*py*(1 + z*e / n);
+
+			v[3] = - z*v[1] + py*v[2];
+			v[4] =   z*v[0] - px*v[2];
+			v[5] = -py*v[0] + px*v[1];
+
+			// step 6: integrate into A and b:
+			ls.update(v, r, *(buf_weight_p + i));
+		}
 	}
 
 	// solve ls
 	ls.finish();
-	//result = ls.A.ldlt().solve(ls.b);
 }
 
 }

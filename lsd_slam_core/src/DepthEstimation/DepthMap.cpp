@@ -1875,12 +1875,14 @@ inline float DepthMap::doLineStereo(
 	if(incx*incx>incy*incy)
 	{
 		float oldX = old[0];
-		float nominator = (oldX*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[0]);
+		float nominator = (oldX*referenceFrame->otherToThis_t[2] 
+			- referenceFrame->otherToThis_t[0]);
 		float dot0 = KinvP.dot(referenceFrame->otherToThis_R_row0);
 		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
 
 		idnew_best_match = (dot0 - oldX*dot2) / nominator;
-		alpha = incx*fxi*(dot0*referenceFrame->otherToThis_t[2] - dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
+		alpha = incx*fxi*(dot0*referenceFrame->otherToThis_t[2] 
+			- dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
 
 	}
 	else
