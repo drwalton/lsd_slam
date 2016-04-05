@@ -59,4 +59,13 @@ std::unique_ptr<CameraModel> ProjCameraModel::clone() const
 	return std::unique_ptr<CameraModel>(new ProjCameraModel(*this));
 }
 
+
+vec2 ProjCameraModel::getFovAngles() const
+{
+	return vec2(
+		2.f * atanf((float)((w / fx) / 2.0f)),
+		2.f * atanf((float)((h / fy) / 2.0f))
+	);
+}
+
 }

@@ -34,8 +34,9 @@ TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, const Cam
 {
 	tracker = new SE3Tracker(model);
 
-	fowX = 2 * atanf((float)((model.w / K(0,0)) / 2.0f));
-	fowY = 2 * atanf((float)((model.h / K(1,1)) / 2.0f));
+	vec2 fov = model.getFovAngles();
+	fowX = fov.x();
+	fowY = fov.y();
 
 	msTrackPermaRef=0;
 	nTrackPermaRef=0;

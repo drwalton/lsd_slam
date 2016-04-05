@@ -39,6 +39,8 @@ public:
 	virtual CameraModelType getType() const = 0;
 
 	virtual std::unique_ptr<CameraModel> clone() const = 0;
+
+	virtual vec2 getFovAngles() const = 0;
 };
 
 }

@@ -25,6 +25,8 @@ public:
 	const mat3 K, Kinv;
 
 	virtual std::unique_ptr<CameraModel> clone() const;
+
+	virtual vec2 getFovAngles() const;
 };
 
 }

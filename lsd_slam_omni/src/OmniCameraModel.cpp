@@ -1,5 +1,9 @@
 #include "OmniCameraModel.hpp"
 
+#ifndef M_PI
+# define M_PI           3.14159265358979323846  /* pi */
+#endif
+
 namespace lsd_slam {
 
 
@@ -100,6 +104,19 @@ CameraModelType OmniCameraModel::getType() const
 std::unique_ptr<CameraModel> OmniCameraModel::clone() const
 {
 	return std::unique_ptr<CameraModel>(new OmniCameraModel(*this));
+}
+
+vec2 OmniCameraModel::getFovAngles() const
+{
+	//N.B. This assumes a minimum FOV of M_PI in both axes.
+	vec2 fovAngles;
+	vec3 maxX = pixelToCam(vec2(w, h/2));
+	float thetaX = atan2f(maxX.z(), maxX.x());
+	fovAngles.x() = 2.f*thetaX + static_cast<float>(M_PI);
+	vec3 maxY = pixelToCam(vec2(w/2, h));
+	float thetaY = atan2f(maxY.z(), maxY.y());
+	fovAngles.y() = 2.f*thetaY + static_cast<float>(M_PI);
+	return fovAngles;
 }
 
 }

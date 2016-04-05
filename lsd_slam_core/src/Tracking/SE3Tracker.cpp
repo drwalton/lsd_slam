@@ -644,9 +644,8 @@ float SE3Tracker::calcResidualAndBuffers(
 		*(buf_warped_y+idx) = Wxp(1);
 		*(buf_warped_z+idx) = Wxp(2);
 
-		//TODO work out what to change this to.
-		*(buf_warped_dx+idx) = fx_l * resInterp[0];
-		*(buf_warped_dy+idx) = fy_l * resInterp[1];
+		*(buf_warped_dx+idx) = m.fx * resInterp[0];
+		*(buf_warped_dy+idx) = m.fy * resInterp[1];
 		*(buf_warped_residual+idx) = residual;
 
 		*(buf_d+idx) = 1.0f / (*refPoint)[2];

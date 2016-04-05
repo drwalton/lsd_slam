@@ -626,8 +626,10 @@ void Frame::buildGradients(int level)
 
 	int width = this->width(level);
 	int height = this->height(level);
-	if(data.gradients[level] == 0)
-		data.gradients[level] = (Eigen::Vector4f*)FrameMemory::getInstance().getBuffer(sizeof(Eigen::Vector4f) * width * height);
+	if (data.gradients[level] == 0) {
+		data.gradients[level] = (Eigen::Vector4f*)FrameMemory::getInstance()
+			.getBuffer(sizeof(Eigen::Vector4f) * width * height);
+	}
 	const float* img_pt = data.image[level] + width;
 	const float* img_pt_max = data.image[level] + width*(height-1);
 	Eigen::Vector4f* gradxyii_pt = data.gradients[level] + width;
