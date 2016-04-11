@@ -17,7 +17,7 @@ std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
 
 using namespace lsd_slam;
 
-const int numFrames = 100;
+const int numFrames = 1000;
 
 enum MotionType {
 	OSC, ELLIPSE
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
 	if (motionType == ELLIPSE) {
 		camMotion.reset(new EllipticalCameraMotion(
-			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), vec3(0.f, 0.25f, 0.f), 50));
+			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), vec3(0.f, 0.25f, 0.f), 100));
 	} else {
 		camMotion.reset(new OscillatingCameraMotion(
 			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), 50));
@@ -66,12 +66,27 @@ int main(int argc, char **argv) {
 	video.open(argv[3], cv::VideoWriter::fourcc('M','J','P','G'), 30, size);
 
 	cv::Mat image;
+	int percentage = 0;
+	
 	for (size_t i = 0; i < numFrames; ++i) {
 		image = raycast(m.vertices(), m.indices(), colors, camMotion->getNextTransform(), 
 			model, size);
+		cv::imshow("PREVIEW", image);
+		cv::waitKey(1);
 		video << image;
+		
+		float percentage_f = 100.f * float(i) / float(numFrames);
+		if(int(percentage_f) > percentage) {
+			percentage = int(percentage_f);
+			if(percentage % 10 == 0) {
+				std::cout << percentage << "\% complete..." << std::endl;
+			}
+		}
 	}
 	
+	video.release();
+	
+	std::cout << "Completed!" << std::endl;
 	
 	return 0;
 }

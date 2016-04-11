@@ -11,8 +11,10 @@ CameraMotion::~CameraMotion() throw()
 
 OscillatingCameraMotion::OscillatingCameraMotion(
 	const WorldToCamTransform &initialTransform, vec3 maxDisplacement, int period)
-	:origin_(initialTransform.translation), maxDisplacement_(maxDisplacement), rotation_(initialTransform.rotation),
-	step_(2 * M_PI / static_cast<float>(period)), angle_(0.f)
+	:rotation_(initialTransform.rotation),angle_(0.f),
+	step_(2 * M_PI / static_cast<float>(period)),
+	origin_(initialTransform.translation),
+	maxDisplacement_(maxDisplacement)
 {}
 
 OscillatingCameraMotion::~OscillatingCameraMotion() throw()
@@ -31,9 +33,10 @@ WorldToCamTransform OscillatingCameraMotion::getNextTransform()
 
 EllipticalCameraMotion::EllipticalCameraMotion(const WorldToCamTransform &initialTransform,
 	vec3 axisA, vec3 axisB, int period)
-	:origin_(initialTransform.translation), rotation_(initialTransform.rotation),
-	axisA_(axisA), axisB_(axisB),
-	step_(2 * M_PI / static_cast<float>(period)), angle_(0.f)
+	:rotation_(initialTransform.rotation), angle_(0.f),
+	step_(2 * M_PI / static_cast<float>(period)),
+	origin_(initialTransform.translation),
+	axisA_(axisA), axisB_(axisB)
 {}
 
 EllipticalCameraMotion::~EllipticalCameraMotion() throw()

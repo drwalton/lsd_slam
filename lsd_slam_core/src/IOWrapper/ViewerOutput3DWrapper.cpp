@@ -43,9 +43,11 @@ ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int hei
 			PointCloudViewer viewer;
 			viewer_ = &viewer;
 			viewer.show();
+#ifdef _WIN32
 			if (glewInit() != GLEW_OK) {
 				throw std::runtime_error("GLEW INIT FAILED");
 			}
+#endif
 			qapp.exec();
 			viewer_ = nullptr;
 			std::cout << "Terminating viewer thread...\n";

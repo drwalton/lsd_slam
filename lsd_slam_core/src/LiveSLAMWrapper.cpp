@@ -114,7 +114,8 @@ void LiveSLAMWrapper::newImageCallback(const cv::Mat& img, Timestamp imgTime)
 	
 	// Assert that we work with 8 bit images
 	assert(grayImg.elemSize() == 1);
-	assert(fx != 0 || fy != 0);
+	//assert(fx != 0 || fy != 0);
+	assert(model->fx != 0 && model->fy != 0);
 
 
 	// need to initialize

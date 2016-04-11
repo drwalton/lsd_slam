@@ -2,7 +2,7 @@ find_path(OPENCV_INCLUDE_DIRS
 	NAMES
 		opencv2/opencv.hpp
 	PATHS
-		/usr/local/Cellar/opencv3/3.1.0_1/include
+		/usr/local/Cellar/opencv3/3.1.0_3/include
 		"C:/local/opencv/opencv-3.0.0/build/include"
 	NO_DEFAULT_PATH
 )
@@ -12,7 +12,7 @@ if(NOT ${OPENCV_INCLUDE_DIRS} EQUAL OPENCV_INCLUDE_DIRS-NOTFOUND)
 endif(NOT ${OPENCV_INCLUDE_DIRS} EQUAL OPENCV_INCLUDE_DIRS-NOTFOUND)
 
 set(LIB_PATHS
-		/usr/local/Cellar/opencv3/3.1.0_1/lib
+		/usr/local/Cellar/opencv3/3.1.0_3/lib
 		"C:/local/opencv/opencv-3.0.0/build/x86/vc12/lib"
 )
 
