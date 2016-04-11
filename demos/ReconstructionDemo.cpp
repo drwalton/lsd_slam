@@ -12,14 +12,15 @@ int main(int argc, char **argv)
 	if (argc < 2) {
 		std::cout << "Need cailbration file!" << std::endl;
 		WIN_WAIT_BEFORE_EXIT
-		return 1;
+			return 1;
 	}
 
 	lsd_slam::OpenCVImageStream stream;
 
 	if (argc >= 3) {
 		stream.capture().open(argv[2]);
-	} else {
+	}
+	else {
 		while (true) {
 			std::cout << "Please select video source ([C]amera, [F]ile): ";
 			std::string selection;
@@ -54,12 +55,24 @@ int main(int argc, char **argv)
 			else {
 				std::cout << "Could not parse response; please try again..." << std::endl;
 			}
+
+			std::string filename;
+			Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
+			ch.title("Select calibration file");
+			ch.show();
 		}
 	}
+	if (argc > 2) {
+		stream.setCalibration(argv[1]);
+	} else {
+		 std::string filename;
+		 Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
+		 ch.title("Select calibration file");
+		 ch.show();
+		 stream.setCalibration(ch.filename());
+	}
 
-	stream.setCalibration(argv[1]);
 	stream.run();
-
 	std::unique_ptr<lsd_slam::ViewerOutput3DWrapper> outWrapper(
 		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480));
 	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());

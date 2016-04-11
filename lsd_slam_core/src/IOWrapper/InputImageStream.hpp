@@ -45,14 +45,14 @@ public:
 
 	virtual bool running() { return true; };
 
-	virtual void setCalibration(const std::string &file) {};
+	virtual void setCalibration(const std::string &file) { model = CameraModel::loadFromFile(file); };
 
 	/**
 	 * Gets the NotifyBuffer to which incoming images are stored.
 	 */
 	inline NotifyBuffer<TimestampedMat>* getBuffer() {return imageBuffer;};
 
-	const CameraModel &camModel() const;
+	const CameraModel &camModel() const { return *model; };
 
 protected:
 	std::unique_ptr<CameraModel> model;

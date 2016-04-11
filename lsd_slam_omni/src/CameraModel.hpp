@@ -41,6 +41,8 @@ public:
 	virtual std::unique_ptr<CameraModel> clone() const = 0;
 
 	virtual vec2 getFovAngles() const = 0;
+
+	static std::unique_ptr<CameraModel> loadFromFile(const std::string &filename);
 };
 
 }

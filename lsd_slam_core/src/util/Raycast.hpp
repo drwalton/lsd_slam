@@ -16,7 +16,7 @@ cv::Mat raycast(
 	const std::vector<vec3> &vertices,
 	const std::vector<unsigned int> &indices,
 	const std::vector<cv::Vec3b> &colors,
-	const mat4 &worldToCamera,
+	const WorldToCamTransform &worldToCamera,
 	const CameraModel &model,
 	cv::Size size);
 

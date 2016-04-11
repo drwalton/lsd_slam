@@ -13,8 +13,8 @@ add_library(lsd_slam_util
 	Raycast.hpp
 	ModelLoader.cpp
 	ModelLoader.hpp
-	ply.h
-	plyfile.c
+	CameraMotion.cpp
+	CameraMotion.hpp
 )
 
 target_link_libraries(lsd_slam_util

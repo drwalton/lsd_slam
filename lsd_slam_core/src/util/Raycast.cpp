@@ -7,18 +7,17 @@ namespace lsd_slam {
 
 const float EPS = 10e-6f;
 cv::Vec3b BACKGROUND_COLOR = cv::Vec3b(0,0,0);
-size_t nHits = 0;
 
 cv::Mat raycast(
 	const std::vector<vec3> &vertices,
 	const std::vector<unsigned int> &indices,
 	const std::vector<cv::Vec3b> &colors,
-	const mat4 &worldToCamera,
+	const WorldToCamTransform &worldToCamera,
 	const CameraModel &model,
 	cv::Size size)
 {
-	vec3 origin = -worldToCamera.block<3,1>(0,3);
-	mat3 invRot = worldToCamera.block<3,3>(0,0).inverse();
+	vec3 origin = worldToCamera.inverse().translation;
+	mat3 invRot = worldToCamera.inverse().rotation;
 	cv::Mat image(size, CV_8UC3);
 	image.setTo(cv::Scalar(255, 0, 0));
 	std::vector<std::thread> threads(image.rows);
@@ -41,7 +40,6 @@ cv::Mat raycast(
 	for(std::thread &t : threads) {
 		t.join();
 	}
-	std::cout << nHits << " hits" << std::endl;
 	return image;
 }
 
@@ -60,7 +58,6 @@ cv::Vec3b shootRay(
 			vertices[indices[i+1]],
 			vertices[indices[i+2]],
 			ray, dist)) {
-				++nHits;
 				if(dist < closestIntersectionDist) {
 					closestIntersectionDist = dist;
 					color = colors.at(indices[i]);

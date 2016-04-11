@@ -32,6 +32,7 @@
 
 #include "QGLViewer/keyFrameInterpolator.h"
 #include "Win32Compatibility.hpp"
+#include "settings.hpp"
 
 class QApplication;
 
@@ -41,7 +42,6 @@ class KeyFrameGraphDisplay;
 class CameraDisplay;
 class KeyFrameDisplay;
 
-#include "settings.hpp"
 
 class AnimationObject
 {
