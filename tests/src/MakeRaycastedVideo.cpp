@@ -19,25 +19,39 @@ using namespace lsd_slam;
 
 const int numFrames = 100;
 
+enum MotionType {
+	OSC, ELLIPSE
+};
+MotionType motionType = ELLIPSE;
+
 int main(int argc, char **argv) {
-	if(argc != 6) {
+	if (argc != 6) {
 		std::cout << "Usage: MakeRaycastedVideo [modelFilename] [camTransform] [vidFilename] [imRows] [imCols]" << std::endl;
 		return 1;
 	}
-	
+
 	OmniCameraModel model = OmniCameraModel::makeDefaultModel();
-	
-	
+
+
 	std::cout << "Loading scene from file: " << argv[1] << std::endl;
 
 	ModelLoader m;
 	m.loadFile(argv[1]);
 
 	std::cout << "Vertices: \n" << m.vertices();
-	
+
 	mat4 worldToCam = loadCamTransform(argv[2]);
-	std::unique_ptr<CameraMotion> camMotion(new OscillatingCameraMotion(
-		WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), 50));
+	std::unique_ptr<CameraMotion> camMotion;
+
+
+
+	if (motionType == ELLIPSE) {
+		camMotion.reset(new EllipticalCameraMotion(
+			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), vec3(0.f, 0.25f, 0.f), 50));
+	} else {
+		camMotion.reset(new OscillatingCameraMotion(
+			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), 50));
+	}
 
 	std::vector<cv::Vec3b> colors;
 	for (auto & color : m.vertColors()) {

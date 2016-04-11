@@ -32,6 +32,20 @@ private:
 	const vec3 origin_, maxDisplacement_;
 };
 
+
+class EllipticalCameraMotion : public CameraMotion {
+public:
+	explicit EllipticalCameraMotion(const WorldToCamTransform &initialTransform, 
+		vec3 axisA, vec3 axisB, int period);
+	virtual ~EllipticalCameraMotion() throw();
+
+	virtual WorldToCamTransform getNextTransform();
+private:
+	mat3 rotation_;
+	float angle_, step_;
+	const vec3 origin_, axisA_, axisB_;
+};
+
 }
 
 #endif
