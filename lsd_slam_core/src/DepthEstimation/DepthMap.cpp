@@ -32,11 +32,8 @@
 #include "IOWrapper/ImageDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
 
-
 namespace lsd_slam
 {
-
-
 
 DepthMap::DepthMap(const CameraModel &model)
 	:model(model.clone()), width(model.w), height(model.h)
@@ -65,7 +62,7 @@ DepthMap::DepthMap(const CameraModel &model)
 	nAvgObserve = nAvgRegularize = nAvgPropagate = nAvgFillHoles = nAvgSetDepth = 0;
 }
 
-DepthMap::~DepthMap()
+DepthMap::~DepthMap() throw()
 {
 	if(activeKeyFrame != 0)
 		activeKeyFramelock.unlock();
@@ -161,23 +158,24 @@ void DepthMap::observeDepth()
 	}
 }
 
-
-
-
-
-bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats)
+bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
+	float* pepx, float* pepy, RunningStats* const stats)
 {
 	int idx = x+y*width;
 
 	// ======= make epl ========
-	// calculate the plane spanned by the two camera centers and the point (x,y,1)
-	// intersect it with the keyframe's image plane (at depth=1)
-	float epx = - fx * ref->thisToOther_t[0] + ref->thisToOther_t[2]*(x - cx);
-	float epy = - fy * ref->thisToOther_t[1] + ref->thisToOther_t[2]*(y - cy);
+	// Find direction towards epipole, in the keyframe image.
+	vec2 epipole = model->camToPixel(ref->thisToOther_t);
+	float epx = x - epipole.x();
+	float epy = y - epipole.y();
+	
+	//Original code for the above:
+	//float epx = - fx * ref->thisToOther_t[0] + ref->thisToOther_t[2]*(x - cx);
+	//float epy = - fy * ref->thisToOther_t[1] + ref->thisToOther_t[2]*(y - cy);
 
-	if(isnan(epx+epy))
+	if(isnan(epx+epy)) {
 		return false;
-
+	}
 
 	// ======== check epl length =========
 	float eplLengthSquared = epx*epx+epy*epy;
@@ -189,7 +187,7 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 
 
 	// ===== check epl-grad magnitude ======
-	float gx = activeKeyFrameImageData[idx+1] - activeKeyFrameImageData[idx-1];
+	float gx = activeKeyFrameImageData[idx+1    ] - activeKeyFrameImageData[idx-1    ];
 	float gy = activeKeyFrameImageData[idx+width] - activeKeyFrameImageData[idx-width];
 	float eplGradSquared = gx * epx + gy * epy;
 	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
@@ -209,6 +207,7 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	}
 
 
+	///TODO: rescaling like this assumes the EPL is straight - change this part.
 	// ===== DONE - return "normalized" epl =====
 	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
 	*pepx = epx * fac;
@@ -645,7 +644,6 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	}
 }
 
-
 void DepthMap::regularizeDepthMapFillHolesRow(size_t yMin, size_t yMax, RunningStats* stats)
 {
 	// =========== regularize fill holes
@@ -697,7 +695,6 @@ void DepthMap::regularizeDepthMapFillHolesRow(size_t yMin, size_t yMax, RunningS
 	}
 }
 
-
 void DepthMap::regularizeDepthMapFillHoles()
 {
 
@@ -712,8 +709,6 @@ void DepthMap::regularizeDepthMapFillHoles()
 		printf("FillHoles (discreteDepth): %d created\n",
 				runningStats.num_reg_created);
 }
-
-
 
 void DepthMap::buildRegIntegralBufferRow1(size_t yMin, size_t yMax, RunningStats* stats)
 {
@@ -735,7 +730,6 @@ void DepthMap::buildRegIntegralBufferRow1(size_t yMin, size_t yMax, RunningStats
 	}
 }
 
-
 void DepthMap::buildRegIntegralBuffer()
 {
 	threadReducer.reduce(boost::bind(&DepthMap::buildRegIntegralBufferRow1, this, _1, _2,_3), 0, height);
@@ -748,8 +742,6 @@ void DepthMap::buildRegIntegralBuffer()
 		*(validityIntegralBufferPT_T++) += *(validityIntegralBufferPT++);
 
 }
-
-
 
 template<bool removeOcclusions> void DepthMap::regularizeDepthMapRow(int validityTH, int yMin, int yMax, RunningStats* stats)
 {
@@ -845,7 +837,6 @@ template<bool removeOcclusions> void DepthMap::regularizeDepthMapRow(int validit
 template void DepthMap::regularizeDepthMapRow<true>(int validityTH, int yMin, int yMax, RunningStats* stats);
 template void DepthMap::regularizeDepthMapRow<false>(int validityTH, int yMin, int yMax, RunningStats* stats);
 
-
 void DepthMap::regularizeDepthMap(bool removeOcclusions, int validityTH)
 {
 	runningStats.num_reg_smeared=0;
@@ -874,7 +865,6 @@ void DepthMap::regularizeDepthMap(bool removeOcclusions, int validityTH)
 				runningStats.num_reg_deleted_occluded,
 				runningStats.num_reg_created);
 }
-
 
 void DepthMap::initializeRandomly(Frame* new_frame)
 {
@@ -910,8 +900,6 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 
 	activeKeyFrame->setDepth(currentDepthMap);
 }
-
-
 
 void DepthMap::setFromExistingKF(Frame* kf)
 {
@@ -956,7 +944,6 @@ void DepthMap::setFromExistingKF(Frame* kf)
 
 	regularizeDepthMap(false, VAL_SUM_MIN_FOR_KEEP);
 }
-
 
 void DepthMap::initializeFromGTDepth(Frame* new_frame)
 {
@@ -1476,8 +1463,6 @@ inline float DepthMap::doLineStereo(
 	float realVal_m2 = getInterpolatedElement(activeKeyFrameImageData,u - 2*epxn*rescaleFactor, v - 2*epyn*rescaleFactor, width);
 	float realVal_p2 = getInterpolatedElement(activeKeyFrameImageData,u + 2*epxn*rescaleFactor, v + 2*epyn*rescaleFactor, width);
 
-
-
 //	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
 
 
@@ -1816,7 +1801,6 @@ inline float DepthMap::doLineStereo(
 			if(enablePrintDebugInfo) stats->num_stereo_invalid_noCrossing++;
 		}
 
-
 		// DO interpolation!
 		// minimum occurs at zero-crossing of gradient, which is a straight line => easy to compute.
 		// the error at that point is also computed by just integrating.
@@ -1844,7 +1828,6 @@ inline float DepthMap::doLineStereo(
 			if(enablePrintDebugInfo) stats->num_stereo_interpNone++;
 		}
 	}
-
 
 	// sampleDist is the distance in pixel at which the realVal's were sampled
 	float sampleDist = GRADIENT_SAMPLE_DIST*rescaleFactor;

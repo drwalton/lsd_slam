@@ -9,5 +9,7 @@ add_library(lsd_slam_util
 	SophusUtil.hpp
 	Undistorter.cpp
 	Undistorter.hpp
+	Raycast.cpp
+	Raycast.hpp
 )
 

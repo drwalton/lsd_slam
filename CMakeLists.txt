@@ -15,6 +15,7 @@ find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Boost COMPONENTS System Thread REQUIRED)
 find_package(FLTK REQUIRED)
+find_package(Assimp REQUIRED)
 
 if(WIN32)
 	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-12.0")
@@ -38,6 +39,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/lsd_slam_core/src
 	${CMAKE_SOURCE_DIR}/lsd_slam_viewer/src
 	${CMAKE_SOURCE_DIR}/lsd_slam_omni/src
+	${CMAKE_SOURCE_DIR}/lsd_slam_core/src/util
 	${EIGEN3_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/thirdparty/Sophus
 	${CSPARSE_INCLUDE_DIR} #Has been set by SuiteParse
@@ -47,6 +49,7 @@ include_directories(
 	${QGLVIEWER_INCLUDE_DIR}
 	${G2O_INCLUDE_DIR}
 	${FLTK_INCLUDE_DIRS}
+	${ASSIMP_INCLUDE_DIRS}
 )
 
 add_subdirectory(lsd_slam_core)
@@ -75,4 +78,5 @@ function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)
 endfunction()
 
 add_subdirectory(demos)
+add_subdirectory(tests)
 

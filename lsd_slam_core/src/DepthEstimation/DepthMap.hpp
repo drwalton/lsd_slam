@@ -52,22 +52,18 @@ public:
 	DepthMap& operator=(const DepthMap&) = delete;
 	~DepthMap();
 
-	/** Resets everything. */
+	///\brief Reset depth map (cause it to be recalculated).
+	///\note Labels all points in depth map as "Invalid", meaning they will be
+	///      updated from scratch at the next update.
 	void reset();
 	
-	/**
-	 * does obervation and regularization only.
-	 **/
+	///\brief does obervation and regularization only.
 	void updateKeyframe(std::deque< std::shared_ptr<Frame>, std::allocator<std::shared_ptr<Frame> > > referenceFrames);
 
-	/**
-	 * does propagation and whole-filling-regularization (no observation, for that need to call updateKeyframe()!)
-	 **/
+	///\brief does propagation and whole-filling-regularization (no observation, for that need to call updateKeyframe()!)
 	void createKeyFrame(Frame* new_keyframe);
 	
-	/**
-	 * does one fill holes iteration
-	 */
+	///\brief Perform one iteration of hole-filling.
 	void finalizeKeyFrame();
 
 	void invalidate();
@@ -127,8 +123,22 @@ private:
 	
 
 	// ============ internal functions ==================================================
-	// does the line-stereo seeking.
-	// takes a lot of parameters, because they all have been pre-computed before.
+	
+	///\brief does the line-stereo seeking.
+	///\note takes a lot of parameters, because they all have been pre-computed before.
+    ///\param mat: NEW image
+    ///\param KinvP: point in OLD image (Kinv * (u_old, v_old, 1)), projected
+    ///\param trafo: x_old = trafo * x_new; (from new to old image)
+    ///\param realVal: descriptor in OLD image.
+    ///\param[out] result_idepth : point depth in new camera's coordinate system
+    ///\param[out] returns: result_u/v : point's coordinates in new camera's coordinate system
+    ///\param[out] returns: idepth_var: (approximated) measurement variance of inverse depth of result_point_NEW
+	///\return If a good match is found, the associated (positive-valued) error is returned.
+	///        If no good match is found, a (negative) error code indicating
+	///        the reason for the failure is returned.
+	///        -4: Epipolar line length invalid (zero or NaN).
+	///        -1: if out of bounds
+	///        -2: if not found
 	inline float doLineStereo(
 			const float u, const float v, const float epxn, const float epyn,
 			const float min_idepth, const float prior_idepth, float max_idepth,
@@ -144,6 +154,9 @@ private:
 	void observeDepthRow(size_t yMin, size_t yMax, RunningStats* stats);
 	bool observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats);
 	bool observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats);
+	
+	///\brief Check an epipolar line segment for validity
+	///\return A boolean value indicating if the epipolar line segment is valid.
 	bool makeAndCheckEPL(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
 
 

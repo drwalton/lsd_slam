@@ -728,7 +728,7 @@ void SE3Tracker::calculateWarpUpdate(
 {
 	ls.initialize(model->w*model->h);
 
-	if (model->getType == CameraModelType::PROJ) {
+	if (model->getType() == CameraModelType::PROJ) {
 		for (int i = 0; i < buf_warped_size; i++)
 		{
 			float px = *(buf_warped_x + i);
