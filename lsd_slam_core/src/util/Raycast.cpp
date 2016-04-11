@@ -20,18 +20,20 @@ cv::Mat raycast(
 	vec3 origin = -worldToCamera.block<3,1>(0,3);
 	mat3 invRot = worldToCamera.block<3,3>(0,0).inverse();
 	cv::Mat image(size, CV_8UC3);
+	image.setTo(cv::Scalar(255, 0, 0));
 	std::vector<std::thread> threads(image.rows);
 	for(size_t r = 0; r < image.rows; ++r) {
 		threads[r] = std::thread([
 		r, &image, &vertices, &indices, &colors,
 		&worldToCamera, &model, &origin, &invRot]() {
-			cv::Vec3b *rPtr = image.ptr<cv::Vec3b>(r);
+			//cv::Vec3b *rPtr = image.ptr<cv::Vec3b>(r);
 			for(size_t c = 0; c < image.cols; ++c) {
     			Ray ray;
     			ray.origin = origin;
-    			ray.dir = invRot * model.pixelToCam(vec2(r,c));
-				*rPtr = shootRay(ray, vertices, indices, colors);
-				++rPtr;
+    			ray.dir = /*invRot * */model.pixelToCam(vec2(r,c));
+				image.at<cv::Vec3b>(r,c) = shootRay(ray, vertices, indices, colors);
+				//*rPtr = shootRay(ray, vertices, indices, colors);
+				//++rPtr;
 			}
 		});
 	}
@@ -51,7 +53,7 @@ cv::Vec3b shootRay(
 {
 	float closestIntersectionDist = FLT_MAX;
 	cv::Vec3b color = BACKGROUND_COLOR;
-	for(size_t i = 0; i < indices.size(); i += 3) {
+	for(size_t i = 0; i+2 < indices.size(); i += 3) {
 		float dist;
 		if(intersectRayWithTriangle(
 			vertices[indices[i]],
@@ -61,8 +63,10 @@ cv::Vec3b shootRay(
 				++nHits;
 				if(dist < closestIntersectionDist) {
 					closestIntersectionDist = dist;
-					color = colors[i];
+					color = colors.at(indices[i]);
 				}
+		}
+		else {
 		}
 	}
 	return color;
@@ -81,7 +85,9 @@ bool intersectRayWithTriangle(
 	
 	vec3 norm = (ray.dir).cross(e2);
 	
-	if(norm.norm() < EPS) return false; //Triangle has no area.
+	if (norm.norm() < EPS) {
+		return false; //Triangle has no area.
+	}
 	
 	float det = e1.dot(norm);
 	
@@ -100,7 +106,7 @@ bool intersectRayWithTriangle(
 	
 	float t = e2.dot(acrossTriangle) * oneOverDet;
 	
-	if(t < EPS) return false; // intersection lies behind ro.
+	if(t < EPS) return false; // intersection lies behind/on ro.
 	
 	dist = t;
 	

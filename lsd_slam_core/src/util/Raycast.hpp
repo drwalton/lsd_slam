@@ -1,3 +1,6 @@
+#ifndef LSD_SLAM_RAYCAST_HPP_INCLUDED
+#define LSD_SLAM_RAYCAST_HPP_INCLUDED
+
 #include <opencv2/opencv.hpp>
 #include "VectorTypes.hpp"
 #include "CameraModel.hpp"
@@ -35,4 +38,7 @@ bool intersectRayWithTriangle(
 mat4 loadCamTransform(const std::string &filename);
 
 }
+
+#endif
+
 

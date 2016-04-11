@@ -1,10 +1,18 @@
 #include <iostream>
 #include "Raycast.hpp"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "ModelLoader.hpp"
 #include "OmniCameraModel.hpp"
 #include <fstream>
+
+template<typename T>
+std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
+	
+	s << t[0];
+	for (size_t i = 1; i < t.size(); ++i) {
+		s << ", " << t[i];
+	}
+	return s;
+}
 
 using namespace lsd_slam;
 
@@ -18,46 +26,23 @@ int main(int argc, char **argv) {
 	
 	
 	std::cout << "Loading scene from file: " << argv[1] << std::endl;
-	
-	std::ifstream file(argv[1]);
-	
-	size_t nVerts, nIndices;
-	file >> nVerts;
-	file >> nIndices;
-	
-	std::vector<vec3> vertices;
-	std::vector<cv::Vec3b> colors;
-	std::vector<unsigned int> indices;
-	
-	
-	for(size_t i = 0; i < nVerts; ++i) {
-		vec3 v;
-		file >> v.x() >> v.y() >> v.z();
-		vertices.push_back(v);
-	}
-	for(size_t i = 0; i < nVerts; ++i) {
-		int a, b, c;
-		file >> a >> b >> c;
-		colors.push_back(cv::Vec3b(a, b, c));
-	}
-	for(size_t i = 0; i < nIndices; ++i) {
-		size_t s;
-		file >> s;
-		indices.push_back(s);
-	}
-	
-	std::cout << "Loaded " << vertices.size() << " vertices, " << indices.size() << " indices, " << colors.size() << " colors" << std::endl;
-	std::cout << "verts";
-	for(auto &vert : vertices) std::cout << vert << std::endl;
-	std::cout << "Indices";
-	for(auto &vert : indices) std::cout << vert << std::endl;
-	std::cout << "Colors";
-	for(auto &vert : colors) std::cout << vert << std::endl;
-	
+
+	ModelLoader m;
+	m.loadFile(argv[1]);
+
+	std::cout << "Vertices: \n" << m.vertices();
 	
 	mat4 worldToCam = loadCamTransform(argv[2]);
+
+	std::vector<cv::Vec3b> colors;
+	for (auto & color : m.vertColors()) {
+		colors.push_back(cv::Vec3b(color.x() * 255.f, color.y() * 255.f, color.z() * 255.f));
+	}
 	
-	cv::Mat image = raycast(vertices, indices, colors, worldToCam, model, cv::Size(atoi(argv[4]), atoi(argv[5])));
+	std::cout << "Colors: \n " << colors;
+
+	cv::Mat image = raycast(m.vertices(), m.indices(), colors, worldToCam, 
+		model, cv::Size(atoi(argv[4]), atoi(argv[5])));
 	
 	cv::imwrite(argv[3], image);
 	
