@@ -22,6 +22,7 @@
 #include "DataStructures/FrameMemory.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
 #include "Tracking/TrackingReference.hpp"
+#include "util/ImgProc.hpp"
 
 namespace lsd_slam
 {
@@ -476,7 +477,7 @@ void Frame::buildImage(int level)
 		printf("CREATE Image lvl %d for frame %d\n", level, id());
 
 	int width = data.models[level - 1]->w;
-	int height = data.models[level - 1]->w;
+	int height = data.models[level - 1]->h;
 	const float* source = data.image[level - 1];
 
 	if (data.image[level] == 0)
@@ -582,20 +583,7 @@ void Frame::buildImage(int level)
 	}
 #endif
 
-	int wh = width*height;
-	const float* s;
-	for(int y=0;y<wh;y+=width*2)
-	{
-		for(int x=0;x<width;x+=2)
-		{
-			s = source + x + y;
-			*dest = (s[0] +
-					s[1] +
-					s[width] +
-					s[1+width]) * 0.25f;
-			dest++;
-		}
-	}
+	downscaleImageHalf(source, dest, width, height);
 
 	data.imageValid[level] = true;
 }

@@ -42,24 +42,14 @@ void OpenCVImageStream::stop()
 
 void OpenCVImageStream::setCalibration(const std::string &file)
 {
-	undistorter_.reset(Undistorter::getUndistorterForFile(file.c_str()));
+	//TEMP
+	undistorter_.reset(new UndistorterPTAM("x100s"));
+	model = CameraModel::loadFromFile(file);
 
-	if (!undistorter_)
+	if (!undistorter_ || !model)
 	{
 		throw std::runtime_error("Unable to read camera calibration from file!");
 	}
-
-	//TODO add omnidirectional calibration.
-
-	model.reset(new ProjCameraModel(
-		float(undistorter_->getK().at<double>(0, 0)),
-		float(undistorter_->getK().at<double>(1, 1)),
-		float(undistorter_->getK().at<double>(2, 0)),
-		float(undistorter_->getK().at<double>(2, 1)),
-
-		undistorter_->getOutputWidth(),
-		undistorter_->getOutputHeight()
-	));
 
 	hasCalib_ = true;
 }

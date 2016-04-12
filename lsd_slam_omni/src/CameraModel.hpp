@@ -22,6 +22,11 @@ public:
 	///       image space.
 	virtual vec3 pixelToCam(const vec2 &pixel, float depth = 1.f) const = 0;
 
+	vec3 camToPixelDepth(const vec3 &cam) {
+		vec2 pix = camToPixel(cam);
+		return vec3(pix.x(), pix.y(), cam.z());
+	}
+
 	///\brief Inverse projection function, mapping from image space to
 	///       camera space, given a depth value d.
 	///\note The depth d defaults to 1, giving a unit vector in the 

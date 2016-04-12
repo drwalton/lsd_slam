@@ -21,3 +21,13 @@ target_link_libraries(MakeRaycastedVideo
 	${Assimp_LIBRARY}
 )
 
+add_executable(TestOmniStereo
+	TestOmniStereo.cpp
+)
+
+target_link_libraries(TestOmniStereo
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+)
+

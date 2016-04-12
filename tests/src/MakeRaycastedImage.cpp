@@ -3,16 +3,7 @@
 #include "ModelLoader.hpp"
 #include "OmniCameraModel.hpp"
 #include <fstream>
-
-template<typename T>
-std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
-	
-	s << t[0];
-	for (size_t i = 1; i < t.size(); ++i) {
-		s << ", " << t[i];
-	}
-	return s;
-}
+#include "globalFuncs.hpp"
 
 using namespace lsd_slam;
 

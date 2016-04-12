@@ -15,6 +15,8 @@ add_library(lsd_slam_util
 	ModelLoader.hpp
 	CameraMotion.cpp
 	CameraMotion.hpp
+	ImgProc.cpp
+	ImgProc.hpp
 )
 
 target_link_libraries(lsd_slam_util

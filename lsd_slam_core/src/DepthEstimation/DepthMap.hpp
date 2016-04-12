@@ -75,7 +75,7 @@ public:
 	cv::Mat debugImageHypothesisHandling;
 	cv::Mat debugImageHypothesisPropagation;
 	cv::Mat debugImageStereoLines;
-	cv::Mat debugImageDepth;
+	cv::Mat debugImageDepth, debugImageDepthGray;
 
 	void initializeFromGTDepth(Frame* new_frame);
 	void initializeRandomly(Frame* new_frame);
@@ -99,6 +99,7 @@ public:
 private:
 	// camera matrix etc.
 	std::unique_ptr<CameraModel> model;
+	CameraModelType modelType;
 	const size_t width, height;
 
 	// ============= parameter copies for convenience ===========================
@@ -139,7 +140,7 @@ private:
 	///        -4: Epipolar line length invalid (zero or NaN).
 	///        -1: if out of bounds
 	///        -2: if not found
-	inline float doLineStereo(
+	float doLineStereo(
 			const float u, const float v, const float epxn, const float epyn,
 			const float min_idepth, const float prior_idepth, float max_idepth,
 			const Frame* const referenceFrame, const float* referenceFrameImage,

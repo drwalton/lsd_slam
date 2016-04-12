@@ -23,8 +23,8 @@
 #include "util/settings.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
 #include "util/SophusUtil.hpp"
-
-
+#include "VectorTypes.hpp"
+#include <array>
 
 namespace lsd_slam
 {
@@ -58,6 +58,10 @@ inline float getInterpolatedElement(const float* const mat, const float x, const
 				+ (1-dx-dy+dxdy) * bp[0];
 
 	return res;
+}
+
+inline float getInterpolatedElement(const float *const mat, const vec2 &p, const int width) {
+	return getInterpolatedElement(mat, p.x(), p.y(), width);
 }
 
 inline Eigen::Vector3f getInterpolatedElement43(const Eigen::Vector4f* const mat, const float x, const float y, const int width)
@@ -130,4 +134,25 @@ inline cv::Vec3b getGrayCvPixel(float val)
 cv::Mat getDepthRainbowPlot(Frame* kf, int lvl=0);
 cv::Mat getDepthRainbowPlot(const float* idepth, const float* idepthVar, const float* gray, int width, int height);
 cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width, int height);
+
+template<typename T>
+std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
+	
+	s << t[0];
+	for (size_t i = 1; i < t.size(); ++i) {
+		s << ", " << t[i];
+	}
+	return s;
+}
+
+template<typename T, size_t N>
+std::ostream &operator << (std::ostream &s, std::array<T, N> &t) {
+	
+	s << t[0];
+	for (size_t i = 1; i < N; ++i) {
+		s << ", " << t[i];
+	}
+	return s;
+}
+
 }

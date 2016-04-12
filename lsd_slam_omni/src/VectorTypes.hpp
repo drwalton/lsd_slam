@@ -13,15 +13,15 @@ typedef Eigen::Matrix2f mat2;
 typedef Eigen::Matrix3f mat3;
 typedef Eigen::Matrix4f mat4;
 
-class WorldToCamTransform {
+class RigidTransform {
 public:
-	WorldToCamTransform();
+	RigidTransform();
 
-	WorldToCamTransform(const mat3 &r, const vec3 &t);
+	RigidTransform(const mat3 &r, const vec3 &t);
 
-	WorldToCamTransform(const mat4 &m);
+	RigidTransform(const mat4 &m);
 
-	WorldToCamTransform inverse() const;
+	RigidTransform inverse() const;
 
 	mat3 rotation;
 	vec3 translation;
@@ -29,6 +29,8 @@ public:
 	operator mat4() const;
 	vec4 operator *(const vec4 &rhs) const;
 };
+
+typedef RigidTransform WorldToCamTransform;
 
 }
 
