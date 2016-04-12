@@ -3,7 +3,34 @@
 
 #include <opencv2/opencv.hpp>
 
+#define SHOW_DEBUG_IMAGES
+
 namespace lsd_slam {
+
+bool omniStereo(
+	const RigidTransform &keyframeToReference,
+	const OmniCameraModel &model,
+	const float* keyframe,
+	int width,
+	int x, int y,
+	float minDepth, float maxDepth,
+	float &minSsd,
+	vec3 &matchDir,
+	vec2 &matchPixel)
+{
+	vec3 pointDir;
+	std::array<float, 5> searchVals = findValuesToSearchFor(keyframeToReference,
+		model, keyframe, x, y, width, pointDir);
+
+	vec3 minDPointDir = minDepth * pointDir;
+	vec3 maxDPointDir = maxDepth * pointDir;
+
+	vec3 lineStart = keyframeToReference * minDPointDir;
+	vec3 lineEnd   = keyframeToReference * maxDPointDir;
+	//TODO
+
+	return true;
+}
 
 std::array<float, 5> findValuesToSearchFor(
 	const RigidTransform &keyframeToReference,
@@ -31,6 +58,7 @@ std::array<float, 5> findValuesToSearchFor(
 	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
 	vec3 bwdDir2 = a*otherDir + (1.f - a)*pointDir;
 	
+#ifdef SHOW_DEBUG_IMAGES
 	cv::Mat lineImage(480, 640, CV_8UC1);
 	lineImage.setTo(0);
 	
@@ -47,6 +75,7 @@ std::array<float, 5> findValuesToSearchFor(
 	
 	cv::imshow("LINE", lineImage);
 	cv::waitKey();
+#endif
 	
 	//Find values of keyframe at these points.
 	std::array<float, 5> vals = {
@@ -59,6 +88,8 @@ std::array<float, 5> findValuesToSearchFor(
 
 	return vals;
 }
+
+
 
 }
 
