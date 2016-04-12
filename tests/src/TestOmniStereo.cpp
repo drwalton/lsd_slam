@@ -16,8 +16,9 @@ int main(int argc, char **argv)
 	keyframeToReference.translation.x() += 1.f;
 	keyframeToReference.translation.y() += 1.f;
 
+	vec3 pointDir;
 	std::array<float, 5> vals = findValuesToSearchFor(keyframeToReference,
-		model, fltImage.ptr<float>(0), 100, 200, 400);
+		model, fltImage.ptr<float>(0), 100, 200, 400, pointDir);
 
 	std::cout << vals;
 

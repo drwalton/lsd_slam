@@ -10,13 +10,11 @@ std::array<float, 5> findValuesToSearchFor(
 	const OmniCameraModel &model,
 	const float* keyframe,
 	int x, int y,
-	int width)
+	int width,
+	vec3 &pointDir)
 {
-	vec3 pointDir = model.pixelToCam(vec2(x+0.5f, y+0.5f));
+	pointDir = model.pixelToCam(vec2(x, y));
 	vec3 epipoleDir = -keyframeToReference.translation.normalized();
-	
-	std::cout << "Point dir: " << pointDir << std::endl;
-	std::cout << "Epipole dir: " << epipoleDir << std::endl;
 
 	float a = 0.f;
 	//Advance two pixels from point toward epipole.

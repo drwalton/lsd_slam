@@ -11,7 +11,8 @@ std::array<float, 5> findValuesToSearchFor(
 	const OmniCameraModel &model,
 	const float* keyframe,
 	int x, int y,
-	int width);
+	int width,
+	vec3 &pointDir);
 
 void findReferenceFrameLineEndpoints(
 	vec3 &pStart, vec3 &pEnd,
