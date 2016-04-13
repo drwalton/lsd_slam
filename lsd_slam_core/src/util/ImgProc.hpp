@@ -1,6 +1,8 @@
 #ifndef UTIL_IMGPROC_HPP_INCLUDED
 #define UTIL_IMGPROC_HPP_INCLUDED
 
+#include <memory>
+
 namespace lsd_slam
 {
 

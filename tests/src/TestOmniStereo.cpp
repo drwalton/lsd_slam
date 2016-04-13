@@ -14,9 +14,10 @@ int main(int argc, char **argv)
 
 	RigidTransform keyframeToReference;
 	keyframeToReference.translation.x() += 1.f;
+	keyframeToReference.translation.y() += 1.f;
 
 	std::array<float, 5> vals = findValuesToSearchFor(keyframeToReference,
-		model, image.ptr<float>(0), 300, 200, 400);
+		model, fltImage.ptr<float>(0), 100, 200, 400);
 
 	std::cout << vals;
 

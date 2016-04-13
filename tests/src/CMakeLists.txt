@@ -8,6 +8,7 @@ target_link_libraries(MakeRaycastedImage
 	lsd_slam_omni
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
 )
 
 add_executable(MakeRaycastedVideo
@@ -19,6 +20,7 @@ target_link_libraries(MakeRaycastedVideo
 	lsd_slam_omni
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
 )
 
 add_executable(TestOmniStereo
@@ -29,5 +31,6 @@ target_link_libraries(TestOmniStereo
 	${LSD_SLAM_LIBS}
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
 )
 

@@ -1,6 +1,8 @@
 #include "DepthMapOmniStereo.hpp"
 #include "globalFuncs.hpp"
 
+#include <opencv2/opencv.hpp>
+
 namespace lsd_slam {
 
 std::array<float, 5> findValuesToSearchFor(
@@ -10,31 +12,51 @@ std::array<float, 5> findValuesToSearchFor(
 	int x, int y,
 	int width)
 {
-	vec3 pointDir = model.pixelToCam(vec2(x, y));
-	vec3 epipoleDir = -keyframeToReference.translation;
+	vec3 pointDir = model.pixelToCam(vec2(x+0.5f, y+0.5f));
+	vec3 epipoleDir = -keyframeToReference.translation.normalized();
+	
+	std::cout << "Point dir: " << pointDir << std::endl;
+	std::cout << "Epipole dir: " << epipoleDir << std::endl;
 
-	float a = 1.f;
+	float a = 0.f;
 	//Advance two pixels from point toward epipole.
-	a = model.getEpipolarParamIncrement(a, pointDir, epipoleDir);
-	vec3 fwdDir1 = a*pointDir + (1.f - a)*epipoleDir;
-	a = model.getEpipolarParamIncrement(a, pointDir, epipoleDir);
-	vec3 fwdDir2 = a*pointDir + (1.f - a)*epipoleDir;
+	a += model.getEpipolarParamIncrement(a, epipoleDir, pointDir);
+	vec3 fwdDir1 = a*epipoleDir + (1.f - a)*pointDir;
+	a += model.getEpipolarParamIncrement(a, epipoleDir, pointDir);
+	vec3 fwdDir2 = a*epipoleDir + (1.f - a)*pointDir;
 
 	//Advance two pixels from point away from epipole.
-	a = 1.f;
+	a = 0.f;
 	vec3 otherDir = 2.f*pointDir - epipoleDir;
-	a = model.getEpipolarParamIncrement(a, pointDir, otherDir);
-	vec3 bwdDir1 = a*pointDir + (1.f - a)*otherDir;
-	a = model.getEpipolarParamIncrement(a, pointDir, otherDir);
-	vec3 bwdDir2 = a*pointDir + (1.f - a)*otherDir;
-
+	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
+	vec3 bwdDir1 = a*otherDir + (1.f - a)*pointDir;
+	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
+	vec3 bwdDir2 = a*otherDir + (1.f - a)*pointDir;
+	
+	cv::Mat lineImage(480, 640, CV_8UC1);
+	lineImage.setTo(0);
+	
+	std::vector<vec3> dirs = {
+		bwdDir2, bwdDir1, pointDir, fwdDir1, fwdDir2
+	};
+	
+	for(vec3 &v : dirs) {
+		vec2 img = model.camToPixel(v);
+		static int i = 0;
+		std::cout << "Point " << i++ << ": " << int(img.x()) << ", " << int(img.y()) << std::endl;
+		lineImage.at<uchar>(img.y(), img.x()) = 255;
+	}
+	
+	cv::imshow("LINE", lineImage);
+	cv::waitKey();
+	
 	//Find values of keyframe at these points.
 	std::array<float, 5> vals = {
 		getInterpolatedElement(keyframe, model.camToPixel(bwdDir2), width),
 		getInterpolatedElement(keyframe, model.camToPixel(bwdDir1), width),
 		getInterpolatedElement(keyframe, model.camToPixel(pointDir), width),
 		getInterpolatedElement(keyframe, model.camToPixel(fwdDir1), width),
-		getInterpolatedElement(keyframe, model.camToPixel(fwdDir2), width),
+		getInterpolatedElement(keyframe, model.camToPixel(fwdDir2), width)
 	};
 
 	return vals;
