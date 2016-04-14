@@ -18,6 +18,9 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
+///This file contains the depth estimation functions specific to Projective
+/// camera models.
+
 #include "DepthEstimation/DepthMap.hpp"
 
 #include <stdio.h>
@@ -38,6 +41,7 @@ namespace lsd_slam
 
 ///\brief Once an initial estimate for the best match has been found, 
 ///       this method can be used to refine its location to subpixel accuracy.
+///\note This version of the method should be applied to PROJ camera models only.
 ///\note No interpolation is performed if no zero crossing could be found in
 ///      the surrounding gradients.
 ///\param[in,out] best_match_x The intial estimate for the best match location,
@@ -49,13 +53,16 @@ namespace lsd_slam
 ///\param best_match_errPre
 ///\param best_match_bool 
 ///\return True if subpixel matching was actually performed.
-bool subpixelMatch(
+bool subpixelMatchProj(
 	float *best_match_x, float *best_match_y, float *best_match_err,
 	float best_match_errPre, float best_match_DiffErrPre,
 	float best_match_errPost, float best_match_DiffErrPost,
 	float incx, float incy,
 	RunningStats *stats);
 
+///\brief Given a match location and error, estimate the inverse depth and 
+///       variance.
+///\note This version of the method should be applied to PROJ camera models only.
 float findDepthAndVarProj(
 	float *result_idepth, float *result_var,
 	const float u, const float v,
@@ -73,6 +80,65 @@ float findDepthAndVarProj(
 	Frame *activeKeyFrame,
 	RunningStats *stats,
 	cv::Mat &debugImageStereoLines);
+
+
+bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
+	float* pepx, float* pepy, RunningStats* const stats)
+{
+	int idx = x+y*width;
+
+	// ======= make epl ========
+	// Find direction towards epipole, in the keyframe image.
+	vec2 epipole = model->camToPixel(ref->thisToOther_t);
+	float epx = x - epipole.x();
+	float epy = y - epipole.y();
+	
+	//Original code for the above:
+	//float epx = - fx * ref->thisToOther_t[0] + ref->thisToOther_t[2]*(x - cx);
+	//float epy = - fy * ref->thisToOther_t[1] + ref->thisToOther_t[2]*(y - cy);
+
+	if(isnan(epx+epy)) {
+		return false;
+	}
+
+	// ======== check epl length =========
+	float eplLengthSquared = epx*epx+epy*epy;
+	if(eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
+		return false;
+	}
+
+
+	// ===== check epl-grad magnitude ======
+	float gx = activeKeyFrameImageData[idx+1    ] - activeKeyFrameImageData[idx-1    ];
+	float gy = activeKeyFrameImageData[idx+width] - activeKeyFrameImageData[idx-width];
+	float eplGradSquared = gx * epx + gy * epy;
+	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
+
+	if(eplGradSquared < MIN_EPL_GRAD_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_grad++;
+		return false;
+	}
+
+
+	// ===== check epl-grad angle ======
+	if(eplGradSquared / (gx*gx+gy*gy) < MIN_EPL_ANGLE_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_angle++;
+		return false;
+	}
+
+
+	///TODO: rescaling like this assumes the EPL is straight - change this part.
+	// ===== DONE - return "normalized" epl =====
+	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
+	*pepx = epx * fac;
+	*pepy = epy * fac;
+
+	return true;
+}
 
 // find pixel in image (do stereo along epipolar line).
 // mat: NEW image
@@ -408,7 +474,7 @@ float DepthMap::doLineStereo(
 		bool didSubpixel = false;
 		if (useSubpixelStereo)
 		{
-			didSubpixel = subpixelMatch(&best_match_x, &best_match_y, &best_match_err,
+			didSubpixel = subpixelMatchProj(&best_match_x, &best_match_y, &best_match_err,
 				best_match_errPre, best_match_DiffErrPre,
 				best_match_errPost, best_match_DiffErrPost,
 				incx, incy, stats);
@@ -447,7 +513,7 @@ float DepthMap::doLineStereo(
 	}
 }
 
-bool subpixelMatch(
+bool subpixelMatchProj(
 	float *best_match_x, float *best_match_y, float *best_match_err,
 	float best_match_errPre, float best_match_DiffErrPre,
 	float best_match_errPost, float best_match_DiffErrPost,

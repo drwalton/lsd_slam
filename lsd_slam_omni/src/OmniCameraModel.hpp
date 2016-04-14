@@ -36,10 +36,12 @@ public:
 		createPyramidCameraModels(int nLevels) const;
 
 	///\brief Given the line segment parameterised by a*p0 + (1-a)*p1 in world space,
-	///       estimates the increment in "a" necessary to move one pixel further along the 
-	///       line in image space. 
+	///       estimates the increment in "a" necessary to move a given distance 
+	///       further along the line in image space. 
 	///\note Used e.g. to efficiently traverse epipolar lines.
-	float getEpipolarParamIncrement(float a, vec3 p0, vec3 p1) const;
+	///\param stepSize Size of step to take in image space. Measured in pixels.
+	float getEpipolarParamIncrement(float a, vec3 p0, vec3 p1,
+		float stepSize = 1.f) const;
 
 	///\brief Apply a function object to each pixel location along the projection
 	///       of a line segment in image space.

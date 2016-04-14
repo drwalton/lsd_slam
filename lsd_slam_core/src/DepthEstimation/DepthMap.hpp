@@ -147,6 +147,12 @@ private:
 			float &result_idepth, float &result_var, float &result_eplLength,
 			RunningStats* const stats);
 
+	float doOmniStereo(
+			const float u, const float v, const vec3 &epDir,
+			const float min_idepth, const float prior_idepth, float max_idepth,
+			const Frame* const referenceFrame, const float* referenceFrameImage,
+			float &result_idepth, float &result_var, float &result_eplLength,
+			RunningStats* const stats);
 
 	void propagateDepth(Frame* new_keyframe);
 	
@@ -160,6 +166,8 @@ private:
 	///\return A boolean value indicating if the epipolar line segment is valid.
 	bool makeAndCheckEPL(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
 
+	bool makeAndCheckEPLOmni(const int x, const int y, const Frame* const ref, 
+		vec3 *epDir, RunningStats* const stats);
 
 	void regularizeDepthMap(bool removeOcclusion, int validityTH);
 	template<bool removeOcclusions> void regularizeDepthMapRow(int validityTH, int yMin, int yMax, RunningStats* stats);

@@ -1,11 +1,33 @@
 #include "DepthMapOmniStereo.hpp"
+#include "DepthMap.hpp"
 #include "globalFuncs.hpp"
 
 #include <opencv2/opencv.hpp>
 
+///This file contains the depth estimation functions specific to Omnidirectional
+/// camera models.
+
 #define SHOW_DEBUG_IMAGES
 
 namespace lsd_slam {
+
+float DepthMap::doOmniStereo(
+	const float u, const float v, const vec3 &epDir,
+	const float min_idepth, const float prior_idepth, float max_idepth,
+	const Frame* const referenceFrame, const float* referenceFrameImage,
+	float &result_idepth, float &result_var, float &result_eplLength,
+	RunningStats* stats)
+{
+	//TODO
+	return 0.f;
+}
+
+bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const ref,
+	vec3 *epDir, RunningStats* const stats)
+{
+	//TODO
+	return true;
+}
 
 bool omniStereo(
 	const RigidTransform &keyframeToReference,

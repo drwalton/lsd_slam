@@ -64,7 +64,8 @@ std::vector<std::unique_ptr<CameraModel> >
 	return models;
 }
 
-float OmniCameraModel::getEpipolarParamIncrement(float a, vec3 p0, vec3 p1) const
+float OmniCameraModel::getEpipolarParamIncrement(float a, vec3 p0, vec3 p1,
+	float stepSize) const
 {
 	float na = (a*p0 + (1.f-a)*p1).norm();
 	float npa = (a*(p0.dot(p0)-p0.dot(p1)) + (1-a)*(p1.dot(p0)-p1.dot(p1)))/na;
@@ -76,7 +77,7 @@ float OmniCameraModel::getEpipolarParamIncrement(float a, vec3 p0, vec3 p1) cons
 	J.x() = fx * (e*na*(p0.x()-p1.x()) - e*npa*(a*p0.x() + (1-a)*p1.x()) + p0.x()*p1.z() - p1.x()*p0.z()) / den;
 	J.y() = fy * (e*na*(p0.y()-p1.y()) - e*npa*(a*p0.y() + (1-a)*p1.y()) + p0.y()*p1.z() - p1.y()*p0.z()) / den;
 	
-	return 1.f / J.norm();
+	return stepSize / J.norm();
 }
 
 void OmniCameraModel::traceWorldSpaceLine(vec3 p0, vec3 p1, std::function<void(vec2)> f)
