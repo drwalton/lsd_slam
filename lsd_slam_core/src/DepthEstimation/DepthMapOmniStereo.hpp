@@ -6,6 +6,16 @@
 
 namespace lsd_slam {
 
+template<typename T, size_t N>
+float findSsd(const std::array<T, N> &a, const std::array<T, N> &b)
+{
+	float ssd = 0.f;
+	for (size_t i = 0; i < N; ++i) {
+		ssd += (a[i] - b[i])*(a[i] - b[i]);
+	}
+	return ssd;
+}
+
 ///\brief Perform omnidirectional stereo to find a match for the given point.
 ///\param keyframeToReference The transform mapping from the coordinate frame 
 ///       of the keyframe to that of the reference frame.

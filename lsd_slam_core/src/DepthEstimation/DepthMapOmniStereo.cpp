@@ -11,6 +11,7 @@ bool omniStereo(
 	const RigidTransform &keyframeToReference,
 	const OmniCameraModel &model,
 	const float* keyframe,
+	const float *reference,
 	int width,
 	int x, int y,
 	float minDepth, float maxDepth,
@@ -25,12 +26,71 @@ bool omniStereo(
 	vec3 minDPointDir = minDepth * pointDir;
 	vec3 maxDPointDir = maxDepth * pointDir;
 
+	//Find start and end of search curve
 	vec3 lineStart = keyframeToReference * minDPointDir;
 	vec3 lineEnd   = keyframeToReference * maxDPointDir;
-	//TODO
+	
+	//Get first 5 possible matching values
+	float a = 0.f;//Line parameter
+	std::array<float, 5> matchVals;
+	std::array<vec3, 5> matchDirs;
+	matchVals[2] = getInterpolatedElement(reference, model.camToPixel(lineStart), width);
+	matchDirs[2] = lineStart;
+	
+	//Get two points before line start.
+	vec3 backDir = 2.f * lineStart - lineEnd;
+	a += model.getEpipolarParamIncrement(a, backDir, lineStart);
+	matchDirs[1] = a*backDir + (1.f - a)*lineStart;
+	matchVals[1] = getInterpolatedElement(reference, model.camToPixel(matchDirs[1]), width);
+
+	a += model.getEpipolarParamIncrement(a, backDir, lineStart);
+	matchDirs[0] = a*backDir + (1.f - a)*lineStart;
+	matchVals[0] = getInterpolatedElement(reference, model.camToPixel(matchDirs[0]), width);
+
+	//Get two points after line start.
+	a = 0.f;
+	a += model.getEpipolarParamIncrement(a, lineEnd, lineStart); 
+	if(a > 1.f) return false;
+	matchDirs[3] = a*lineEnd + (1.f - a)*lineStart;
+	matchVals[3] = getInterpolatedElement(reference, model.camToPixel(matchDirs[3]), width);
+
+	a += model.getEpipolarParamIncrement(a, lineEnd, lineStart);
+	if(a > 1.f) return false;
+	matchDirs[4] = a*lineEnd + (1.f - a)*lineStart;
+	matchVals[4] = getInterpolatedElement(reference, model.camToPixel(matchDirs[4]), width);
+	float ssd = findSsd(searchVals, matchVals);
+
+	matchDir = matchDirs[2];
+	minSsd = ssd;
+
+	//Advance along remainder of line.
+	while (a < 1.f) {
+		a += model.getEpipolarParamIncrement(a, lineEnd, lineStart);
+		if (a > 1.f) break;
+		
+		//Move values along arrays
+		for (size_t i = 0; i < 4; ++i) {
+			matchDirs[i] = matchDirs[i + 1];
+			matchVals[i] = matchVals[i + 1];
+		}
+
+		//Find next value on line.
+		matchDirs[4] = a*lineEnd + (1.f - a) * lineStart;
+		matchVals[4] = getInterpolatedElement(reference, model.camToPixel(matchDirs[4]), width);
+
+		float ssd = findSsd(searchVals, matchVals);
+		if (ssd < minSsd) {
+			minSsd = ssd;
+			matchDir = matchDirs[2];
+		}
+	}
+
+	matchPixel = model.camToPixel(matchDir);
 
 	return true;
 }
+
+
 
 std::array<float, 5> findValuesToSearchFor(
 	const RigidTransform &keyframeToReference,
