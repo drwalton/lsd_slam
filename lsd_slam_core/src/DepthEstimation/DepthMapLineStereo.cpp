@@ -36,6 +36,44 @@
 namespace lsd_slam
 {
 
+///\brief Once an initial estimate for the best match has been found, 
+///       this method can be used to refine its location to subpixel accuracy.
+///\note No interpolation is performed if no zero crossing could be found in
+///      the surrounding gradients.
+///\param[in,out] best_match_x The intial estimate for the best match location,
+///               which will be refined by this function.
+///\param[in,out] best_match_y The intial estimate for the best match location,
+///               which will be refined by this function.
+///\param[in,out] best_match_err The initial estimate for the best match error,
+///               which will be refined by this function.
+///\param best_match_errPre
+///\param best_match_bool 
+///\return True if subpixel matching was actually performed.
+bool subpixelMatch(
+	float *best_match_x, float *best_match_y, float *best_match_err,
+	float best_match_errPre, float best_match_DiffErrPre,
+	float best_match_errPost, float best_match_DiffErrPost,
+	float incx, float incy,
+	RunningStats *stats);
+
+float findDepthAndVarProj(
+	float *result_idepth, float *result_var,
+	const float u, const float v,
+	const float epxn, const float epyn,
+	const float best_match_x, const float best_match_y,
+	const float best_match_err,
+	const float incx, const float incy,
+	const bool didSubpixel,
+	const vec3 &KinvP,
+	const vec3 &pClose, const vec3 &pFar,
+	const float gradAlongLine,
+	const float sampleDist,
+	const ProjCameraModel *model,
+	const Frame *referenceFrame,
+	Frame *activeKeyFrame,
+	RunningStats *stats,
+	cv::Mat &debugImageStereoLines);
+
 // find pixel in image (do stereo along epipolar line).
 // mat: NEW image
 // KinvP: point in OLD image (Kinv * (u_old, v_old, 1)), projected
@@ -89,10 +127,7 @@ float DepthMap::doLineStereo(
 		float realVal_m2 = getInterpolatedElement(activeKeyFrameImageData, u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, width);
 		float realVal_p2 = getInterpolatedElement(activeKeyFrameImageData, u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, width);
 
-
-
 		//	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
-
 
 		Eigen::Vector3f pClose = pInf + K_otherToThis_t*max_idepth;
 		// if the assumed close-point lies behind the
@@ -167,8 +202,6 @@ float DepthMap::doLineStereo(
 			return -1;
 		}
 
-
-
 		// if near point is outside: move inside, and test length again.
 		if (
 			pClose[0] <= SAMPLE_POINT_TO_BORDER ||
@@ -181,8 +214,7 @@ float DepthMap::doLineStereo(
 				float toAdd = (SAMPLE_POINT_TO_BORDER - pClose[0]) / incx;
 				pClose[0] += toAdd * incx;
 				pClose[1] += toAdd * incy;
-			}
-			else if (pClose[0] >= width - SAMPLE_POINT_TO_BORDER)
+			} else if (pClose[0] >= width - SAMPLE_POINT_TO_BORDER)
 			{
 				float toAdd = (width - SAMPLE_POINT_TO_BORDER - pClose[0]) / incx;
 				pClose[0] += toAdd * incx;
@@ -194,8 +226,7 @@ float DepthMap::doLineStereo(
 				float toAdd = (SAMPLE_POINT_TO_BORDER - pClose[1]) / incy;
 				pClose[0] += toAdd * incx;
 				pClose[1] += toAdd * incy;
-			}
-			else if (pClose[1] >= height - SAMPLE_POINT_TO_BORDER)
+			} else if (pClose[1] >= height - SAMPLE_POINT_TO_BORDER)
 			{
 				float toAdd = (height - SAMPLE_POINT_TO_BORDER - pClose[1]) / incy;
 				pClose[0] += toAdd * incx;
@@ -295,8 +326,7 @@ float DepthMap::doLineStereo(
 				e3A = val_cp - realVal;      ee += e3A*e3A;
 				e4A = val_cp_m1 - realVal_m1; ee += e4A*e4A;
 				e5A = val_cp_m2 - realVal_m2; ee += e5A*e5A;
-			}
-			else
+			} else
 			{
 				// calc error and accumulate sums.
 				e1B = val_cp_p2 - realVal_p2; ee += e1B*e1B;
@@ -378,84 +408,10 @@ float DepthMap::doLineStereo(
 		bool didSubpixel = false;
 		if (useSubpixelStereo)
 		{
-			// ================== compute exact match =========================
-			// compute gradients (they are actually only half the real gradient)
-			float gradPre_pre = -(best_match_errPre - best_match_DiffErrPre);
-			float gradPre_this = +(best_match_err - best_match_DiffErrPre);
-			float gradPost_this = -(best_match_err - best_match_DiffErrPost);
-			float gradPost_post = +(best_match_errPost - best_match_DiffErrPost);
-
-			// final decisions here.
-			bool interpPost = false;
-			bool interpPre = false;
-
-			// if one is oob: return false.
-			if (enablePrintDebugInfo && (best_match_errPre < 0 || best_match_errPost < 0))
-			{
-				stats->num_stereo_invalid_atEnd++;
-			}
-
-
-			// - if zero-crossing occurs exactly in between (gradient Inconsistent),
-			else if ((gradPost_this < 0) ^ (gradPre_this < 0))
-			{
-				// return exact pos, if both central gradients are small compared to their counterpart.
-				if (enablePrintDebugInfo && (gradPost_this*gradPost_this > 0.1f*0.1f*gradPost_post*gradPost_post ||
-					gradPre_this*gradPre_this > 0.1f*0.1f*gradPre_pre*gradPre_pre))
-					stats->num_stereo_invalid_inexistantCrossing++;
-			}
-
-			// if pre has zero-crossing
-			else if ((gradPre_pre < 0) ^ (gradPre_this < 0))
-			{
-				// if post has zero-crossing
-				if ((gradPost_post < 0) ^ (gradPost_this < 0))
-				{
-					if (enablePrintDebugInfo) stats->num_stereo_invalid_twoCrossing++;
-				}
-				else
-					interpPre = true;
-			}
-
-			// if post has zero-crossing
-			else if ((gradPost_post < 0) ^ (gradPost_this < 0))
-			{
-				interpPost = true;
-			}
-
-			// if none has zero-crossing
-			else
-			{
-				if (enablePrintDebugInfo) stats->num_stereo_invalid_noCrossing++;
-			}
-
-
-			// DO interpolation!
-			// minimum occurs at zero-crossing of gradient, which is a straight line => easy to compute.
-			// the error at that point is also computed by just integrating.
-			if (interpPre)
-			{
-				float d = gradPre_this / (gradPre_this - gradPre_pre);
-				best_match_x -= d*incx;
-				best_match_y -= d*incy;
-				best_match_err = best_match_err - 2 * d*gradPre_this - (gradPre_pre - gradPre_this)*d*d;
-				if (enablePrintDebugInfo) stats->num_stereo_interpPre++;
-				didSubpixel = true;
-
-			}
-			else if (interpPost)
-			{
-				float d = gradPost_this / (gradPost_this - gradPost_post);
-				best_match_x += d*incx;
-				best_match_y += d*incy;
-				best_match_err = best_match_err + 2 * d*gradPost_this + (gradPost_post - gradPost_this)*d*d;
-				if (enablePrintDebugInfo) stats->num_stereo_interpPost++;
-				didSubpixel = true;
-			}
-			else
-			{
-				if (enablePrintDebugInfo) stats->num_stereo_interpNone++;
-			}
+			didSubpixel = subpixelMatch(&best_match_x, &best_match_y, &best_match_err,
+				best_match_errPre, best_match_DiffErrPre,
+				best_match_errPost, best_match_DiffErrPost,
+				incx, incy, stats);
 		}
 
 
@@ -477,110 +433,196 @@ float DepthMap::doLineStereo(
 			return -3;
 		}
 
-
-		// ================= calc depth (in KF) ====================
-		// * KinvP = Kinv * (x,y,1); where x,y are pixel coordinates of point we search for, in the KF.
-		// * best_match_x = x-coordinate of found correspondence in the reference frame.
-
-		float idnew_best_match;	// depth in the new image
-		float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
-		vec2 old = model->camToPixel(vec3(best_match_x, best_match_y, 1.f));
-		if (incx*incx > incy*incy)
-		{
-			float oldX = old[0];
-			float nominator = (oldX*referenceFrame->otherToThis_t[2]
-				- referenceFrame->otherToThis_t[0]);
-			float dot0 = KinvP.dot(referenceFrame->otherToThis_R_row0);
-			float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
-
-			idnew_best_match = (dot0 - oldX*dot2) / nominator;
-			alpha = incx*pModel.fxi()*(dot0*referenceFrame->otherToThis_t[2]
-				- dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
-		}
-		else
-		{
-			float oldY = old[1];
-
-			float nominator = (oldY*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[1]);
-			float dot1 = KinvP.dot(referenceFrame->otherToThis_R_row1);
-			float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
-
-			idnew_best_match = (dot1 - oldY*dot2) / nominator;
-			alpha = incy*pModel.fyi()*(dot1*referenceFrame->otherToThis_t[2] - dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
-		}
-
-		if (idnew_best_match < 0)
-		{
-			if (enablePrintDebugInfo) stats->num_stereo_negative++;
-			if (!allowNegativeIdepths)
-				return -2;
-		}
-
-		if (enablePrintDebugInfo) stats->num_stereo_successfull++;
-
-		// ================= calc var (in NEW image) ====================
-
-		// calculate error from photometric noise
-		float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
-
-		float trackingErrorFac = 0.25f*(1.0f + referenceFrame->initialTrackedResidual);
-
-		// calculate error from geometric noise (wrong camera pose / calibration)
-		Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, width);
-		float geoDispError = (gradsInterp[0] * epxn + gradsInterp[1] * epyn) + DIVISION_EPS;
-		geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / (geoDispError*geoDispError);
-
-
-		//geoDispError *= (0.5 + 0.5 *result_idepth) * (0.5 + 0.5 *result_idepth);
-
-		// final error consists of a small constant part (discretization error),
-		// geometric and photometric error.
-		result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
-
-		if (plotStereoImages)
-		{
-			if (rand() % 5 == 0)
-			{
-				//if(rand()%500 == 0)
-				//	printf("geo: %f, photo: %f, alpha: %f\n", sqrt(geoDispError), sqrt(photoDispError), alpha, sqrt(result_var));
-
-
-				//int idDiff = (keyFrame->pyramidID - referenceFrame->id);
-				//cv::Scalar color = cv::Scalar(0,0, 2*idDiff);// bw
-
-				//cv::Scalar color = cv::Scalar(sqrt(result_var)*2000, 255-sqrt(result_var)*2000, 0);// bw
-
-				//			float eplLengthF = std::min((float)MIN_EPL_LENGTH_CROP,(float)eplLength);
-				//			eplLengthF = std::max((float)MAX_EPL_LENGTH_CROP,(float)eplLengthF);
-				//
-				//			float pixelDistFound = sqrtf((float)((pReal[0]/pReal[2] - best_match_x)*(pReal[0]/pReal[2] - best_match_x)
-				//					+ (pReal[1]/pReal[2] - best_match_y)*(pReal[1]/pReal[2] - best_match_y)));
-				//
-				float fac = best_match_err / ((float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20);
-
-				cv::Scalar color = cv::Scalar(255 * fac, 255 - 255 * fac, 0);// bw
-
-
-				/*
-				if(rescaleFactor > 1)
-				color = cv::Scalar(500*(rescaleFactor-1),0,0);
-				else
-				color = cv::Scalar(0,500*(1-rescaleFactor),500*(1-rescaleFactor));
-				*/
-
-				cv::line(debugImageStereoLines, cv::Point2f(pClose[0], pClose[1]), cv::Point2f(pFar[0], pFar[1]), color, 1, 8, 0);
-			}
-		}
-
-		result_idepth = idnew_best_match;
+		float r = findDepthAndVarProj(&result_idepth, &result_var, u, v, epxn,
+			epyn, best_match_x, best_match_y, best_match_err,
+			incx, incy, didSubpixel, KinvP, pClose, pFar,
+			gradAlongLine, sampleDist, &pModel, referenceFrame, activeKeyFrame,
+			stats, debugImageStereoLines);
+		if (r != 0.f) return r;
 
 		result_eplLength = eplLength;
-
 		return best_match_err;
-	}
-	else {
+	} else {
 		return 0.f;
 	}
+}
+
+bool subpixelMatch(
+	float *best_match_x, float *best_match_y, float *best_match_err,
+	float best_match_errPre, float best_match_DiffErrPre,
+	float best_match_errPost, float best_match_DiffErrPost,
+	float incx, float incy,
+	RunningStats *stats)
+{
+	bool didSubpixel = false;
+
+	// ================== compute exact match =========================
+	// compute gradients (they are actually only half the real gradient)
+	float gradPre_pre = -(best_match_errPre - best_match_DiffErrPre);
+	float gradPre_this = +(*best_match_err - best_match_DiffErrPre);
+	float gradPost_this = -(*best_match_err - best_match_DiffErrPost);
+	float gradPost_post = +(best_match_errPost - best_match_DiffErrPost);
+
+	// final decisions here.
+	bool interpPost = false;
+	bool interpPre = false;
+
+	// if one is oob: return false.
+	if (enablePrintDebugInfo && (best_match_errPre < 0 || best_match_errPost < 0))
+	{
+		stats->num_stereo_invalid_atEnd++;
+	}
+
+
+	// - if zero-crossing occurs exactly in between (gradient Inconsistent),
+	else if ((gradPost_this < 0) ^ (gradPre_this < 0))
+	{
+		// return exact pos, if both central gradients are small compared to their counterpart.
+		if (enablePrintDebugInfo && (gradPost_this*gradPost_this > 0.1f*0.1f*gradPost_post*gradPost_post ||
+			gradPre_this*gradPre_this > 0.1f*0.1f*gradPre_pre*gradPre_pre))
+			stats->num_stereo_invalid_inexistantCrossing++;
+	}
+
+	// if pre has zero-crossing
+	else if ((gradPre_pre < 0) ^ (gradPre_this < 0))
+	{
+		// if post has zero-crossing
+		if ((gradPost_post < 0) ^ (gradPost_this < 0))
+		{
+			if (enablePrintDebugInfo) stats->num_stereo_invalid_twoCrossing++;
+		} else
+			interpPre = true;
+	}
+
+	// if post has zero-crossing
+	else if ((gradPost_post < 0) ^ (gradPost_this < 0))
+	{
+		interpPost = true;
+	}
+
+	// if none has zero-crossing
+	else
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_invalid_noCrossing++;
+	}
+
+
+	// DO interpolation!
+	// minimum occurs at zero-crossing of gradient, which is a straight line => easy to compute.
+	// the error at that point is also computed by just integrating.
+	if (interpPre)
+	{
+		float d = gradPre_this / (gradPre_this - gradPre_pre);
+		*best_match_x -= d*incx;
+		*best_match_y -= d*incy;
+		*best_match_err = *best_match_err - 2 * d*gradPre_this - (gradPre_pre - gradPre_this)*d*d;
+		if (enablePrintDebugInfo) stats->num_stereo_interpPre++;
+		didSubpixel = true;
+
+	} else if (interpPost)
+	{
+		float d = gradPost_this / (gradPost_this - gradPost_post);
+		*best_match_x += d*incx;
+		*best_match_y += d*incy;
+		*best_match_err = *best_match_err + 2 * d*gradPost_this + (gradPost_post - gradPost_this)*d*d;
+		if (enablePrintDebugInfo) stats->num_stereo_interpPost++;
+		didSubpixel = true;
+	} else
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_interpNone++;
+	}
+
+	return didSubpixel;
+}
+
+float findDepthAndVarProj(
+	float *result_idepth, float *result_var,
+	const float u, const float v,
+	const float epxn, const float epyn,
+	const float best_match_x, const float best_match_y,
+	const float best_match_err,
+	const float incx, const float incy,
+	const bool didSubpixel,
+	const vec3 &KinvP,
+	const vec3 &pClose, const vec3 &pFar,
+	const float gradAlongLine,
+	const float sampleDist,
+	const ProjCameraModel *model,
+	const Frame *referenceFrame,
+	Frame *activeKeyFrame,
+	RunningStats *stats,
+	cv::Mat &debugImageStereoLines)
+{
+
+	// ================= calc depth (in KF) ====================
+	// * KinvP = Kinv * (x,y,1); where x,y are pixel coordinates of point we search for, in the KF.
+	// * best_match_x = x-coordinate of found correspondence in the reference frame.
+
+	float idnew_best_match;	// depth in the new image
+	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
+	vec2 old = model->camToPixel(vec3(best_match_x, best_match_y, 1.f));
+	if (incx*incx > incy*incy)
+	{
+		float oldX = old[0];
+		float nominator = (oldX*referenceFrame->otherToThis_t[2]
+			- referenceFrame->otherToThis_t[0]);
+		float dot0 = KinvP.dot(referenceFrame->otherToThis_R_row0);
+		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
+
+		idnew_best_match = (dot0 - oldX*dot2) / nominator;
+		alpha = incx*model->fxi()*(dot0*referenceFrame->otherToThis_t[2]
+			- dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
+	} else
+	{
+		float oldY = old[1];
+
+		float nominator = (oldY*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[1]);
+		float dot1 = KinvP.dot(referenceFrame->otherToThis_R_row1);
+		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
+
+		idnew_best_match = (dot1 - oldY*dot2) / nominator;
+		alpha = incy*model->fyi()*(dot1*referenceFrame->otherToThis_t[2] - dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
+	}
+
+	if (idnew_best_match < 0)
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_negative++;
+		if (!allowNegativeIdepths)
+			return -2;
+	}
+
+	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
+
+	// ================= calc var (in NEW image) ====================
+
+	// calculate error from photometric noise
+	float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
+
+	float trackingErrorFac = 0.25f*(1.0f + referenceFrame->initialTrackedResidual);
+
+	// calculate error from geometric noise (wrong camera pose / calibration)
+	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, model->w);
+	float geoDispError = (gradsInterp[0] * epxn + gradsInterp[1] * epyn) + DIVISION_EPS;
+	geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / (geoDispError*geoDispError);
+
+	// final error consists of a small constant part (discretization error),
+	// geometric and photometric error.
+	*result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
+
+	if (plotStereoImages)
+	{
+		if (rand() % 5 == 0)
+		{
+			float fac = best_match_err / ((float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20);
+
+			cv::Scalar color = cv::Scalar(255 * fac, 255 - 255 * fac, 0);// bw
+
+			cv::line(debugImageStereoLines, cv::Point2f(pClose[0], pClose[1]), cv::Point2f(pFar[0], pFar[1]), color, 1, 8, 0);
+		}
+	}
+
+	*result_idepth = idnew_best_match;
+	return 0.f;
 }
 
 }
