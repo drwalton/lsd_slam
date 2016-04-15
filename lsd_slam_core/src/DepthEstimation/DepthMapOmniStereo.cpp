@@ -91,7 +91,7 @@ RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2)
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float *resultIDepth, float *resultVar,
 	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,
-	float sampleDist, bool didSubpixel,
+	float sampleDist, bool didSubpixel, float tracedLineLen,
 	OmniCameraModel *model,
 	RunningStats *stats)
 {
@@ -114,8 +114,9 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 		//baseline too small
 		return -2;
 	}
-
-	idnew_best_match = 1.f / r.position.norm();
+	alpha = r.position.norm();
+	idnew_best_match = 1.f / alpha;
+	alpha /= tracedLineLen;
 	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
 
 	// ================= calc var (in NEW image) ====================
@@ -213,6 +214,7 @@ float DepthMap::doOmniStereo(
 	linePix[3] = oModel.camToPixel(lineDir[3]);
 	lineValue[3] = getInterpolatedElement(referenceFrameImage, linePix[3], width);
 
+	float tracedLineLen = 0.f;
 	//Advance along line.
 	size_t loopC = 0;
 	while (centerA <= 1.f) {
@@ -256,6 +258,7 @@ float DepthMap::doOmniStereo(
 			linePix[i] = linePix[i + 1];
 			lineValue[i] = lineValue[i + 1];
 		}
+		tracedLineLen += (linePix[2] - linePix[1]).norm();
 		++loopC;
 	}
 	//Check if epipolar line left image before any error vals could be found.
@@ -305,7 +308,7 @@ float DepthMap::doOmniStereo(
 	bestEpDir.normalize();
 	float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var, 
 		gradAlongLine, bestEpDir, referenceFrame, activeKeyFrame, 
-		GRADIENT_SAMPLE_DIST, didSubpixel, &oModel, stats);
+		GRADIENT_SAMPLE_DIST, didSubpixel, tracedLineLen, &oModel, stats);
 	if (r != 0.f) {
 		return r;
 	}
