@@ -15,9 +15,17 @@ public:
 	///\brief The default model covers a 180 degree fov in a circle of radius 200.
 	static OmniCameraModel makeDefaultModel();
 
+	///\brief Distance from the image plane in the omnidirectional model.
 	float e;
 
-	OmniCameraModel(float fx, float fy, float cx, float cy, size_t w, size_t h, float e);
+	///\brief Center of the circle within the image containing valid colour values
+	vec2 c;
+
+	///\brief Radius of the circle within the image containing valid color values
+	float r;
+
+	OmniCameraModel(float fx, float fy, float cx, float cy, 
+		size_t w, size_t h, float e, vec2 c, float r);
 	virtual ~OmniCameraModel();
 
 	///\brief Forward projection function, mapping from camera space to
@@ -30,6 +38,8 @@ public:
 	///      direction associated with this pixel.
 	///\note d should be strictly greater than 0 (if not, incorrect values
 	///      or NaNs will be returned).
+	///\note No checking is performed to ensure the projected point
+	///      corresponds to a valid pixel.
 	virtual	vec3 pixelToCam(const vec2 &p, float d = 1.f) const;
 
 	virtual std::vector<std::unique_ptr<CameraModel> >
@@ -52,6 +62,17 @@ public:
 	///\note Efficient, but suitable for relatively short lines only (accumulates errors
 	///      and may skip pixels for longer lines).
 	void traceWorldSpaceLine(vec3 p0, vec3 p1, std::function<void(vec2)> f);
+
+	///\brief Given a point in camera space, determines whether it projects
+	///       to a valid pixel location in image space.
+	///\param p The point to attempt to project into image space.
+	///\param[out] pixelLoc The projected pixel location (optional).
+	///\return true if the location is valid, false otherwise.
+	bool pointInImage(const vec3 &p, vec2 *pixelLoc = nullptr) const;
+
+	///\brief Checks if a pixel location is valid (i.e. lies within the circle
+	///       defined by the parameters c, r.
+	bool pixelLocValid(const vec2 &p) const;
 
 	virtual CameraModelType getType() const;
 

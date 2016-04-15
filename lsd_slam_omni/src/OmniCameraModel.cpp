@@ -6,8 +6,9 @@ namespace lsd_slam {
 
 
 OmniCameraModel::OmniCameraModel(
-	float fx, float fy, float cx, float cy, size_t w, size_t h, float e)
-	:CameraModel(fx, fy, cx, cy, w, h), e(e)
+	float fx, float fy, float cx, float cy, size_t w, size_t h, float e,
+	vec2 c, float r)
+	:CameraModel(fx, fy, cx, cy, w, h), e(e), c(c), r(r)
 {}
 
 OmniCameraModel::~OmniCameraModel()
@@ -15,7 +16,8 @@ OmniCameraModel::~OmniCameraModel()
 
 OmniCameraModel OmniCameraModel::makeDefaultModel()
 {
-	return OmniCameraModel(200.f, 200.f, 200.f, 200.f, 400, 400, 1.f);
+	return OmniCameraModel(200.f, 200.f, 200.f, 200.f, 400, 400, 1.f, 
+		vec2(200.f, 200.f), 200.f);
 }
 
 vec2 OmniCameraModel::camToPixel(const vec3 &p) const
@@ -57,8 +59,12 @@ std::vector<std::unique_ptr<CameraModel> >
 		float newFy = models.back()->fy * 0.5f;
 		float newCx = (this->cx + 0.5f) / static_cast<float>(1 << level) - 0.5f;
 		float newCy = (this->cy + 0.5f) / static_cast<float>(1 << level) - 0.5f;
+		float newE = static_cast<OmniCameraModel*>(models.back().get())->e * 0.5f;
+		vec2 newC = static_cast<OmniCameraModel*>(models.back().get())->c * 0.5f;
+		float newR = static_cast<OmniCameraModel*>(models.back().get())->r * 0.5f;
 
-		newModel = new OmniCameraModel(newFx, newFy, newCx, newCy, newW, newH, e);
+		newModel = new OmniCameraModel(
+			newFx, newFy, newCx, newCy, newW, newH, newE, newC, newR);
 		models.emplace_back(newModel);
 	}
 	return models;
@@ -116,6 +122,21 @@ vec2 OmniCameraModel::getFovAngles() const
 	float thetaY = atan2f(maxY.z(), maxY.y());
 	fovAngles.y() = 2.f*thetaY + static_cast<float>(M_PI);
 	return fovAngles;
+}
+
+bool OmniCameraModel::pixelLocValid(const vec2 &p) const
+{
+	vec2 d = p - c;
+	return d.norm() < r;
+}
+
+bool OmniCameraModel::pointInImage(const vec3 &p, vec2 *pixelLoc) const
+{
+	vec2 pix = camToPixel(p);
+	if (pixelLoc) {
+		*pixelLoc = pix;
+	}
+	return pixelLocValid(pix);
 }
 
 }

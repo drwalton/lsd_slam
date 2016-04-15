@@ -19,13 +19,15 @@ std::unique_ptr<CameraModel> CameraModel::loadFromFile(const std::string &filena
 	std::string type;
 	std::getline(file, type);
 
-	float fx, fy, cx, cy, e;
+	float fx, fy, cx, cy;
 	int w, h;
 	file >> fx >> fy >> cx >> cy >> w >> h;
 	
 	if (type == "OMNI") {
-		file >> e;
-		return std::unique_ptr<CameraModel>(new OmniCameraModel(fx, fy, cx, cy, w, h, e));
+		vec2 c;
+		float e, r;
+		file >> e >> c.x() >> c.y() >> r;
+		return std::unique_ptr<CameraModel>(new OmniCameraModel(fx, fy, cx, cy, w, h, e, c, r));
 	}
 	else if (type == "PROJ") {
 		return std::unique_ptr<CameraModel>(new ProjCameraModel(fx, fy, cx, cy, w, h));

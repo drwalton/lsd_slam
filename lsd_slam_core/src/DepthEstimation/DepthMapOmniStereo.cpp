@@ -114,6 +114,11 @@ float DepthMap::doOmniStereo(
 		a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos, GRADIENT_SAMPLE_DIST);
 		lineDir[4] = a*lineEndPos + (1.f - a)*lineStartPos;
 		linePix[4] = oModel.camToPixel(lineDir[4]);
+		if (!oModel.pixelLocValid(linePix[4])) {
+			//Epipolar curve has left image - terminate here.
+			break;
+		}
+
 		lineValue[4] = getInterpolatedElement(referenceFrameImage, linePix[4], width);
 
 		//Check error
@@ -144,6 +149,11 @@ float DepthMap::doOmniStereo(
 		}
 		++loopC;
 	}
+	//Check if epipolar line left image before any error vals could be found.
+	if (loopCBest < 0) {
+		if (enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
+		return -1;
+	}
 
 	// if error too big, will return -3, otherwise -2.
 	if (bestMatchErr > 4.0f*(float)MAX_ERROR_STEREO)
@@ -153,7 +163,7 @@ float DepthMap::doOmniStereo(
 	}
 
 	// check if clear enough winner
-	if (loopCBest > 0 && loopCSecondBest > 0) {
+	if (loopCBest >= 0 && loopCSecondBest >= 0) {
 		if (abs(loopCBest - loopCSecondBest) > 1.0f && 
 			MIN_DISTANCE_ERROR_STEREO * bestMatchErr > secondBestMatchErr) {
 			if (enablePrintDebugInfo) stats->num_stereo_invalid_unclear_winner++;
@@ -181,6 +191,9 @@ float DepthMap::doOmniStereo(
 bool epipolarLineInImageOmni(vec3 lineStart, vec3 lineEnd, const OmniCameraModel &model)
 {
 	//TODO
+	if (!model.pointInImage(lineStart) || !model.pointInImage(lineEnd)) {
+		return false;
+	}
 	return true;
 }
 
