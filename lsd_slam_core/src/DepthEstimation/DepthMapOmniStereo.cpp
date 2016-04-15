@@ -22,6 +22,15 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 	float minLength,
 	const OmniCameraModel &oModel);
 
+bool subpixelMatchOmni() {
+	//TODO
+	return false;
+}
+
+float findDepthAndVarOmni(float *resultIDepth, float *resultVar) {
+	return 0.f;
+}
+
 float DepthMap::doOmniStereo(
 	const float u, const float v, const vec3 &epDir,
 	const float min_idepth, const float prior_idepth, float max_idepth,
@@ -72,47 +81,101 @@ float DepthMap::doOmniStereo(
 	std::array<vec3, 5> lineDir;
 	std::array<vec2, 5> linePix;
 	std::array<float, 5> lineValue;
-	float bestMatchErr, secondBestMatchErr;
+	float bestMatchErr = FLT_MAX, secondBestMatchErr = FLT_MAX;
 	vec2 bestMatchPix, secondBestMatchPix;
 	vec3 bestMatchPos, secondBestMatchPos;
 	float centerA = 0.f;
+	int loopCBest = -1, loopCSecondBest = -1;
 
 	//Find first 4 values along line.
 	lineDir[2] = lineStartPos;
 	linePix[2] = lineStartPix;
 	lineValue[2] = getInterpolatedElement(referenceFrameImage, lineStartPix, width);
 	float a = 1.f; vec3 dir;
-	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos);
+	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos, GRADIENT_SAMPLE_DIST);
 	lineDir[1] = a*lineStartPos + (1.f - a)*lineEndPos;
 	linePix[1] = oModel.camToPixel(lineDir[1]);
-	lineValue[1] = getInterpolatedElement(referenceFrameImage, lineDir[1], width);
-	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos);
+	lineValue[1] = getInterpolatedElement(referenceFrameImage, linePix[1], width);
+	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos, GRADIENT_SAMPLE_DIST);
 	lineDir[0] = a*lineStartPos + (1.f - a)*lineEndPos;
-	linePix[0] = oModel.camToPixel(lineDir[1]);
-	lineValue[0] = getInterpolatedElement(referenceFrameImage, lineDir[0], width);
+	linePix[0] = oModel.camToPixel(lineDir[0]);
+	lineValue[0] = getInterpolatedElement(referenceFrameImage, linePix[0], width);
 	a = 0.f;
-	a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos);
+	a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos, GRADIENT_SAMPLE_DIST);
 	lineDir[3] = a*lineEndPos + (1.f - a)*lineStartPos;
 	linePix[3] = oModel.camToPixel(lineDir[3]);
-	lineValue[3] = getInterpolatedElement(referenceFrameImage, lineDir[3], width);
+	lineValue[3] = getInterpolatedElement(referenceFrameImage, linePix[3], width);
 
 	//Advance along line.
+	size_t loopC = 0;
 	while (centerA <= 1.f) {
-		//Update centerA
-
+		centerA = a;
 		//Find fifth entry
+		a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos, GRADIENT_SAMPLE_DIST);
+		lineDir[4] = a*lineEndPos + (1.f - a)*lineStartPos;
+		linePix[4] = oModel.camToPixel(lineDir[4]);
+		lineValue[4] = getInterpolatedElement(referenceFrameImage, linePix[4], width);
 
 		//Check error
-
-		//Update if appropriate
+		float err = findSsd(valuesToFind, lineValue);
+		if (err < bestMatchErr) {
+			//Move best match to second place.
+			secondBestMatchErr = bestMatchErr;
+			secondBestMatchPix = bestMatchPix;
+			secondBestMatchPos = bestMatchPos;
+			loopCSecondBest = loopCBest;
+			bestMatchErr = err;
+			bestMatchPix = linePix[2];
+			bestMatchPos = lineDir[2];
+			loopCBest = loopC;
+		} else if (err < secondBestMatchErr) {
+			//Replace second best match.
+			secondBestMatchErr = err;
+			secondBestMatchPix = linePix[2];
+			secondBestMatchPos = lineDir[2];
+			loopCSecondBest = loopC;
+		}
 
 		//Shuffle values down
-		//Update 
-
+		for (size_t i = 0; i < 4; ++i) {
+			lineDir[i] = lineDir[i + 1];
+			linePix[i] = linePix[i + 1];
+			lineValue[i] = lineValue[i + 1];
+		}
+		++loopC;
 	}
 
-	//TODO
-	return 0.f;
+	// if error too big, will return -3, otherwise -2.
+	if (bestMatchErr > 4.0f*(float)MAX_ERROR_STEREO)
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
+		return -3;
+	}
+
+	// check if clear enough winner
+	if (loopCBest > 0 && loopCSecondBest > 0) {
+		if (abs(loopCBest - loopCSecondBest) > 1.0f && 
+			MIN_DISTANCE_ERROR_STEREO * bestMatchErr > secondBestMatchErr) {
+			if (enablePrintDebugInfo) stats->num_stereo_invalid_unclear_winner++;
+			return -2;
+		}
+	}
+
+	//Perform subpixel matching, if necessary.
+	bool didSubpixel = false;
+	if (useSubpixelStereo) {
+		//TODO
+		didSubpixel = subpixelMatchOmni();
+	}
+
+	//TODO Uncertainty Propogation.
+
+	float r = findDepthAndVarOmni(&result_idepth, &result_var);
+	if (r != 0.f) {
+		return r;
+	}
+	
+	return bestMatchErr;
 }
 
 bool epipolarLineInImageOmni(vec3 lineStart, vec3 lineEnd, const OmniCameraModel &model)
@@ -151,18 +214,18 @@ std::array<float, 5> getValuesToFindOmni(const vec3 &keyframePointDir, const vec
 	std::array<float, 5> valuesToFind;
 	valuesToFind[2] = getInterpolatedElement(activeKeyFrameImageData, u, v, width);
 	float a = 1.f; vec3 dir; vec2 pixel;
-	a += oModel.getEpipolarParamIncrement(a, keyframePointDir, epDir);
+	a += oModel.getEpipolarParamIncrement(a, keyframePointDir, epDir, GRADIENT_SAMPLE_DIST);
 	dir = a*keyframePointDir + (1.f - a)*epDir;
 	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
-	a += oModel.getEpipolarParamIncrement(a, keyframePointDir, epDir);
+	a += oModel.getEpipolarParamIncrement(a, keyframePointDir, epDir, GRADIENT_SAMPLE_DIST);
 	dir = a*keyframePointDir + (1.f - a)*epDir;
 	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
 
 	a = 0.f;
-	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir);
+	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
-	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir);
+	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
 

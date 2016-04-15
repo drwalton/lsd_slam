@@ -465,8 +465,7 @@ float DepthMap::doLineStereo(
 	}
 
 	bool didSubpixel = false;
-	if (useSubpixelStereo)
-	{
+	if (useSubpixelStereo) {
 		didSubpixel = subpixelMatchProj(&best_match_x, &best_match_y, &best_match_err,
 			best_match_errPre, best_match_DiffErrPre,
 			best_match_errPost, best_match_DiffErrPost,
@@ -486,8 +485,7 @@ float DepthMap::doLineStereo(
 	gradAlongLine /= sampleDist*sampleDist;
 
 	// check if interpolated error is OK. use evil hack to allow more error if there is a lot of gradient.
-	if (best_match_err > (float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20)
-	{
+	if (best_match_err > (float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20) {
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
 		return -3;
 	}
@@ -497,7 +495,9 @@ float DepthMap::doLineStereo(
 		incx, incy, didSubpixel, KinvP, pClose, pFar,
 		gradAlongLine, sampleDist, &pModel, referenceFrame, activeKeyFrame,
 		stats, debugImageStereoLines);
-	if (r != 0.f) return r;
+	if (r != 0.f) {
+		return r;
+	}
 
 	result_eplLength = eplLength;
 	return best_match_err;
