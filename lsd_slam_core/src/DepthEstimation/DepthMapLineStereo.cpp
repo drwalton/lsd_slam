@@ -628,8 +628,7 @@ float findDepthAndVarProj(
 		idnew_best_match = (dot0 - oldX*dot2) / nominator;
 		alpha = incx*model->fxi()*(dot0*referenceFrame->otherToThis_t[2]
 			- dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
-	} else
-	{
+	} else {
 		float oldY = old[1];
 
 		float nominator = (oldY*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[1]);

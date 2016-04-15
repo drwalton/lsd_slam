@@ -12,11 +12,18 @@
 
 namespace lsd_slam {
 
+///\brief Check if an epipolar line lies within an omnidirectional image.
+///\note For now, just checks if the endpoints lie in the image.
 bool epipolarLineInImageOmni(vec3 lineStart, vec3 lineEnd, const OmniCameraModel &model);
+
+///\brief Fill an array with the 5 values on the epipolar line surrounding the 
+///       chosen image point. Used by doOmniStereo().
 std::array<float, 5> getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel,
 	int u, int v);
 
+///\brief Increase the size of an epipolar line, if its length is found
+///       to be less than minLength.
 void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 	vec2* lineStartPix, vec2* lineEndPix,
 	float minLength,
@@ -26,8 +33,107 @@ bool subpixelMatchOmni() {
 	//TODO
 	return false;
 }
+struct Ray {
+	vec3 origin;
+	vec3 dir;
+};
 
-float findDepthAndVarOmni(float *resultIDepth, float *resultVar) {
+struct RayIntersectionResult {
+	enum Outcome {
+		VALID, BEHIND, PARALLEL
+	};
+	Outcome valid;
+	float distance;
+	vec3 position;
+	std::string to_string() const;
+};
+
+RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2)
+{
+	RayIntersectionResult ans;
+	const vec3& u = r1.dir, &v = r2.dir, &p = r1.origin, &q = r2.origin;
+	vec3 d = p - q;
+	float uu = u.dot(u), vd = v.dot(d), vv = v.dot(v), ud = u.dot(d), uv = u.dot(v);
+
+	//Find line parameters at intersection.
+	float kd = uu*vv - uv*uv;
+
+	//Special case: if kd == 0.f, the lines are parallel.
+	if (fabsf(kd) < FLT_EPSILON) {
+		ans.valid = RayIntersectionResult::Outcome::PARALLEL;
+		float tc = vd / vv;
+		ans.distance = (p - (q + tc*v)).norm();
+		//Can't find a single intersection point.
+		return ans;
+	}
+
+	float sc = (uv*vd - vv*ud) / kd;
+	float tc = (uu*vd - uv*ud) / kd;
+
+	//The intersection is valid if it happens at positive s, t.
+	if (sc >= 0.f && tc >= 0.f) {
+		ans.valid = RayIntersectionResult::Outcome::VALID;
+	}
+	else {
+		ans.valid = RayIntersectionResult::Outcome::BEHIND;
+	}
+
+	//Find intersection points on r1.
+	vec3 ip = p + sc*u, iq = q + tc*v;
+
+	//Get distance between these points.
+	ans.distance = (ip - iq).norm();
+	ans.position = ip;
+
+	return ans;
+}
+
+float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
+	float *resultIDepth, float *resultVar,
+	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,
+	float sampleDist, bool didSubpixel,
+	OmniCameraModel *model,
+	RunningStats *stats)
+{
+	// ================= calc depth (in KF) ====================
+	float idnew_best_match;	// depth in the new image
+	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
+	//TODO
+	vec3 findDirKf = model->pixelToCam(vec2(u, v));
+	vec3 bestMatchDirKf = referenceFrame->thisToOther_R * bestMatchDir;
+	Ray findRay, matchRay;
+	findRay.dir = findDirKf; findRay.origin = vec3::Zero();
+	matchRay.dir = bestMatchDirKf; matchRay.origin = referenceFrame->thisToOther_t;
+	RayIntersectionResult r = computeRayIntersection(findRay, matchRay);
+
+	if (r.valid == RayIntersectionResult::Outcome::BEHIND) {
+		if (enablePrintDebugInfo) stats->num_stereo_negative++;
+		if (!allowNegativeIdepths)
+			return -2;
+	} else if (r.valid == RayIntersectionResult::Outcome::PARALLEL) {
+		//baseline too small
+		return -2;
+	}
+
+	idnew_best_match = 1.f / r.position.norm();
+	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
+
+	// ================= calc var (in NEW image) ====================
+
+	// calculate error from photometric noise
+	float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
+	float trackingErrorFac = 0.25f*(1.0f + referenceFrame->initialTrackedResidual);
+
+	// calculate error from geometric noise (wrong camera pose / calibration)
+	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, model->w);
+	float geoDispError = (gradsInterp[0] * bestEpDir[0] + gradsInterp[1] * bestEpDir[1]) + DIVISION_EPS;
+	geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / (geoDispError*geoDispError);
+
+	// final error consists of a small constant part (discretization error),
+	// geometric and photometric error.
+	*resultVar = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
+
+	*resultIDepth = idnew_best_match;
 	return 0.f;
 }
 
@@ -84,6 +190,7 @@ float DepthMap::doOmniStereo(
 	float bestMatchErr = FLT_MAX, secondBestMatchErr = FLT_MAX;
 	vec2 bestMatchPix, secondBestMatchPix;
 	vec3 bestMatchPos, secondBestMatchPos;
+	vec2 bestEpDir;
 	float centerA = 0.f;
 	int loopCBest = -1, loopCSecondBest = -1;
 
@@ -129,10 +236,12 @@ float DepthMap::doOmniStereo(
 			secondBestMatchPix = bestMatchPix;
 			secondBestMatchPos = bestMatchPos;
 			loopCSecondBest = loopCBest;
+			//Replace best match
 			bestMatchErr = err;
 			bestMatchPix = linePix[2];
 			bestMatchPos = lineDir[2];
 			loopCBest = loopC;
+			bestEpDir = linePix[3] - linePix[2];
 		} else if (err < secondBestMatchErr) {
 			//Replace second best match.
 			secondBestMatchErr = err;
@@ -180,17 +289,34 @@ float DepthMap::doOmniStereo(
 
 	//TODO Uncertainty Propogation.
 
-	float r = findDepthAndVarOmni(&result_idepth, &result_var);
+	float gradAlongLine = 0.f;
+	float tmp = valuesToFind[4] - valuesToFind[3];  gradAlongLine += tmp*tmp;
+	tmp = valuesToFind[3] - valuesToFind[2];  gradAlongLine += tmp*tmp;
+	tmp = valuesToFind[2] - valuesToFind[1];  gradAlongLine += tmp*tmp;
+	tmp = valuesToFind[1] - valuesToFind[0];  gradAlongLine += tmp*tmp;
+	gradAlongLine /= GRADIENT_SAMPLE_DIST*GRADIENT_SAMPLE_DIST;
+
+	// check if interpolated error is OK. use evil hack to allow more error if there is a lot of gradient.
+	if (bestMatchErr > (float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20) {
+		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
+		return -3;
+	}
+
+	bestEpDir.normalize();
+	float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var, 
+		gradAlongLine, bestEpDir, referenceFrame, activeKeyFrame, 
+		GRADIENT_SAMPLE_DIST, didSubpixel, &oModel, stats);
 	if (r != 0.f) {
 		return r;
 	}
+
+	//TODO set epipolar length
 	
 	return bestMatchErr;
 }
 
 bool epipolarLineInImageOmni(vec3 lineStart, vec3 lineEnd, const OmniCameraModel &model)
 {
-	//TODO
 	if (!model.pointInImage(lineStart) || !model.pointInImage(lineEnd)) {
 		return false;
 	}
