@@ -33,5 +33,6 @@ cmake_install.cmake
 *.swp
 build/
 xcode/
+resources/*
 
 

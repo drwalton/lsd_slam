@@ -28,6 +28,7 @@
 namespace lsd_slam
 {
 
+std::string resourcesDir();
 
 #define ALIGN __attribute__((__aligned__(16)))
 #define SSEE(val,idx) (*(((float*)&val)+idx))
@@ -182,7 +183,6 @@ extern bool displayDepthMap;
 extern bool onSceenInfoDisplay;
 extern bool dumpMap;
 extern bool doFullReConstraintTrack;
-
 
 // dyn config
 extern bool printPropagationStatistics;

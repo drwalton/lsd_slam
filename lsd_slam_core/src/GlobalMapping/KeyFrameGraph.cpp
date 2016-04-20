@@ -126,8 +126,8 @@ void KeyFrameGraph::dumpMap(std::string folder)
 	keyframesAllMutex.lock_shared();
 	char buf[100];
 	boost::filesystem::path folderPath(folder);
-	int succ = boost::filesystem::remove_all(folderPath);
-	succ += boost::filesystem::create_directories(folderPath);
+	int succ = static_cast<int>(boost::filesystem::remove_all(folderPath));
+	succ += static_cast<int>(boost::filesystem::create_directories(folderPath));
 	//int succ = system(("rm -rf "+folder).c_str());
 	//succ += system(("mkdir "+folder).c_str());
 
@@ -137,7 +137,7 @@ void KeyFrameGraph::dumpMap(std::string folder)
 		cv::imwrite(buf, getDepthRainbowPlot(keyframesAll[i], 0));
 
 		snprintf(buf, 100, "%s/frame-%d.png", folder.c_str(), i);
-		cv::imwrite(buf, cv::Mat(keyframesAll[i]->height(), keyframesAll[i]->width(),CV_32F,keyframesAll[i]->image()));
+		cv::imwrite(buf, cv::Mat(keyframesAll[i]->height(), keyframesAll[i]->width(),CV_32FC1 ,keyframesAll[i]->image()));
 
 		snprintf(buf, 100, "%s/var-%d.png", folder.c_str(), i);
 		cv::imwrite(buf, getVarRedGreenPlot(keyframesAll[i]->idepthVar(),keyframesAll[i]->image(),keyframesAll[i]->width(),keyframesAll[i]->height()));

@@ -27,7 +27,10 @@ int main(int argc, char **argv) {
 
 	std::vector<cv::Vec3b> colors;
 	for (auto & color : m.vertColors()) {
-		colors.push_back(cv::Vec3b(color.x() * 255.f, color.y() * 255.f, color.z() * 255.f));
+		colors.push_back(cv::Vec3b(
+			static_cast<uchar>(color.x() * 255.f), 
+			static_cast<uchar>(color.y() * 255.f), 
+			static_cast<uchar>(color.z() * 255.f)));
 	}
 	
 	std::cout << "Colors: \n " << colors;

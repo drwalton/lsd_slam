@@ -295,7 +295,7 @@ float DepthMap::doOmniStereo(
 	//Perform subpixel matching, if necessary.
 	bool didSubpixel = false;
 	if (useSubpixelStereo) {
-		//TODO
+		//TODO subpixel matching
 		didSubpixel = subpixelMatchOmni();
 	}
 
@@ -322,7 +322,6 @@ float DepthMap::doOmniStereo(
 		return r;
 	}
 
-	//TODO set epipolar length
 	result_eplLength = tracedLineLen;
 	
 	return bestMatchErr;

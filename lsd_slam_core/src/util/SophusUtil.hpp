@@ -46,6 +46,7 @@
 	#define sophusType double
 #endif
 
+std::ostream &operator << (std::ostream &s, const SE3 &t);
 
 namespace lsd_slam
 {
