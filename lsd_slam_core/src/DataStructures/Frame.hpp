@@ -317,8 +317,9 @@ inline const float* Frame::idepth(int level)
 		printfAssert("Frame::idepth(): idepth has not been set yet!");
 		return nullptr;
 	}
-	if (! data.idepthValid[level])
+	if (!data.idepthValid[level]) {
 		require(IDEPTH, level);
+	}
 	return data.idepth[level];
 }
 inline const unsigned char* Frame::validity_reAct()

@@ -20,6 +20,7 @@ target_link_libraries(MakeRaycastedVideo
 	optimized ${OPENCV_LIBRARIES} debug ${OPENCV_DEBUG_LIBRARIES}
 	${Assimp_LIBRARY}
 	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
 )
 
 add_executable(TestOmniStereo
@@ -43,6 +44,7 @@ target_link_libraries(TestSE3Tracking
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
 	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
 )
 link_libs_exec_debug(TestSE3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 

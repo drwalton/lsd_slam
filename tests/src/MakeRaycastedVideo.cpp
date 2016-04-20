@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <boost/filesystem.hpp>
 #include "util/settings.hpp"
+#include "util/ImgProc.hpp"
 
 template<typename T>
 std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
@@ -39,7 +40,9 @@ int main(int argc, char **argv) {
 
 	std::string vidFilename(lsd_slam::resourcesDir() + argv[4]);
 	std::string imageFolder = vidFilename.substr(0, vidFilename.find_last_of('.'));
+	std::string depthFolder = vidFilename.substr(0, vidFilename.find_last_of('.')) + "_depth";
 	boost::filesystem::create_directories(boost::filesystem::path(imageFolder));
+	boost::filesystem::create_directories(boost::filesystem::path(depthFolder));
 
 	std::cout << "Loading scene from file: " << argv[1] << std::endl;
 
@@ -74,13 +77,23 @@ int main(int argc, char **argv) {
 	video.open(lsd_slam::resourcesDir() + argv[3], cv::VideoWriter::fourcc('M','J','P','G'), 30, size);
 
 	cv::Mat image;
+	cv::Mat depth;
 	int percentage = 0;
+
+	cv::namedWindow("Color");
+	cv::namedWindow("Depth");
+	cv::moveWindow("Color", 0, 30);
+	cv::moveWindow("Depth", model->w, 30);
 	
 	size_t imgCounter = 0;
 	for (size_t i = 0; i < numFrames; ++i) {
+		//TODO also record depth, for initialising when testing tracking.
 		image = raycast(m.vertices(), m.indices(), colors, camMotion->getNextTransform(), 
-			*model, size);
-		cv::imshow("PREVIEW", image);
+			*model, true, depth);
+		cv::imshow("Color", image);
+		double minD, maxD;
+		cv::minMaxLoc(depth, &minD, &maxD);
+		cv::imshow("Depth", depth / maxD);
 		cv::waitKey(1);
 		if (saveImages) {
 			std::stringstream ifName;
@@ -88,6 +101,11 @@ int main(int argc, char **argv) {
 				std::setfill('0') << std::setw(5) << imgCounter << ".png";
 			std::string str = ifName.str();
 			cv::imwrite(str, image);
+			std::stringstream dfName;
+			dfName << depthFolder << "/" << 
+				std::setfill('0') << std::setw(5) << imgCounter << ".tiff";
+			str = dfName.str();
+			imwriteFloat(str, depth);
 			++imgCounter;
 		}
 

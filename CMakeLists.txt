@@ -16,6 +16,7 @@ find_package(OpenGL REQUIRED)
 find_package(Boost COMPONENTS System Thread REQUIRED)
 find_package(FLTK REQUIRED)
 find_package(Assimp REQUIRED)
+find_package(libtiff REQUIRED)
 
 if(WIN32)
 	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-12.0")
@@ -50,6 +51,7 @@ include_directories(
 	${G2O_INCLUDE_DIR}
 	${FLTK_INCLUDE_DIRS}
 	${ASSIMP_INCLUDE_DIRS}
+	${libtiff_INCLUDE_DIRS}
 )
 
 add_subdirectory(lsd_slam_core)
