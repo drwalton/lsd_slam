@@ -20,7 +20,7 @@ bool epipolarLineInImageOmni(vec3 lineStart, vec3 lineEnd, const OmniCameraModel
 ///       chosen image point. Used by doOmniStereo().
 std::array<float, 5> getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel,
-	int u, int v);
+	float u, float v);
 
 ///\brief Increase the size of an epipolar line, if its length is found
 ///       to be less than minLength.
@@ -134,6 +134,8 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 	*resultVar = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
 
 	*resultIDepth = idnew_best_match;
+
+
 	return 0.f;
 }
 
@@ -298,6 +300,26 @@ float DepthMap::doOmniStereo(
 		didSubpixel = subpixelMatchOmni();
 	}
 
+#define OMNI_STEREO_DEBUG_SHOW_MATCHES 0
+#if OMNI_STEREO_DEBUG_SHOW_MATCHES
+	static int savedIms = 0;
+	if (savedIms < 100) {
+		cv::Mat activeKeyframeIm(model->h, model->w, CV_32FC1, (void*)(activeKeyFrameImageData));
+		cv::Mat refFrameIm(model->h, model->w, CV_32FC1, (void*)(referenceFrameImage));
+		cv::Mat kfToShow, refToShow;
+		cv::cvtColor(activeKeyframeIm, kfToShow, CV_GRAY2BGR);
+		cv::cvtColor(refFrameIm, refToShow, CV_GRAY2BGR);
+		cv::circle(kfToShow, cv::Point(u, v), 5, cv::Scalar(0, 0, 255), 2);
+		cv::circle(refToShow, cv::Point(bestMatchPix.x(), bestMatchPix.y()), 5, cv::Scalar(0, 0, 255), 2);
+		cv::circle(refToShow, cv::Point(secondBestMatchPos.x(), secondBestMatchPos.y()), 3, cv::Scalar(0, 0, 255), 2);
+		cv::Mat show;
+		cv::hconcat(std::vector<cv::Mat>{ kfToShow, refToShow }, show);
+		cv::imwrite(resourcesDir() + std::to_string(savedIms) + ".png", show);
+		std::cout << "Match: " << u << ", " << v << " -> " 
+			<< bestMatchPix.x() << ", " << bestMatchPix.y() << std::endl;
+		++savedIms;
+	} 
+#endif
 	//TODO Uncertainty Propogation.
 
 	float gradAlongLine = 0.f;
@@ -358,7 +380,7 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 
 std::array<float, 5> getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel, 
-	int u, int v)
+	float u, float v)
 {
 
 	std::array<float, 5> valuesToFind;
