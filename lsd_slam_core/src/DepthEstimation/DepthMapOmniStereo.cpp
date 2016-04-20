@@ -203,15 +203,24 @@ float DepthMap::doOmniStereo(
 	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos, GRADIENT_SAMPLE_DIST);
 	lineDir[1] = a*lineStartPos + (1.f - a)*lineEndPos;
 	linePix[1] = oModel.camToPixel(lineDir[1]);
+	if (!oModel.pixelLocValid(linePix[1])) {
+		return -1;
+	}
 	lineValue[1] = getInterpolatedElement(referenceFrameImage, linePix[1], width);
 	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos, GRADIENT_SAMPLE_DIST);
 	lineDir[0] = a*lineStartPos + (1.f - a)*lineEndPos;
 	linePix[0] = oModel.camToPixel(lineDir[0]);
+	if (!oModel.pixelLocValid(linePix[0])) {
+		return -1;
+	}
 	lineValue[0] = getInterpolatedElement(referenceFrameImage, linePix[0], width);
 	a = 0.f;
 	a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos, GRADIENT_SAMPLE_DIST);
 	lineDir[3] = a*lineEndPos + (1.f - a)*lineStartPos;
 	linePix[3] = oModel.camToPixel(lineDir[3]);
+	if (!oModel.pixelLocValid(linePix[3])) {
+		return -1;
+	}
 	lineValue[3] = getInterpolatedElement(referenceFrameImage, linePix[3], width);
 
 	float tracedLineLen = 0.f;
@@ -314,6 +323,7 @@ float DepthMap::doOmniStereo(
 	}
 
 	//TODO set epipolar length
+	result_eplLength = tracedLineLen;
 	
 	return bestMatchErr;
 }

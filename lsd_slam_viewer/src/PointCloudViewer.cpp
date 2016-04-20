@@ -34,6 +34,7 @@
 #include <qcoreapplication.h>
 #include <stdio.h>
 #include "settings.hpp"
+#include <boost/filesystem.hpp>
 
 //#include <zlib.h>
 #include <iostream>
@@ -123,11 +124,14 @@ void PointCloudViewer::reset()
 	simMsBetweenSaves = 1;
 	lastCamID = -1;
 	lastAnimTime = lastCamTime = lastSaveTime = 0;
-	char buf[500];
-	snprintf(buf, 500, "rm -rf %s", save_folder.c_str());
-	int k = system(buf);
-	snprintf(buf, 500, "mkdir %s", save_folder.c_str());
-	k += system(buf);
+	boost::filesystem::path saveFolderPath(save_folder);
+	int k = boost::filesystem::remove_all(saveFolderPath);
+	k += boost::filesystem::create_directory(saveFolderPath);
+	//char buf[500];
+	//snprintf(buf, 500, "rm -rf %s", save_folder.c_str());
+	//int k = system(buf);
+	//snprintf(buf, 500, "mkdir %s", save_folder.c_str());
+	//k += system(buf);
 
 
 	assert(k != -42);
