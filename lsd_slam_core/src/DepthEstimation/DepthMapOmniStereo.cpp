@@ -98,7 +98,6 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 	// ================= calc depth (in KF) ====================
 	float idnew_best_match;	// depth in the new image
 	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
-	//TODO
 	vec3 findDirKf = model->pixelToCam(vec2(u, v));
 	vec3 bestMatchDirKf = referenceFrame->thisToOther_R * bestMatchDir;
 	Ray findRay, matchRay;

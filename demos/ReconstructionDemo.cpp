@@ -6,6 +6,7 @@
 #include "LiveSLAMWrapper.hpp"
 #include <FL/Fl_Native_File_Chooser.H>
 #include "Win32Compatibility.hpp"
+#include "util/settings.hpp"
 
 int main(int argc, char **argv)
 {
@@ -18,7 +19,7 @@ int main(int argc, char **argv)
 	lsd_slam::OpenCVImageStream stream;
 
 	if (argc >= 3) {
-		stream.capture().open(argv[2]);
+		stream.capture().open(lsd_slam::resourcesDir() + argv[2]);
 	}
 	else {
 		while (true) {
@@ -43,13 +44,13 @@ int main(int argc, char **argv)
 				ch.title("Select video file");
 				ch.show();
 				filename = pathToForwardSlashes(ch.filename());
-				stream.capture().open(filename);
-				stream.capture() = cv::VideoCapture(filename);
+				stream.capture().open(lsd_slam::resourcesDir() + filename);
+				stream.capture() = cv::VideoCapture(lsd_slam::resourcesDir() + filename);
 				if (stream.capture().isOpened()) {
 					break;
 				}
 				else {
-					std::cout << "Unable to open file \"" << filename << "\"." << std::endl;
+					std::cout << "Unable to open file \"" << lsd_slam::resourcesDir() + filename << "\"." << std::endl;
 				}
 			}
 			else {
@@ -63,13 +64,13 @@ int main(int argc, char **argv)
 		}
 	}
 	if (argc > 2) {
-		stream.setCalibration(argv[1]);
+		stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
 	} else {
 		 std::string filename;
 		 Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
 		 ch.title("Select calibration file");
 		 ch.show();
-		 stream.setCalibration(ch.filename());
+		 stream.setCalibration(lsd_slam::resourcesDir() + ch.filename());
 	}
 
 	stream.run();

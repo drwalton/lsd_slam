@@ -152,11 +152,12 @@ float DepthMap::doLineStereo(
 {
 	ProjCameraModel &pModel = static_cast<ProjCameraModel&>(*model);
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
-	vec3 K_otherToThis_t = model->camToPixelDepth(referenceFrame->otherToThis_t);
+	vec3 K_otherToThis_t = pModel.K * referenceFrame->otherToThis_t;
+	mat3 K_otherToThis_R = pModel.K * referenceFrame->otherToThis_R;
 
 	// calculate epipolar line start and end point in old image
-	vec3 KinvP = model->pixelToCam(vec2(u, v), 1.0f);
-	Eigen::Vector3f pInf = model->camToPixelDepth(referenceFrame->otherToThis_R * KinvP);
+	vec3 KinvP = vec3(pModel.fxi()*u+pModel.cxi(), pModel.fyi()*v+pModel.cyi(), 1.f);
+	Eigen::Vector3f pInf = K_otherToThis_R * KinvP;
 	Eigen::Vector3f pReal = pInf / prior_idepth + K_otherToThis_t;
 
 	float rescaleFactor = pReal[2] * prior_idepth;
@@ -616,10 +617,9 @@ float findDepthAndVarProj(
 
 	float idnew_best_match;	// depth in the new image
 	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
-	vec2 old = model->camToPixel(vec3(best_match_x, best_match_y, 1.f));
 	if (incx*incx > incy*incy)
 	{
-		float oldX = old[0];
+		float oldX = model->fxi()*best_match_x + model->cxi();
 		float nominator = (oldX*referenceFrame->otherToThis_t[2]
 			- referenceFrame->otherToThis_t[0]);
 		float dot0 = KinvP.dot(referenceFrame->otherToThis_R_row0);
@@ -629,7 +629,7 @@ float findDepthAndVarProj(
 		alpha = incx*model->fxi()*(dot0*referenceFrame->otherToThis_t[2]
 			- dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
 	} else {
-		float oldY = old[1];
+		float oldY = model->fxi()*best_match_x + model->cxi();
 
 		float nominator = (oldY*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[1]);
 		float dot1 = KinvP.dot(referenceFrame->otherToThis_R_row1);

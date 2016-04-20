@@ -69,10 +69,13 @@ set(LSD_SLAM_LIBS
 )
 
 function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)
+	message("Linking library list to ${TARGET}")
 	foreach(LIB IN LISTS ${EXEC_LIBS})
+		message("> exec: ${LIB}")
 		target_link_libraries(${TARGET} optimized ${LIB})
 	endforeach()
 	foreach(LIB IN LISTS ${DEBUG_LIBS})
+		message("> debug: ${LIB}")
 		target_link_libraries(${TARGET} debug ${LIB})
 	endforeach()
 endfunction()

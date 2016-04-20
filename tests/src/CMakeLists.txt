@@ -39,8 +39,23 @@ add_executable(TestSE3Tracking
 
 target_link_libraries(TestSE3Tracking
 	${LSD_SLAM_LIBS}
+	lsd_slam_DepthEstimation
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
 	${Boost_LIBRARIES}
 )
+link_libs_exec_debug(TestSE3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
+
+add_executable(RenderAndTestSE3Tracking
+	RenderAndTestSE3Tracking.cpp
+)
+
+target_link_libraries(RenderAndTestSE3Tracking
+	${LSD_SLAM_LIBS}
+	lsd_slam_DepthEstimation
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+)
+link_libs_exec_debug(RenderAndTestSE3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 

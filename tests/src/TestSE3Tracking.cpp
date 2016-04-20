@@ -1,5 +1,6 @@
 #include "Tracking/SE3Tracker.hpp"
 #include "Tracking/TrackingReference.hpp"
+#include "DepthEstimation/DepthMap.hpp"
 #include "DataStructures/Frame.hpp"
 #include <opencv2/opencv.hpp>
 #include "globalFuncs.hpp"
@@ -18,6 +19,9 @@ int main(int argc, char **argv)
 	image2.convertTo(fltImage2, CV_32FC1);
 
 	lsd_slam::Frame referenceFrame(0, *model, 0.0, fltImage1.ptr<float>(0));
+	lsd_slam::DepthMap depthMap(*model);
+	depthMap.initializeRandomly(&referenceFrame);
+
 	lsd_slam::TrackingReference reference;
 	reference.importFrame(&referenceFrame);
 

@@ -79,6 +79,20 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 			throw std::runtime_error("No omni undistorters except NOP implemented yet.");
 		}
 	}
+	else if (type == "PROJ") {
+		float fx, fy, cx, cy;
+		int w, h;
+		f >> fx >> fy >> cx >> cy >> w >> h;
+
+		std::getline(f, type);
+		std::getline(f, type);
+		if (type == "NOP") {
+			return new UndistorterNop(w, h);
+		} else {
+			throw std::runtime_error("No PROJ undistorters except NOP implemented yet.");
+		}
+	}
+
 	f.clear(); f.seekg(0);
 
 	std::string l1;

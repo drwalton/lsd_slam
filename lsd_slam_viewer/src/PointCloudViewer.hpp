@@ -66,7 +66,8 @@ public:
 
 	bool isFix;
 
-	AnimationObject(bool isSettings, double time, double duration, qglviewer::Frame f = qglviewer::Frame())
+	AnimationObject(bool isSettings, double time, double duration, 
+		qglviewer::Frame f = qglviewer::Frame())
 	{
 		this->time = time;
 		this->duration = duration;
@@ -100,9 +101,11 @@ public:
 
 		float x, y, z;
 
-		if (17 != sscanf(s.c_str(), "Animation: %d at %lf (dur %lf) S: %f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d\n",
+		if (17 != sscanf(s.c_str(), "Animation: %d at %lf (dur %lf) S: "
+				"%f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d\n",
 			&isSettings_i, &time, &duration,
-			&scaledTH, &absTH, &showLoopClosures_i, &showKeyframes_i, &showCurrentCam_i, &sparsity, &neighb,
+			&scaledTH, &absTH, &showLoopClosures_i, &showKeyframes_i, 
+			&showCurrentCam_i, &sparsity, &neighb,
 			&(orient[0]), &(orient[1]), &(orient[2]), &(orient[3]),
 			&x, &y, &z, &isFix_i))
 			printf("error parsing: %s\n", s.c_str());
@@ -138,10 +141,13 @@ public:
 		qreal x, y, z;
 		frame.getPosition(x, y, z);
 
-		snprintf(buf, 1000, "Animation: %d at %lf (dur %lf) S: %f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d",
+		snprintf(buf, 1000, "Animation: %d at %lf (dur %lf) S: "
+				"%f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d",
 			isSettings_i, time, duration,
-			scaledTH, absTH, showLoopClosures_i, showKeyframes_i, showCurrentCam_i, sparsity, neighb,
-			frame.orientation()[0], frame.orientation()[1], frame.orientation()[2], frame.orientation()[3],
+			scaledTH, absTH, showLoopClosures_i, showKeyframes_i, 
+			showCurrentCam_i, sparsity, neighb,
+			frame.orientation()[0], frame.orientation()[1], 
+			frame.orientation()[2], frame.orientation()[3],
 			x, y, z, isFix_i);
 
 		return buf;
@@ -171,7 +177,8 @@ protected:
 	virtual void keyReleaseEvent(QKeyEvent *e);
 	virtual QString helpString() const;
 
-	//	virtual void drawText(int x, int y, const QString & text, const QFont & fnt) {printf(text.toStdString().c_str());};
+	//	virtual void drawText(int x, int y, const QString & text, 
+	//   const QFont & fnt) {printf(text.toStdString().c_str());};
 
 
 private:
