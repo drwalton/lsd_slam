@@ -34,6 +34,11 @@ find_package(QGLViewer REQUIRED)
 message("QOPENGL: ${QT_QTOPENGL_INCLUDE_DIR}")
 include_directories("${QT_QTOPENGL_INCLUDE_DIR}/..")
 
+if(APPLE)
+	message("On mac, including /usr/local/Cellar/qt/4.8.7_2/include")
+	include_directories(/usr/local/Cellar/qt/4.8.7_2/include)
+endif(APPLE)
+
 include_directories(
 	${GLEW_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/lsd_slam_core/src
