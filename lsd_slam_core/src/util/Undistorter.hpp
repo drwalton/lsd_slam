@@ -38,15 +38,15 @@ public:
 	 */
 	virtual void undistort(const cv::Mat& image, cv::OutputArray result) const = 0;
 	
-	/**
-	 * Returns the intrinsic parameter matrix of the undistorted images.
-	 */
-	virtual const cv::Mat& getK() const = 0;
-	
-	/**
-	 * Returns the intrinsic parameter matrix of the original images,
-	 */
-	virtual const cv::Mat& getOriginalK() const = 0;
+	///**
+	// * Returns the intrinsic parameter matrix of the undistorted images.
+	// */
+	//virtual const cv::Mat& getK() const = 0;
+	//
+	///**
+	// * Returns the intrinsic parameter matrix of the original images,
+	// */
+	//virtual const cv::Mat& getOriginalK() const = 0;
 	
 	/**
 	 * Returns the width of the undistorted images in pixels.
@@ -79,6 +79,24 @@ public:
 	 * configuration file. If the format is not recognized, returns nullptr.
 	 */
 	static Undistorter* getUndistorterForFile(const char* configFilename);
+};
+
+class UndistorterNop : public Undistorter
+{
+public:
+	explicit UndistorterNop(size_t width, size_t height);
+	virtual ~UndistorterNop();
+
+	virtual void undistort(const cv::Mat& image, cv::OutputArray result) const;
+
+	virtual int getOutputWidth() const;
+	virtual int getOutputHeight() const;
+	virtual int getInputWidth() const;
+	virtual int getInputHeight() const;
+
+	virtual bool isValid() const;
+private:
+	size_t width_, height_;
 };
 
 class UndistorterPTAM : public Undistorter

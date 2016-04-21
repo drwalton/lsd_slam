@@ -42,8 +42,7 @@ void OpenCVImageStream::stop()
 
 void OpenCVImageStream::setCalibration(const std::string &file)
 {
-	//TEMP
-	undistorter_.reset(new UndistorterPTAM("x100s"));
+	undistorter_.reset(Undistorter::getUndistorterForFile(file.c_str()));
 	model = CameraModel::loadFromFile(file);
 
 	if (!undistorter_ || !model)

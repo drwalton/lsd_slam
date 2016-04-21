@@ -161,63 +161,6 @@ void DepthMap::observeDepth()
 	}
 }
 
-bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
-	float* pepx, float* pepy, RunningStats* const stats)
-{
-	int idx = x+y*width;
-
-	// ======= make epl ========
-	// Find direction towards epipole, in the keyframe image.
-	vec2 epipole = model->camToPixel(ref->thisToOther_t);
-	float epx = x - epipole.x();
-	float epy = y - epipole.y();
-	
-	//Original code for the above:
-	//float epx = - fx * ref->thisToOther_t[0] + ref->thisToOther_t[2]*(x - cx);
-	//float epy = - fy * ref->thisToOther_t[1] + ref->thisToOther_t[2]*(y - cy);
-
-	if(isnan(epx+epy)) {
-		return false;
-	}
-
-	// ======== check epl length =========
-	float eplLengthSquared = epx*epx+epy*epy;
-	if(eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
-	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
-		return false;
-	}
-
-
-	// ===== check epl-grad magnitude ======
-	float gx = activeKeyFrameImageData[idx+1    ] - activeKeyFrameImageData[idx-1    ];
-	float gy = activeKeyFrameImageData[idx+width] - activeKeyFrameImageData[idx-width];
-	float eplGradSquared = gx * epx + gy * epy;
-	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
-
-	if(eplGradSquared < MIN_EPL_GRAD_SQUARED)
-	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_grad++;
-		return false;
-	}
-
-
-	// ===== check epl-grad angle ======
-	if(eplGradSquared / (gx*gx+gy*gy) < MIN_EPL_ANGLE_SQUARED)
-	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_angle++;
-		return false;
-	}
-
-
-	///TODO: rescaling like this assumes the EPL is straight - change this part.
-	// ===== DONE - return "normalized" epl =====
-	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
-	*pepx = epx * fac;
-	*pepy = epy * fac;
-
-	return true;
-}
 
 
 bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats)
@@ -237,20 +180,31 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		}
 	}
 
-	float epx, epy;
-	bool isGood = makeAndCheckEPL(x, y, refFrame, &epx, &epy, stats);
-	if(!isGood) return false;
-
-	if(enablePrintDebugInfo) stats->num_observe_create_attempted++;
-
 	float new_u = float(x);
 	float new_v = float(y);
 	float result_idepth, result_var, result_eplLength;
-	float error = doLineStereo(
-			new_u,new_v,epx,epy,
-			0.0f, 1.0f, 1.0f/MIN_DEPTH,
+	float error;
+	if (modelType == CameraModelType::PROJ) {
+		float epx, epy;
+		bool isGood = makeAndCheckEPL(x, y, refFrame, &epx, &epy, stats);
+		if(!isGood) return false;
+		error = doLineStereo(
+			new_u, new_v, epx, epy,
+			0.0f, 1.0f, 1.0f / MIN_DEPTH,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
+	} else /*modelType == CameraModelType::OMNI*/ {
+		vec3 epDir;
+		bool isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
+		if(!isGood) return false;
+		error = doOmniStereo(
+			new_u, new_v, epDir,
+			0.0f, 1.0f, 1.0f / MIN_DEPTH,
+			refFrame, refFrame->image(0),
+			result_idepth, result_var, result_eplLength, stats);
+	}
+
+	if(enablePrintDebugInfo) stats->num_observe_create_attempted++;
 
 	if(error == -3 || error == -2)
 	{
@@ -314,26 +268,44 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		}
 	}
 
-	float epx, epy;
-	bool isGood = makeAndCheckEPL(x, y, refFrame, &epx, &epy, stats);
-	if(!isGood) return false;
-
-	// which exact point to track, and where from.
-	float sv = sqrt(target->idepth_var_smoothed);
-	float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC;
-	float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC;
-	if(min_idepth < 0) min_idepth = 0;
-	if(max_idepth > 1/MIN_DEPTH) max_idepth = 1/MIN_DEPTH;
-
-	stats->num_observe_update_attempted++;
-
+	float error = 0.f;
 	float result_idepth, result_var, result_eplLength;
+	if (modelType == CameraModelType::PROJ) {
+		float epx, epy;
+		bool isGood = makeAndCheckEPL(x, y, refFrame, &epx, &epy, stats);
+		if (!isGood) return false;
 
-	float error = doLineStereo(
-			float(x),float(y),epx,epy,
-			min_idepth, target->idepth_smoothed ,max_idepth,
+		// which exact point to track, and where from.
+		float sv = sqrt(target->idepth_var_smoothed);
+		float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC;
+		float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC;
+		if (min_idepth < 0) min_idepth = 0;
+		if (max_idepth > 1 / MIN_DEPTH) max_idepth = 1 / MIN_DEPTH;
+
+		error = doLineStereo(
+			float(x), float(y), epx, epy,
+			min_idepth, target->idepth_smoothed, max_idepth,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
+	} else /*CameraModelType::OMNI*/ {
+		vec3 epDir;
+		bool isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
+		if (!isGood) return false;
+
+		// which exact point to track, and where from.
+		float sv = sqrt(target->idepth_var_smoothed);
+		float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC;
+		float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC;
+		if (min_idepth < 0) min_idepth = 0;
+		if (max_idepth > 1 / MIN_DEPTH) max_idepth = 1 / MIN_DEPTH;
+
+		error = doOmniStereo(
+			float(x), float(y), epDir,
+			min_idepth, target->idepth_smoothed, max_idepth,
+			refFrame, refFrame->image(0),
+			result_idepth, result_var, result_eplLength, stats);
+	}
+	stats->num_observe_update_attempted++;
 
 	float diff = result_idepth - target->idepth_smoothed;
 

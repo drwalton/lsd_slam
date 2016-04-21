@@ -28,6 +28,7 @@
 #include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.hpp"
 #include "Win32Compatibility.hpp"
+#include "OmniCameraModel.hpp"
 
 namespace lsd_slam
 {
@@ -660,46 +661,100 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 	ls6.initialize(width*height);
 	ls4.initialize(width*height);
 
-	for(int i=0;i<buf_warped_size;i++)
-	{
-		float px = *(buf_warped_x+i);	// x'
-		float py = *(buf_warped_y+i);	// y'
-		float pz = *(buf_warped_z+i);	// z'
+	if (model->getType() == CameraModelType::PROJ) {
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);	// x'
+			float py = *(buf_warped_y + i);	// y'
+			float pz = *(buf_warped_z + i);	// z'
 
-		float wp = *(buf_weight_p+i);	// wr/wp
-		float wd = *(buf_weight_d+i);	// wr/wd
+			float wp = *(buf_weight_p + i);	// wr/wp
+			float wd = *(buf_weight_d + i);	// wr/wd
 
-		float rp = *(buf_warped_residual+i); // r_p
-		float rd = *(buf_residual_d+i);	 // r_d
+			float rp = *(buf_warped_residual + i); // r_p
+			float rd = *(buf_residual_d + i);	 // r_d
 
-		float gx = *(buf_warped_dx+i);	// \delta_x I
-		float gy = *(buf_warped_dy+i);  // \delta_y I
+			float gx = *(buf_warped_dx + i);	// \delta_x I
+			float gy = *(buf_warped_dy + i);  // \delta_y I
 
 
-		float z = 1.0f / pz;
-		float z_sqr = 1.0f / (pz*pz);
-		Vector6 v;
-		Vector4 v4;
-		v[0] = z*gx + 0;
-		v[1] = 0 +         z*gy;
-		v[2] = (-px * z_sqr) * gx +
-			  (-py * z_sqr) * gy;
-		v[3] = (-px * py * z_sqr) * gx +
-			  (-(1.0f + py * py * z_sqr)) * gy;
-		v[4] = (1.0f + px * px * z_sqr) * gx +
-			  (px * py * z_sqr) * gy;
-		v[5] = (-py * z) * gx +
-			  (px * z) * gy;
+			float z = 1.0f / pz;
+			float z_sqr = 1.0f / (pz*pz);
+			Vector6 v;
+			Vector4 v4;
+			v[0] = z*gx + 0;
+			v[1] = 0 + z*gy;
+			v[2] = (-px * z_sqr) * gx +
+				(-py * z_sqr) * gy;
+			v[3] = (-px * py * z_sqr) * gx +
+				(-(1.0f + py * py * z_sqr)) * gy;
+			v[4] = (1.0f + px * px * z_sqr) * gx +
+				(px * py * z_sqr) * gy;
+			v[5] = (-py * z) * gx +
+				(px * z) * gy;
 
-		// new:
-		v4[0] = z_sqr;
-		v4[1] = z_sqr * py;
-		v4[2] = -z_sqr * px;
-		v4[3] = z;
+			// new:
+			v4[0] = z_sqr;
+			v4[1] = z_sqr * py;
+			v4[2] = -z_sqr * px;
+			v4[3] = z;
 
-		ls6.update(v, rp, wp);		// Jac = - v
-		ls4.update(v4, rd, wd);	// Jac = v4
+			ls6.update(v, rp, wp);		// Jac = - v
+			ls4.update(v4, rd, wd);	// Jac = v4
 
+		}
+	}
+	else  /* CameraModelType::OMNI */ {
+		const OmniCameraModel *m = static_cast<const OmniCameraModel*>(model.get());
+		float e = m->e;
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);	// x'
+			float py = *(buf_warped_y + i);	// y'
+			float pz = *(buf_warped_z + i);	// z'
+
+			float wp = *(buf_weight_p + i);	// wr/wp
+			float wd = *(buf_weight_d + i);	// wr/wd
+
+			float rp = *(buf_warped_residual + i); // r_p
+			float rd = *(buf_residual_d + i);	 // r_d
+
+			float gx = *(buf_warped_dx + i);	// \delta_x I
+			float gy = *(buf_warped_dy + i);  // \delta_y I
+
+
+			float z = 1.0f / pz;
+			float z_sqr = 1.0f / (pz*pz);
+			float n = vec3(px, py, z).norm();
+			float den = 1.f / ((z + n*e)*(z + n*e));
+			Vector6 v;
+
+			v[0] = gx*den*(z + e*(n - (px*px) / n))
+				- (gy*den*e*px*py / n);
+
+			v[1] = -(gx*den*e*px*py / n) +
+				gy*den*(z + e*(n - py*py / n));
+
+			v[2] = -gx*den*px*(1 + z*e / n)
+				- gy*den*py*(1 + z*e / n);
+
+			v[3] = -z*v[1] + py*v[2];
+			v[4] = z*v[0] - px*v[2];
+			v[5] = -py*v[0] + px*v[1];
+
+			//TODO: check this is correct for SIM3!
+			Vector4 v4;
+
+			// new:
+			v4[0] = z_sqr;
+			v4[1] = z_sqr * py;
+			v4[2] = -z_sqr * px;
+			v4[3] = z;
+
+			ls6.update(v, rp, wp);		// Jac = - v
+			ls4.update(v4, rd, wd);	// Jac = v4
+
+		}
 	}
 
 	ls4.finishNoDivide();

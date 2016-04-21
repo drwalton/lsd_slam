@@ -4,6 +4,10 @@
 #include "OmniCameraModel.hpp"
 #include "CameraMotion.hpp"
 #include <fstream>
+#include <iomanip>
+#include <boost/filesystem.hpp>
+#include "util/settings.hpp"
+#include "util/ImgProc.hpp"
 
 template<typename T>
 std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
@@ -25,22 +29,29 @@ enum MotionType {
 MotionType motionType = ELLIPSE;
 
 int main(int argc, char **argv) {
-	if (argc != 6) {
-		std::cout << "Usage: MakeRaycastedVideo [modelFilename] [camTransform] [vidFilename] [imRows] [imCols]" << std::endl;
+	if (argc < 7) {
+		std::cout << "Usage: MakeRaycastedVideo [camModel] [modelFilename] [camTransform] "
+			" [vidFilename] [imRows] [imCols] [saveImages]" << std::endl;
 		return 1;
 	}
+	bool saveImages = argc >= 8;
 
-	OmniCameraModel model = OmniCameraModel::makeDefaultModel();
+	std::unique_ptr<CameraModel> model = CameraModel::loadFromFile(lsd_slam::resourcesDir() + argv[1]);
 
+	std::string vidFilename(lsd_slam::resourcesDir() + argv[4]);
+	std::string imageFolder = vidFilename.substr(0, vidFilename.find_last_of('.'));
+	std::string depthFolder = vidFilename.substr(0, vidFilename.find_last_of('.')) + "_depth";
+	boost::filesystem::create_directories(boost::filesystem::path(imageFolder));
+	boost::filesystem::create_directories(boost::filesystem::path(depthFolder));
 
 	std::cout << "Loading scene from file: " << argv[1] << std::endl;
 
 	ModelLoader m;
-	m.loadFile(argv[1]);
+	m.loadFile(argv[2]);
 
 	std::cout << "Vertices: \n" << m.vertices();
 
-	mat4 worldToCam = loadCamTransform(argv[2]);
+	mat4 worldToCam = loadCamTransform(lsd_slam::resourcesDir() + argv[3]);
 	std::unique_ptr<CameraMotion> camMotion;
 
 
@@ -60,26 +71,51 @@ int main(int argc, char **argv) {
 	
 	std::cout << "Colors: \n " << colors;
 
-	cv::Size size(atoi(argv[4]), atoi(argv[5]));
+	cv::Size size(atoi(argv[5]), atoi(argv[6]));
 
 	cv::VideoWriter video;
-	video.open(argv[3], cv::VideoWriter::fourcc('M','J','P','G'), 30, size);
+	video.open(lsd_slam::resourcesDir() + argv[3], cv::VideoWriter::fourcc('M','J','P','G'), 30, size);
 
 	cv::Mat image;
+	cv::Mat depth;
 	int percentage = 0;
+
+	cv::namedWindow("Color");
+	cv::namedWindow("Depth");
+	cv::moveWindow("Color", 0, 30);
+	cv::moveWindow("Depth", model->w, 30);
 	
+	size_t imgCounter = 0;
 	for (size_t i = 0; i < numFrames; ++i) {
+		//TODO also record depth, for initialising when testing tracking.
 		image = raycast(m.vertices(), m.indices(), colors, camMotion->getNextTransform(), 
-			model, size);
-		cv::imshow("PREVIEW", image);
+			*model, true, depth);
+		cv::imshow("Color", image);
+		double minD, maxD;
+		cv::minMaxLoc(depth, &minD, &maxD);
+		cv::imshow("Depth", depth / maxD);
 		cv::waitKey(1);
+		if (saveImages) {
+			std::stringstream ifName;
+			ifName << imageFolder << "/" << 
+				std::setfill('0') << std::setw(5) << imgCounter << ".png";
+			std::string str = ifName.str();
+			cv::imwrite(str, image);
+			std::stringstream dfName;
+			dfName << depthFolder << "/" << 
+				std::setfill('0') << std::setw(5) << imgCounter << ".tiff";
+			str = dfName.str();
+			imwriteFloat(str, depth);
+			++imgCounter;
+		}
+
 		video << image;
 		
 		float percentage_f = 100.f * float(i) / float(numFrames);
 		if(int(percentage_f) > percentage) {
 			percentage = int(percentage_f);
 			if(percentage % 10 == 0) {
-				std::cout << percentage << "\% complete..." << std::endl;
+				std::cout << percentage << "% complete..." << std::endl;
 			}
 		}
 	}

@@ -24,8 +24,10 @@ public:
 
 	const mat3 K, Kinv;
 
-	inline float fxi() { return Kinv(0, 0); };
-	inline float fyi() { return Kinv(1, 1); };
+	inline float fxi() const { return Kinv(0, 0); } ;
+	inline float fyi() const { return Kinv(1, 1); } ;
+	inline float cxi() const { return Kinv(0, 2); } ;
+	inline float cyi() const { return Kinv(1, 2); } ;
 
 	virtual std::unique_ptr<CameraModel> clone() const;
 

@@ -28,6 +28,14 @@ namespace lsd_slam
 {
 RunningStats runningStats;
 
+std::string resourcesDir() {
+#ifdef _WIN32
+	static std::string dir = getenv("HOMEDRIVE") + std::string(getenv("HOMEPATH")) + "/Documents/lsd_slam/resources/";
+#else
+	static std::string dir = "~/lsd_slam/resources/";
+#endif
+	return dir;
+}
 
 bool autoRun = true;
 bool autoRunWithinFrame = true;

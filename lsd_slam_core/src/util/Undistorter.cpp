@@ -62,6 +62,39 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 
 	printf(" ... found!\n");
 
+	std::string type;
+	std::getline(f, type);
+
+	if (type == "OMNI") {
+		float fx, fy, cx, cy, e, r, c_x, c_y;
+		int w, h;
+		f >> fx >> fy >> cx >> cy >> w >> h;
+		f >> e >> c_x >> c_y >> r;
+
+		std::getline(f, type);
+		std::getline(f, type);
+		if (type == "NOP") {
+			return new UndistorterNop(w, h);
+		} else {
+			throw std::runtime_error("No omni undistorters except NOP implemented yet.");
+		}
+	}
+	else if (type == "PROJ") {
+		float fx, fy, cx, cy;
+		int w, h;
+		f >> fx >> fy >> cx >> cy >> w >> h;
+
+		std::getline(f, type);
+		std::getline(f, type);
+		if (type == "NOP") {
+			return new UndistorterNop(w, h);
+		} else {
+			throw std::runtime_error("No PROJ undistorters except NOP implemented yet.");
+		}
+	}
+
+	f.clear(); f.seekg(0);
+
 	std::string l1;
 	std::getline(f,l1);
 	f.close();
@@ -87,6 +120,42 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 	}
 }
 
+UndistorterNop::UndistorterNop(size_t width, size_t height)
+	:width_(width), height_(height)
+{}
+
+UndistorterNop::~UndistorterNop()
+{}
+
+void UndistorterNop::undistort(const cv::Mat& image, cv::OutputArray result) const
+{
+	if (image.cols != width_ || image.rows != height_) {
+		throw std::runtime_error("UndistorterNop given image of incorrect size!");
+	}
+	image.copyTo(result);
+}
+
+int UndistorterNop::getOutputWidth() const
+{
+	return width_;
+}
+int UndistorterNop::getOutputHeight() const
+{
+	return height_;
+}
+int UndistorterNop::getInputWidth() const
+{
+	return width_;
+}
+int UndistorterNop::getInputHeight() const
+{
+	return height_;
+}
+
+bool UndistorterNop::isValid() const
+{
+	return true;
+}
 
 UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 {

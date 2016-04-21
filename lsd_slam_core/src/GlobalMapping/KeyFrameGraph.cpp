@@ -36,6 +36,7 @@
 #include "opencv2/opencv.hpp"
 
 #include <g2o/types/sim3/sim3.h>
+#include <boost/filesystem.hpp>
 #include "GlobalMapping/g2oTypeSim3Sophus.hpp"
 
 
@@ -124,8 +125,11 @@ void KeyFrameGraph::dumpMap(std::string folder)
 
 	keyframesAllMutex.lock_shared();
 	char buf[100];
-	int succ = system(("rm -rf "+folder).c_str());
-	succ += system(("mkdir "+folder).c_str());
+	boost::filesystem::path folderPath(folder);
+	int succ = static_cast<int>(boost::filesystem::remove_all(folderPath));
+	succ += static_cast<int>(boost::filesystem::create_directories(folderPath));
+	//int succ = system(("rm -rf "+folder).c_str());
+	//succ += system(("mkdir "+folder).c_str());
 
 	for(unsigned int i=0;i<keyframesAll.size();i++)
 	{
@@ -133,7 +137,7 @@ void KeyFrameGraph::dumpMap(std::string folder)
 		cv::imwrite(buf, getDepthRainbowPlot(keyframesAll[i], 0));
 
 		snprintf(buf, 100, "%s/frame-%d.png", folder.c_str(), i);
-		cv::imwrite(buf, cv::Mat(keyframesAll[i]->height(), keyframesAll[i]->width(),CV_32F,keyframesAll[i]->image()));
+		cv::imwrite(buf, cv::Mat(keyframesAll[i]->height(), keyframesAll[i]->width(),CV_32FC1 ,keyframesAll[i]->image()));
 
 		snprintf(buf, 100, "%s/var-%d.png", folder.c_str(), i);
 		cv::imwrite(buf, getVarRedGreenPlot(keyframesAll[i]->idepthVar(),keyframesAll[i]->image(),keyframesAll[i]->width(),keyframesAll[i]->height()));
