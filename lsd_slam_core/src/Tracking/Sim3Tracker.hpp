@@ -56,6 +56,8 @@ struct Sim3ResidualStruct
 };
 
 
+///\brief Tracker designed to align frames using a Sim3 transform - that is,
+///       a rigid transform with additional scaling.
 class Sim3Tracker
 {
 public:

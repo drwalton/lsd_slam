@@ -9,6 +9,7 @@ namespace lsd_slam {
 
 enum class CameraModelType { OMNI, PROJ };
 
+///\brief Abstract class encapsulating a camera model.
 class CameraModel {
 public:
 	CameraModel(float fx, float fy, float cx, float cy, size_t w, size_t h);

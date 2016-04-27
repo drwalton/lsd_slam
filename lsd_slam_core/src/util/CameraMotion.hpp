@@ -11,14 +11,19 @@ class NoNewTransformException : public std::runtime_error {
 	std::string what() { return std::runtime_error::what(); }
 };
 
+///\brief Abstract class encapsulating the motion of a camera over time.
 class CameraMotion {
 public:
 	explicit CameraMotion();
 	virtual ~CameraMotion() throw();
 
+	///\brief Get the transform corresponding the the position of the camera in
+	///       the next frame.
 	virtual WorldToCamTransform getNextTransform() = 0;
 };
 
+///\brief CameraMotion which moves back and forth along an axis through a
+///       central point.
 class OscillatingCameraMotion : public CameraMotion {
 public:
 	explicit OscillatingCameraMotion(const WorldToCamTransform &initialTransform, 
@@ -32,7 +37,7 @@ private:
 	const vec3 origin_, maxDisplacement_;
 };
 
-
+///\brief CameraMotion which moves along an elliptical orbit.
 class EllipticalCameraMotion : public CameraMotion {
 public:
 	explicit EllipticalCameraMotion(const WorldToCamTransform &initialTransform, 

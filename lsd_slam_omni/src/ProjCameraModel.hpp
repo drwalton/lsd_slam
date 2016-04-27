@@ -5,6 +5,7 @@
 
 namespace lsd_slam {
 
+///\brief Projective, pinhole camera model.
 class ProjCameraModel : public CameraModel {
 public:
 	ProjCameraModel(float fx, float fy, float cx, float cy, size_t w, size_t h);

@@ -32,7 +32,8 @@ namespace lsd_slam
 class TrackingReference;
 class Frame;
 
-
+///\brief Tracker designed to align frames using rigid transforms (elements
+///       of SE3).
 class SE3Tracker
 {
 public:
