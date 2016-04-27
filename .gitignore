@@ -34,5 +34,5 @@ cmake_install.cmake
 build/
 xcode/
 resources/*
-
+docs/
 
