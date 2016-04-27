@@ -1,6 +1,7 @@
 #include "Tracking/SE3Tracker.hpp"
 #include "Tracking/TrackingReference.hpp"
 #include "DepthEstimation/DepthMap.hpp"
+#include "DepthEstimation/DepthMapPixelHypothesis.hpp"
 #include "DataStructures/Frame.hpp"
 #include <opencv2/opencv.hpp>
 #include "globalFuncs.hpp"
@@ -33,26 +34,45 @@ int main(int argc, char **argv)
 			static_cast<uchar>(color.y() * 255.f), 
 			static_cast<uchar>(color.z() * 255.f)));
 	}
+	cv::Mat depth1;
 
-	cv::Mat image1 = raycast(m.vertices(), m.indices(), colors, t1, *model, cv::Size(model->w, model->h));
-	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *model, cv::Size(model->w, model->h));
-
-	
+	cv::Mat image1 = raycast(m.vertices(), m.indices(), colors, t1, *model, true, depth1);
+	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *model);
 
 	cv::Mat fltImage1;
 	image1.convertTo(fltImage1, CV_32FC1);
 	cv::Mat fltImage2;
 	image2.convertTo(fltImage2, CV_32FC1);
 
-	lsd_slam::Frame referenceFrame(0, *model, 0.0, fltImage1.ptr<float>(0));
+	lsd_slam::Frame keyframe(0, *model, 0.0, fltImage1.ptr<float>(0));
+
+	{
+		lsd_slam::DepthMapPixelHypothesis *arr = new lsd_slam::DepthMapPixelHypothesis[model->w*model->h];
+
+		for (size_t r = 0; r < model->h; ++r) {
+			for (size_t c = 0; c < model->w; ++c) {
+				arr[r*model->w + c].idepth =
+					arr[r*model->w + c].idepth_smoothed = 
+					1.f / depth1.at<float>(r, c);
+				arr[r*model->w + c].idepth_var = 
+					arr[r*model->w + c].idepth_var_smoothed = 0.01f;
+				arr[r*model->w + c].isValid = true;
+			}
+		}
+
+		keyframe.setDepth(arr);
+
+
+		delete[] arr;
+	}
+
 	lsd_slam::DepthMap depthMap(*model);
-	depthMap.initializeRandomly(&referenceFrame);
+	depthMap.initializeFromGTDepth(&keyframe);
 
 	lsd_slam::TrackingReference reference;
-	reference.importFrame(&referenceFrame);
+	reference.importFrame(&keyframe);
 
 	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
-
 
 	SE3 initialEstimate;
 
