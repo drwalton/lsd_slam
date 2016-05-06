@@ -2,6 +2,7 @@
 #define LSD_OMNI_VECTORTYPES_HPP_INCLUDED
 
 #include <Eigen/Core>
+#include <ostream>
 
 namespace lsd_slam {
 
@@ -29,6 +30,8 @@ public:
 	operator mat4() const;
 	vec4 operator *(const vec4 &rhs) const;
 };
+
+std::ostream &operator <<(std::ostream &stream, const RigidTransform &rhs);
 
 typedef RigidTransform WorldToCamTransform;
 

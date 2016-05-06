@@ -39,4 +39,10 @@ vec4 RigidTransform::operator *(const vec4 &rhs) const
 	return this->operator mat4() * rhs;
 }
 
+std::ostream &operator <<(std::ostream &stream, const RigidTransform &rhs)
+{
+	stream << "R:\n" << rhs.rotation << "\nt:\n" << rhs.translation;
+	return stream;
+}
+
 }

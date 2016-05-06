@@ -36,8 +36,16 @@ int main(int argc, char **argv)
 	}
 	cv::Mat depth1;
 
+	std::cout << "Rendering..." << std::endl;
+
 	cv::Mat image1 = raycast(m.vertices(), m.indices(), colors, t1, *model, true, depth1);
 	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *model);
+
+	cv::imshow("Im1", image1);
+	cv::imshow("Im2", image2);
+	cv::waitKey(1);
+
+	std::cout << "Real transform applied:\n" << t2 << std::endl;
 
 	cv::Mat fltImage1;
 	image1.convertTo(fltImage1, CV_32FC1);
@@ -75,12 +83,22 @@ int main(int argc, char **argv)
 	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
 
 	SE3 initialEstimate;
+	initialEstimate.translation() += Eigen::Vector3d(.1, 0., 0.);
 
 	SE3Tracker tracker(*model);
 
 	SE3 trackedEstimate = tracker.trackFrame(&reference, &newFrame, initialEstimate);
 
 	std::cout << trackedEstimate;
+
+	WorldToCamTransform estTransform;
+	estTransform.rotation = trackedEstimate.rotationMatrix().cast<float>();
+	estTransform.translation = trackedEstimate.translation().cast<float>();
+	cv::Mat image3 = raycast(m.vertices(), m.indices(), colors, estTransform, *model);
+
+	cv::imshow("Estimated transform visualisation (should be same as Im2", image3);
+
+	cv::waitKey();
 
 	return 0;
 }

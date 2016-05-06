@@ -32,13 +32,13 @@ cv::Mat raycast(
 	}
 
 	std::vector<std::thread> threads(image.rows);
-	for(size_t r = 0; r < image.rows; ++r) {
+	for(size_t r = 0; r < size_t(image.rows); ++r) {
 		threads[r] = std::thread([
 		r, &image, &vertices, &indices, &colors,
 		&worldToCamera, &model, &origin, &invRot,
 		raycastDepths, &depths]() {
 			//cv::Vec3b *rPtr = image.ptr<cv::Vec3b>(r);
-			for(size_t c = 0; c < image.cols; ++c) {
+			for(size_t c = 0; c < size_t(image.cols); ++c) {
     			Ray ray;
     			ray.origin = origin;
     			ray.dir = /*invRot * */model.pixelToCam(vec2(r,c));
