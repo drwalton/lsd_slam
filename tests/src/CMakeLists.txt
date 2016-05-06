@@ -44,7 +44,9 @@ target_link_libraries(TestDepthMapGeneration
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
 	${Boost_LIBRARIES}
+	${libtiff_LIBRARY}
 )
+link_libs_exec_debug(TestDepthMapGeneration G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
 add_executable(TestSE3Tracking
 	TestSE3Tracking.cpp
