@@ -34,6 +34,18 @@ target_link_libraries(TestOmniStereo
 	${Boost_LIBRARIES}
 )
 
+
+add_executable(TestDepthMapGeneration
+	TestDepthMapGeneration.cpp
+)
+
+target_link_libraries(TestDepthMapGeneration
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+)
+
 add_executable(TestSE3Tracking
 	TestSE3Tracking.cpp
 )
