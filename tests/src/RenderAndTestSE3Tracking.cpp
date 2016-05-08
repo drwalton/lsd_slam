@@ -12,10 +12,18 @@ using namespace lsd_slam;
 
 int main(int argc, char **argv)
 {
-	std::cout << "Loading scene from file: " << "cube.ply" << std::endl;
+	if(argc < 3 || argv[1] == std::string("-h")) {
+		std::cout << "RenderandTestSE3Tracking: render two views of a model using"
+			" a supplied camera model, and attempt to recover the transform using"
+			" the SE3 tracker.\nUsage: ./RenderAndTestSE3Tracking [camModel]"
+			" [3dModel]" << std::endl;
+		return 0;
+	}
+
+	std::cout << "Loading scene from file: " << argv[2] << std::endl;
 
 	ModelLoader m;
-	m.loadFile(resourcesDir() + "cube.ply");
+	m.loadFile(resourcesDir() + argv[2]);
 
 	std::cout << "Vertices: \n" << m.vertices();
 
@@ -96,7 +104,7 @@ int main(int argc, char **argv)
 	estTransform.translation = trackedEstimate.translation().cast<float>();
 	cv::Mat image3 = raycast(m.vertices(), m.indices(), colors, estTransform, *model);
 
-	cv::imshow("Estimated transform visualisation (should be same as Im2", image3);
+	cv::imshow("Estimated transform visualisation (should be same as Im2)", image3);
 
 	cv::waitKey();
 

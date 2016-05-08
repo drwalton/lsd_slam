@@ -19,6 +19,8 @@
 */
 
 #pragma once
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 #include "sophus/sim3.hpp"
 #include "sophus/se3.hpp"
@@ -80,3 +82,5 @@ extern template class Sophus::SE3Group<double, 0>;
 extern template class Sophus::Sim3Group<float, 0>;
 extern template class Sophus::Sim3Group<double, 0>;
 #endif
+
+#pragma clang diagnostic pop

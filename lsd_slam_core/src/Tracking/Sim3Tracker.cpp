@@ -34,7 +34,7 @@ namespace lsd_slam
 {
 
 Sim3Tracker::Sim3Tracker(const CameraModel &m)
-	:model(m.clone()), width(m.w), height(m.h)
+	:width(m.w), height(m.h), model(m.clone())
 {
 	size_t w = width, h = height;
 	settings = DenseDepthTrackerSettings();

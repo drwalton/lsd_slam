@@ -6,6 +6,10 @@ using namespace lsd_slam;
 
 int main(int argc, char **argv)
 {
+	if(argv < 2) {
+		return -1;
+	}
+	
 	cv::Mat image = cv::imread(argv[1]);
 	cv::Mat fltImage;
 	image.convertTo(fltImage, CV_32FC1);

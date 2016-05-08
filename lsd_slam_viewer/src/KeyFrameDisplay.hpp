@@ -25,10 +25,13 @@
 
 #ifdef _WIN32
 #include <GL/glew.h>
-#endif _WIN32
+#endif 
 
 #include "QGLViewer/qglviewer.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #include "sophus/sim3.hpp"
+#pragma clang diagnostic pop
 
 #include <sstream>
 #include <fstream>

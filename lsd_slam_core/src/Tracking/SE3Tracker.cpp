@@ -770,7 +770,7 @@ void SE3Tracker::calculateWarpUpdate(
 			// step 3 + step 5 comp 6d error vector
 
 			float z = 1.0f / pz;
-			float z_sqr = 1.0f / (pz*pz);
+			//float z_sqr = 1.0f / (pz*pz);
 			float n = vec3(px, py, z).norm();
 			float den = 1.f / ((z + n*e)*(z + n*e));
 			Vector6 v;

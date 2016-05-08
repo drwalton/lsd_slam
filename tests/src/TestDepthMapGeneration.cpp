@@ -12,10 +12,14 @@ using namespace lsd_slam;
 
 int main(int argc, char **argv)
 {
-	std::cout << "Loading scene from file: " << "cube.ply" << std::endl;
+	if(argc < 2 || argv[1] == std::string("-h") {
+		return -1;
+	}
+	
+	std::cout << "Loading scene from file: " << argv[1] << std::endl;
 
 	ModelLoader m;
-	m.loadFile(resourcesDir() + "cube.ply");
+	m.loadFile(resourcesDir() + argv[1]);
 
 	std::cout << "Vertices: \n" << m.vertices();
 

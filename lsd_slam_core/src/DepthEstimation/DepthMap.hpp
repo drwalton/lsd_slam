@@ -50,7 +50,7 @@ public:
 	DepthMap(const CameraModel &model);
 	DepthMap(const DepthMap&) = delete;
 	DepthMap& operator=(const DepthMap&) = delete;
-	~DepthMap();
+	~DepthMap() throw();
 
 	///\brief Reset depth map (cause it to be recalculated).
 	///\note Labels all points in depth map as "Invalid", meaning they will be

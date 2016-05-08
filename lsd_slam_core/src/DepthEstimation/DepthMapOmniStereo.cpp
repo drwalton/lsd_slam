@@ -153,9 +153,9 @@ float DepthMap::doOmniStereo(
 	// the reference image.
 	//N.B. This line moves away from the epipole in the reference image.
 	vec3 keyframePointDir = oModel.pixelToCam(vec2(u, v), 1.f);
-	vec3 expectedMatchPos = referenceFrame->otherToThis_R
-		* (keyframePointDir / prior_idepth) 
-		+ referenceFrame->otherToThis_t;
+//	vec3 expectedMatchPos = referenceFrame->otherToThis_R
+//		* (keyframePointDir / prior_idepth) 
+//		+ referenceFrame->otherToThis_t;
 	vec3 lineStartPos = referenceFrame->otherToThis_R
 		* (keyframePointDir / max_idepth) 
 		+ referenceFrame->otherToThis_t;
@@ -368,10 +368,10 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 	if (eplLength < minLength)
 	{
 		// make epl long enough (pad a little bit).
-		float pad = (minLength - (eplLength)) / 2.0f;
-		float a = 1.f;
-
 		//TODO
+//		float pad = (minLength - (eplLength)) / 2.0f;
+//		float a = 1.f;
+
 
 		*lineStartPix = oModel.camToPixel(*lineStart);
 		*lineEndPix = oModel.camToPixel(*lineEnd);
@@ -579,11 +579,11 @@ std::array<float, 5> findValuesToSearchFor(
 	
 	//Find values of keyframe at these points.
 	std::array<float, 5> vals = {
-		getInterpolatedElement(keyframe, model.camToPixel(bwdDir2), width),
+		{getInterpolatedElement(keyframe, model.camToPixel(bwdDir2), width),
 		getInterpolatedElement(keyframe, model.camToPixel(bwdDir1), width),
 		getInterpolatedElement(keyframe, model.camToPixel(pointDir), width),
 		getInterpolatedElement(keyframe, model.camToPixel(fwdDir1), width),
-		getInterpolatedElement(keyframe, model.camToPixel(fwdDir2), width)
+		getInterpolatedElement(keyframe, model.camToPixel(fwdDir2), width)}
 	};
 
 	return vals;
