@@ -34,6 +34,8 @@ find_package(X11 REQUIRED)
 find_package(QGLViewer REQUIRED)
 message("QOPENGL: ${QT_QTOPENGL_INCLUDE_DIR}")
 include_directories("${QT_QTOPENGL_INCLUDE_DIR}/..")
+include_directories("${QT_QTOPENGL_INCLUDE_DIR}")
+include_directories(${QT_QTCORE_INCLUDE_DIR})
 
 if(APPLE)
 	message("On mac, including /usr/local/Cellar/qt/4.8.7_2/include")

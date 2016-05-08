@@ -35,12 +35,14 @@
 //template class Eigen::Quaternion<float>;
 //template class Eigen::Quaternion<double>;
 
+//Clang seems to have issues with these external templates.
+#ifndef __clang__
 template class Sophus::SE3Group<float, 0>;
 template class Sophus::SE3Group<double, 0>;
 
 template class Sophus::Sim3Group<float, 0>;
 template class Sophus::Sim3Group<double, 0>;
-
+#endif
 
 std::ostream &operator << (std::ostream &s, const SE3 &t) {
 	s << "SE3 Element:\nRotation:\n" << t.rotationMatrix()

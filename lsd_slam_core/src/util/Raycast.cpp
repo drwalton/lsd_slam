@@ -7,6 +7,7 @@ namespace lsd_slam {
 
 const float EPS = 10e-6f;
 cv::Vec3b BACKGROUND_COLOR = cv::Vec3b(0,0,0);
+cv::Mat emptyMat = cv::Mat();
 
 cv::Mat raycast(
 	const std::vector<vec3> &vertices,

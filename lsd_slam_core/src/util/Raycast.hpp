@@ -12,6 +12,8 @@ struct Ray {
 	vec3 dir;
 };
 
+extern cv::Mat emptyMat;
+
 ///\brief Generate a raycasted image given a triangle mesh and a camera model.
 ///       Optionally also generate depth maps.
 ///\param vertices Vertices of the triangle mesh.
@@ -33,7 +35,7 @@ cv::Mat raycast(
 	const WorldToCamTransform &worldToCamera,
 	const CameraModel &model,
 	bool raycastDepths = false,
-	cv::Mat &depths = cv::Mat());
+	cv::Mat &depths = emptyMat);
 
 
 cv::Vec3b shootRay(

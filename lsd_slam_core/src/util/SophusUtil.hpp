@@ -67,6 +67,10 @@ inline SE3 se3FromSim3(const Sim3& sim3)
 }
 
 // Extern templates (see SophusUtil.cpp)
+//Clang seems to have issues with these, so disabling them in this case
+// (This means that these classes will instead be compiled when they are
+// needed - slower, but links correctly).
+#ifndef __clang__
 extern template class Eigen::Quaternion<float>;
 extern template class Eigen::Quaternion<double>;
 
@@ -75,3 +79,4 @@ extern template class Sophus::SE3Group<double, 0>;
 
 extern template class Sophus::Sim3Group<float, 0>;
 extern template class Sophus::Sim3Group<double, 0>;
+#endif

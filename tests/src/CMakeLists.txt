@@ -73,6 +73,7 @@ target_link_libraries(RenderAndTestSE3Tracking
 	${Assimp_LIBRARY}
 	${Boost_LIBRARIES}
 	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
 )
 link_libs_exec_debug(RenderAndTestSE3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 

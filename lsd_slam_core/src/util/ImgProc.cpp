@@ -1,5 +1,20 @@
 #include "ImgProc.hpp"
+
+//This typedef hack is designed to fix an issue with both libtiff and Eigen3
+// defining int64 and uint64 typedefs. This renames all the libtiff typedefs
+// to int64_ignore, and uint64_ignore, instead.
+#ifdef __clang__
+#define int64 int64_ignore
+#define uint64 uint64_ignore
+#endif
+
 #include <tiffio.h>
+
+//Undefining again - from now on, int64/uint64 use the Eigen3 typedefs.
+#ifdef __clang__
+#undef int64
+#undef uint64
+#endif
 
 namespace lsd_slam
 {
