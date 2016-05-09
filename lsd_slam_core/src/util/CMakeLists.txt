@@ -1,4 +1,6 @@
 add_library(lsd_slam_util
+	Constants.hpp
+	Constants.cpp
 	EigenCoreInclude.hpp
 	globalFuncs.cpp
 	globalFuncs.hpp

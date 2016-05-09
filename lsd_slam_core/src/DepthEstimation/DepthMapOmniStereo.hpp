@@ -3,6 +3,7 @@
 
 #include "OmniCameraModel.hpp"
 #include <array>
+#include "util/Constants.hpp"
 
 namespace lsd_slam {
 
@@ -29,6 +30,9 @@ float findSsd(const std::array<T, N> &a, const std::array<T, N> &b)
 ///\param[out] matchDir The direction to the matched pixel
 ///\param[out] matchPixel The 2D coordinates of the matched pixel in the reference
 ///            frame.
+///\param[out] drawSearch Optional output image. The SSDs are plotted on the 
+///            supplied image. Make sure this image has the same size as the 
+///            matchFrame, and is in CV_32UC3 format.
 ///\return true if a match is found, false otherwise.
 ///\note If this returns false, the values of minSsd, matchDir, matchPixel are invalid!
 bool omniStereo(
@@ -40,7 +44,8 @@ bool omniStereo(
 	float minDepth, float maxDepth,
 	float &minSsd,
 	vec3 &matchDir,
-	vec2 &matchPixel);
+	vec2 &matchPixel,
+	cv::Mat &drawSearch = emptyMat);
 
 ///\brief Return 5 floating-point values, centered around the given point, 
 ///       along the respective epipolar curve (values should be one pixel apart).
@@ -51,7 +56,8 @@ std::array<float, 5> findValuesToSearchFor(
 	const float* keyframe,
 	int x, int y,
 	int width,
-	vec3 &pointDir);
+	vec3 &pointDir,
+	cv::Mat &visIm = emptyMat);
 
 void findReferenceFrameLineEndpoints(
 	vec3 &pStart, vec3 &pEnd,

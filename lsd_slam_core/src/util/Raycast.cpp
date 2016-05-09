@@ -7,7 +7,6 @@ namespace lsd_slam {
 
 const float EPS = 10e-6f;
 cv::Vec3b BACKGROUND_COLOR = cv::Vec3b(0,0,0);
-cv::Mat emptyMat = cv::Mat();
 
 cv::Mat raycast(
 	const std::vector<vec3> &vertices,
@@ -42,7 +41,7 @@ cv::Mat raycast(
 			for(size_t c = 0; c < size_t(image.cols); ++c) {
     			Ray ray;
     			ray.origin = origin;
-    			ray.dir = /*invRot * */model.pixelToCam(vec2(r,c));
+    			ray.dir = /*invRot * */model.pixelToCam(vec2(c,r));
 				float depth;
 				image.at<cv::Vec3b>(r,c) = shootRay(ray, vertices, indices, colors, depth);
 				if (raycastDepths) {

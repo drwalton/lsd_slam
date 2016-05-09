@@ -64,6 +64,15 @@ inline float getInterpolatedElement(const float *const mat, const vec2 &p, const
 	return getInterpolatedElement(mat, p.x(), p.y(), width);
 }
 
+inline vec3 hueToRgb(float H)
+{
+	return vec3(
+		fabsf(H*6.f - 3.f) - 1.f,
+		2.f - fabsf(H*6.f - 2.f),
+		2.f - fabsf(H*6.f - 4.f)
+		);
+}
+
 inline Eigen::Vector3f getInterpolatedElement43(const Eigen::Vector4f* const mat, const float x, const float y, const int width)
 {
 	int ix = (int)x;

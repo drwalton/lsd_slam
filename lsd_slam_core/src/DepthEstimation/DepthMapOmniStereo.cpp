@@ -8,7 +8,7 @@
 ///This file contains the depth estimation functions specific to Omnidirectional
 /// camera models.
 
-#define SHOW_DEBUG_IMAGES
+#define SHOW_DEBUG_IMAGES 0
 
 namespace lsd_slam {
 
@@ -457,7 +457,8 @@ bool omniStereo(
 	float minDepth, float maxDepth,
 	float &minSsd,
 	vec3 &matchDir,
-	vec2 &matchPixel)
+	vec2 &matchPixel,
+	cv::Mat &drawMatch)
 {
 	vec3 pointDir;
 	std::array<float, 5> searchVals = findValuesToSearchFor(keyframeToReference,
@@ -469,6 +470,14 @@ bool omniStereo(
 	//Find start and end of search curve
 	vec3 lineStart = keyframeToReference * minDPointDir;
 	vec3 lineEnd   = keyframeToReference * maxDPointDir;
+	lineStart.normalize(), lineEnd.normalize();
+
+	if (!drawMatch.empty()) {
+		vec2 pix = model.camToPixel(lineStart);
+		cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 255, 0));
+		pix = model.camToPixel(lineEnd);
+		cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 0, 255));
+	}
 	
 	//Get first 5 possible matching values
 	float a = 0.f;//Line parameter
@@ -489,13 +498,13 @@ bool omniStereo(
 
 	//Get two points after line start.
 	a = 0.f;
+	float prevA = 0.f, prevPrevA = 0.f;
 	a += model.getEpipolarParamIncrement(a, lineEnd, lineStart); 
-	if(a > 1.f) return false;
 	matchDirs[3] = a*lineEnd + (1.f - a)*lineStart;
 	matchVals[3] = getInterpolatedElement(reference, model.camToPixel(matchDirs[3]), width);
+	prevA = a;
 
 	a += model.getEpipolarParamIncrement(a, lineEnd, lineStart);
-	if(a > 1.f) return false;
 	matchDirs[4] = a*lineEnd + (1.f - a)*lineStart;
 	matchVals[4] = getInterpolatedElement(reference, model.camToPixel(matchDirs[4]), width);
 	float ssd = findSsd(searchVals, matchVals);
@@ -504,9 +513,11 @@ bool omniStereo(
 	minSsd = ssd;
 
 	//Advance along remainder of line.
-	while (a < 1.f) {
+	while (prevPrevA < 1.f) {
+		prevPrevA = prevA;
+		prevA = a;
 		a += model.getEpipolarParamIncrement(a, lineEnd, lineStart);
-		if (a > 1.f) break;
+		if (prevPrevA > 1.f) break;
 		
 		//Move values along arrays
 		for (size_t i = 0; i < 4; ++i) {
@@ -523,6 +534,13 @@ bool omniStereo(
 			minSsd = ssd;
 			matchDir = matchDirs[2];
 		}
+
+		if (!drawMatch.empty()) {
+			vec2 pix = model.camToPixel(matchDirs[2]);
+			vec3 rgb = 255.f * hueToRgb(ssd / 50000.f);
+			drawMatch.at<cv::Vec3b>(pix.y(), pix.x()) =
+				cv::Vec3b(rgb.z(), rgb.y(), rgb.x());
+		}
 	}
 
 	matchPixel = model.camToPixel(matchDir);
@@ -530,15 +548,14 @@ bool omniStereo(
 	return true;
 }
 
-
-
 std::array<float, 5> findValuesToSearchFor(
 	const RigidTransform &keyframeToReference,
 	const OmniCameraModel &model,
 	const float* keyframe,
 	int x, int y,
 	int width,
-	vec3 &pointDir)
+	vec3 &pointDir,
+	cv::Mat &visIm)
 {
 	pointDir = model.pixelToCam(vec2(x, y));
 	vec3 epipoleDir = -keyframeToReference.translation.normalized();
@@ -558,7 +575,7 @@ std::array<float, 5> findValuesToSearchFor(
 	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
 	vec3 bwdDir2 = a*otherDir + (1.f - a)*pointDir;
 	
-#ifdef SHOW_DEBUG_IMAGES
+#if SHOW_DEBUG_IMAGES
 	cv::Mat lineImage(480, 640, CV_8UC1);
 	lineImage.setTo(0);
 	
@@ -570,12 +587,25 @@ std::array<float, 5> findValuesToSearchFor(
 		vec2 img = model.camToPixel(v);
 		static int i = 0;
 		std::cout << "Point " << i++ << ": " << int(img.x()) << ", " << int(img.y()) << std::endl;
-		lineImage.at<uchar>(img.y(), img.x()) = 255;
+		lineImage.at<uchar>(int(img.y()), int(img.x())) = 255;
 	}
 	
 	cv::imshow("LINE", lineImage);
 	cv::waitKey();
 #endif
+
+	if (!visIm.empty()) {
+		vec2 pix = model.camToPixel(bwdDir2);
+		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		pix = model.camToPixel(bwdDir1);
+		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		pix = model.camToPixel(pointDir);
+		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 255);
+		pix = model.camToPixel(fwdDir1);
+		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		pix = model.camToPixel(fwdDir2);
+		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+	}
 	
 	//Find values of keyframe at these points.
 	std::array<float, 5> vals = {

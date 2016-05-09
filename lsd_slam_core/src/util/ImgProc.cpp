@@ -47,7 +47,7 @@ bool imwriteFloat(const std::string &filename, const cv::Mat &imToSave)
 		TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 32);
 		TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 
-		for (size_t row = 0; row < imToSave.rows; ++row) {
+		for (size_t row = 0; row < size_t(imToSave.rows); ++row) {
 			//Write each row of the image in turn.
 			float *rptr = const_cast<float*>(imToSave.ptr<float>(row));
 			if (TIFFWriteScanline(tif, rptr, row, 0) < 0) {

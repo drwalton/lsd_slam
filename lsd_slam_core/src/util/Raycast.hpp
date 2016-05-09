@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include "VectorTypes.hpp"
 #include "CameraModel.hpp"
+#include "Constants.hpp"
 
 namespace lsd_slam {
 
@@ -11,8 +12,6 @@ struct Ray {
 	vec3 origin;
 	vec3 dir;
 };
-
-extern cv::Mat emptyMat;
 
 ///\brief Generate a raycasted image given a triangle mesh and a camera model.
 ///       Optionally also generate depth maps.

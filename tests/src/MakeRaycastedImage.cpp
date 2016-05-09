@@ -8,12 +8,13 @@
 using namespace lsd_slam;
 
 int main(int argc, char **argv) {
-	if(argc != 6) {
-		std::cout << "Usage: MakeRaycastedImage [modelFilename] [camTransform] [imageFilename] [imRows] [imCols]" << std::endl;
+	if(argc < 5) {
+		std::cout << "Usage: MakeRaycastedImage [modelFilename] [camTransform] [imageFilename] [camModel]" << std::endl;
 		return 1;
 	}
 	
-	OmniCameraModel model = OmniCameraModel::makeDefaultModel();
+	std::unique_ptr<CameraModel> model = OmniCameraModel::loadFromFile(
+		resourcesDir() + argv[4]);
 	
 	
 	std::cout << "Loading scene from file: " << argv[1] << std::endl;
@@ -36,7 +37,7 @@ int main(int argc, char **argv) {
 	std::cout << "Colors: \n " << colors;
 
 	cv::Mat image = raycast(m.vertices(), m.indices(), colors, worldToCam, 
-		model, cv::Size(atoi(argv[4]), atoi(argv[5])));
+		*model);
 	
 	cv::imwrite(argv[3], image);
 	

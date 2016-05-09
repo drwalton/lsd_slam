@@ -28,10 +28,14 @@
 #endif 
 
 #include "QGLViewer/qglviewer.h"
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 #include "sophus/sim3.hpp"
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 #include <sstream>
 #include <fstream>

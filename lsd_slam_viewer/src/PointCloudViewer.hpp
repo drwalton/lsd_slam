@@ -34,6 +34,10 @@
 #include "Win32Compatibility.hpp"
 #include "settings.hpp"
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 class QApplication;
 
 namespace lsd_slam {
@@ -100,7 +104,7 @@ public:
 
 
 		float x, y, z;
-
+#pragma warning(suppress: 4996)
 		if (17 != sscanf(s.c_str(), "Animation: %d at %lf (dur %lf) S: "
 				"%f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d\n",
 			&isSettings_i, &time, &duration,
