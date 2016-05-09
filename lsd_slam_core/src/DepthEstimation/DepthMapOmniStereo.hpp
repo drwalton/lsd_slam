@@ -4,6 +4,7 @@
 #include "OmniCameraModel.hpp"
 #include <array>
 #include "util/Constants.hpp"
+#include "util/settings.hpp"
 
 namespace lsd_slam {
 
@@ -17,6 +18,7 @@ float findSsd(const std::array<T, N> &a, const std::array<T, N> &b)
 	return ssd;
 }
 
+/*
 ///\brief Perform omnidirectional stereo to find a match for the given point.
 ///\param keyframeToReference The transform mapping from the coordinate frame 
 ///       of the keyframe to that of the reference frame.
@@ -46,6 +48,21 @@ bool omniStereo(
 	vec3 &matchDir,
 	vec2 &matchPixel,
 	cv::Mat &drawSearch = emptyMat);
+*/
+
+///\brief Function used internally by DepthMap::doOmniStereo.
+///\param [out] bestEpDir The direction of the epipolar curve, in image space,
+///                       at the lowest-error point found on the curve.
+///\param [out] bestMatchPos The direction to the best match in camera space.
+float doOmniStereo(
+	const float u, const float v, const vec3 &epDir,
+	const float min_idepth, const float prior_idepth, float max_idepth,
+	const float* const keyframe, const float* referenceFrameImage,
+	const RigidTransform &keyframeToReference,
+	float &result_idepth, float &result_var, float &result_eplLength,
+	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
+	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
+	cv::Mat &drawMat = emptyMat);
 
 ///\brief Return 5 floating-point values, centered around the given point, 
 ///       along the respective epipolar curve (values should be one pixel apart).

@@ -12,7 +12,7 @@ using namespace lsd_slam;
 
 int main(int argc, char **argv)
 {
-	if(argc < 2 || argv[1] == std::string("-h") {
+	if(argc < 2 || argv[1] == std::string("-h")) {
 		return -1;
 	}
 	

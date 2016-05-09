@@ -139,14 +139,16 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 	return 0.f;
 }
 
-float DepthMap::doOmniStereo(
+float doOmniStereo(
 	const float u, const float v, const vec3 &epDir,
 	const float min_idepth, const float prior_idepth, float max_idepth,
-	const Frame* const referenceFrame, const float* referenceFrameImage,
+	const float* const keyframe, const float* referenceFrameImage,
+	const RigidTransform &keyframeToReference,
 	float &result_idepth, float &result_var, float &result_eplLength,
-	RunningStats* stats)
+	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
+	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
+	cv::Mat &drawMatch)
 {
-	OmniCameraModel &oModel = static_cast<OmniCameraModel&>(*model);
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 
 	//Find line containing possible positions for the match, in the frame of 
@@ -156,12 +158,8 @@ float DepthMap::doOmniStereo(
 //	vec3 expectedMatchPos = referenceFrame->otherToThis_R
 //		* (keyframePointDir / prior_idepth) 
 //		+ referenceFrame->otherToThis_t;
-	vec3 lineStartPos = referenceFrame->otherToThis_R
-		* (keyframePointDir / max_idepth) 
-		+ referenceFrame->otherToThis_t;
-	vec3 lineEndPos = referenceFrame->otherToThis_R
-		* (keyframePointDir / min_idepth) 
-		+ referenceFrame->otherToThis_t;
+	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / max_idepth);
+	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / min_idepth);
 
 	if (!epipolarLineInImageOmni(lineStartPos, lineEndPos, oModel))	{
 		if (enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
@@ -172,7 +170,7 @@ float DepthMap::doOmniStereo(
 	//These values are 5 samples, advancing along the epipolar line towards the
 	//epipole, centred at the input point u,v.
 	std::array<float, 5> valuesToFind = getValuesToFindOmni(keyframePointDir,
-		epDir, activeKeyFrameImageData, width, oModel, u, v);
+		epDir, keyframe, width, oModel, u, v);
 
 	vec2 lineStartPix = oModel.camToPixel(lineStartPos);
 	vec2 lineEndPix   = oModel.camToPixel(lineEndPos  );
@@ -191,8 +189,7 @@ float DepthMap::doOmniStereo(
 	std::array<float, 5> lineValue;
 	float bestMatchErr = FLT_MAX, secondBestMatchErr = FLT_MAX;
 	vec2 bestMatchPix, secondBestMatchPix;
-	vec3 bestMatchPos, secondBestMatchPos;
-	vec2 bestEpDir;
+	vec3 secondBestMatchPos;
 	float centerA = 0.f;
 	int loopCBest = -1, loopCSecondBest = -1;
 
@@ -224,7 +221,7 @@ float DepthMap::doOmniStereo(
 	}
 	lineValue[3] = getInterpolatedElement(referenceFrameImage, linePix[3], width);
 
-	float tracedLineLen = 0.f;
+	tracedLineLen = 0.f;
 	//Advance along line.
 	size_t loopC = 0;
 	while (centerA <= 1.f) {
@@ -242,6 +239,14 @@ float DepthMap::doOmniStereo(
 
 		//Check error
 		float err = findSsd(valuesToFind, lineValue);
+
+		if (!drawMatch.empty()) {
+			vec3 rgb = 255.f * hueToRgb(err / 50000.f);
+			vec2 pix = oModel.camToPixel(lineDir[2]);
+			drawMatch.at<cv::Vec3b>(pix.y(), pix.x()) =
+				cv::Vec3b(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+		}
+
 		if (err < bestMatchErr) {
 			//Move best match to second place.
 			secondBestMatchErr = bestMatchErr;
@@ -300,29 +305,7 @@ float DepthMap::doOmniStereo(
 		didSubpixel = subpixelMatchOmni();
 	}
 
-#define OMNI_STEREO_DEBUG_SHOW_MATCHES 0
-#if OMNI_STEREO_DEBUG_SHOW_MATCHES
-	static int savedIms = 0;
-	if (savedIms < 100) {
-		cv::Mat activeKeyframeIm(model->h, model->w, CV_32FC1, (void*)(activeKeyFrameImageData));
-		cv::Mat refFrameIm(model->h, model->w, CV_32FC1, (void*)(referenceFrameImage));
-		cv::Mat kfToShow, refToShow;
-		cv::cvtColor(activeKeyframeIm, kfToShow, CV_GRAY2BGR);
-		cv::cvtColor(refFrameIm, refToShow, CV_GRAY2BGR);
-		cv::circle(kfToShow, cv::Point(u, v), 5, cv::Scalar(0, 0, 255), 2);
-		cv::circle(refToShow, cv::Point(bestMatchPix.x(), bestMatchPix.y()), 5, cv::Scalar(0, 0, 255), 2);
-		cv::circle(refToShow, cv::Point(secondBestMatchPos.x(), secondBestMatchPos.y()), 3, cv::Scalar(0, 0, 255), 2);
-		cv::Mat show;
-		cv::hconcat(std::vector<cv::Mat>{ kfToShow, refToShow }, show);
-		cv::imwrite(resourcesDir() + std::to_string(savedIms) + ".png", show);
-		std::cout << "Match: " << u << ", " << v << " -> " 
-			<< bestMatchPix.x() << ", " << bestMatchPix.y() << std::endl;
-		++savedIms;
-	} 
-#endif
-	//TODO Uncertainty Propogation.
-
-	float gradAlongLine = 0.f;
+	gradAlongLine = 0.f;
 	float tmp = valuesToFind[4] - valuesToFind[3];  gradAlongLine += tmp*tmp;
 	tmp = valuesToFind[3] - valuesToFind[2];  gradAlongLine += tmp*tmp;
 	tmp = valuesToFind[2] - valuesToFind[1];  gradAlongLine += tmp*tmp;
@@ -336,9 +319,34 @@ float DepthMap::doOmniStereo(
 	}
 
 	bestEpDir.normalize();
+	
+	return bestMatchErr;
+}
+
+float DepthMap::doOmniStereo(
+	const float u, const float v, const vec3 &epDir,
+	const float min_idepth, const float prior_idepth, float max_idepth,
+	const Frame* const referenceFrame, const float* referenceFrameImage,
+	float &result_idepth, float &result_var, float &result_eplLength,
+	RunningStats* stats)
+{
+	OmniCameraModel &oModel = static_cast<OmniCameraModel&>(*model);
+	
+	vec2 bestEpDir;
+	vec3 bestMatchPos;
+	RigidTransform keyframeToReference;
+	keyframeToReference.translation = referenceFrame->otherToThis_t;
+	keyframeToReference.rotation = referenceFrame->otherToThis_R;
+	float gradAlongLine, tracedLineLen;
+	float bestMatchErr = lsd_slam::doOmniStereo(u, v, epDir, min_idepth, prior_idepth, max_idepth,
+		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+		result_idepth, result_var, result_eplLength,
+		stats, oModel, referenceFrame->width(), bestEpDir, bestMatchPos, gradAlongLine, tracedLineLen);
+
+	bestEpDir.normalize();
 	float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var, 
 		gradAlongLine, bestEpDir, referenceFrame, activeKeyFrame, 
-		GRADIENT_SAMPLE_DIST, didSubpixel, tracedLineLen, &oModel, stats);
+		GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
 	if (r != 0.f) {
 		return r;
 	}
@@ -447,6 +455,7 @@ bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const 
 	return true;
 }
 
+/*
 bool omniStereo(
 	const RigidTransform &keyframeToReference,
 	const OmniCameraModel &model,
@@ -473,10 +482,10 @@ bool omniStereo(
 	lineStart.normalize(), lineEnd.normalize();
 
 	if (!drawMatch.empty()) {
-		vec2 pix = model.camToPixel(lineStart);
-		cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 255, 0));
-		pix = model.camToPixel(lineEnd);
-		cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 0, 255));
+		//vec2 pix = model.camToPixel(lineStart);
+		//cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 255, 0));
+		//pix = model.camToPixel(lineEnd);
+		//cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 0, 255));
 	}
 	
 	//Get first 5 possible matching values
@@ -538,8 +547,8 @@ bool omniStereo(
 		if (!drawMatch.empty()) {
 			vec2 pix = model.camToPixel(matchDirs[2]);
 			vec3 rgb = 255.f * hueToRgb(ssd / 50000.f);
-			drawMatch.at<cv::Vec3b>(pix.y(), pix.x()) =
-				cv::Vec3b(rgb.z(), rgb.y(), rgb.x());
+			drawMatch.at<cv::Vec3b>(int(pix.y()), int(pix.x())) =
+				cv::Vec3b(int(rgb.z()), int(rgb.y()), int(rgb.x()));
 		}
 	}
 
@@ -547,6 +556,7 @@ bool omniStereo(
 
 	return true;
 }
+*/
 
 std::array<float, 5> findValuesToSearchFor(
 	const RigidTransform &keyframeToReference,
@@ -596,15 +606,15 @@ std::array<float, 5> findValuesToSearchFor(
 
 	if (!visIm.empty()) {
 		vec2 pix = model.camToPixel(bwdDir2);
-		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
 		pix = model.camToPixel(bwdDir1);
-		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
 		pix = model.camToPixel(pointDir);
-		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 255);
+		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 255);
 		pix = model.camToPixel(fwdDir1);
-		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
 		pix = model.camToPixel(fwdDir2);
-		visIm.at<cv::Vec3b>(pix.y(), pix.x()) = cv::Vec3b(0, 255, 0);
+		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
 	}
 	
 	//Find values of keyframe at these points.

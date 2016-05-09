@@ -33,19 +33,26 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		cv::cvtColor(fltIm2, showIm2, CV_GRAY2BGR);
 		showIm2.convertTo(showIm2, CV_8UC3);
 		
-		bool ok = omniStereo(keyframeToReference, *omCamModel,
+		float r_idepth, r_var, r_eplLength;
+		float r_gradAlongLine, r_lineLen;
+		RunningStats s;
+		float err = doOmniStereo(
+			x, y, matchDir,
+			1.f / (depth * DEPTH_SEARCH_RANGE), 
+			1.f / (depth),
+			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)),
 			fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
-			fltIm1.cols,
-			x, y,
-			depth * DEPTH_SEARCH_RANGE, depth * (2.f-DEPTH_SEARCH_RANGE),
-			minSsd,
-			matchDir, matchPixel,
+			keyframeToReference, r_idepth, r_var, r_eplLength,
+			&s, *omCamModel, fltIm1.cols,
+			matchPixel, matchDir, 
+			r_gradAlongLine, r_lineLen,
 			showIm2);
-		if(!ok) {
-			std::cout << "Stereo match failed!" << std::endl;
+		if(err < 0.f) {
+			std::cout << "Stereo match failed! Code: " << err << std::endl;
 		} else {
 			std::cout << "Match found: " << matchPixel << std::endl;
-			//cv::circle(showIm2, cv::Point(matchPixel.x(), matchPixel.y()), 3, cv::Scalar(0,255,0));
+			matchPixel = omCamModel->camToPixel(matchDir);
+			cv::circle(showIm2, cv::Point(matchPixel.x(), matchPixel.y()), 3, cv::Scalar(0,255,0));
 		}
 		cv::imshow("Im2", showIm2);
 		cv::waitKey(1);
