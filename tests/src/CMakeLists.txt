@@ -32,6 +32,8 @@ target_link_libraries(TestOmniStereo
 	${OPENCV_LIBRARIES}
 	${Assimp_LIBRARY}
 	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
 )
 
 

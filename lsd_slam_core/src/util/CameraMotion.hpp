@@ -8,7 +8,6 @@ namespace lsd_slam {
 class NoNewTransformException : public std::runtime_error {
 	NoNewTransformException(const std::string &e) :std::runtime_error(e.c_str())
 	{}
-	std::string what() { return std::runtime_error::what(); }
 };
 
 ///\brief Abstract class encapsulating the motion of a camera over time.

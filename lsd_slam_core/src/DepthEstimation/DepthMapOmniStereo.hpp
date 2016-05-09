@@ -34,7 +34,7 @@ float findSsd(const std::array<T, N> &a, const std::array<T, N> &b)
 bool omniStereo(
 	const RigidTransform &keyframeToReference,
 	const OmniCameraModel &model,
-	const float* keyframe,
+	const float* keyframe, const float *matchFrame,
 	int width,
 	int x, int y,
 	float minDepth, float maxDepth,
