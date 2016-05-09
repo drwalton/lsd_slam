@@ -13,6 +13,7 @@ OmniCameraModel *omCamModel;
 vec3 pointDir;
 
 const float DEPTH_SEARCH_RANGE = 0.2f;
+void showPossibleColors();
 
 void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 	if(event == CV_EVENT_LBUTTONDOWN) {
@@ -102,6 +103,8 @@ int main(int argc, char **argv)
 	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *camModel);
 	std::cout << "Rendering complete!" << std::endl;
 
+	showPossibleColors();
+
 	cv::Mat im1gray, im2gray;
 	cv::cvtColor(image1, im1gray, CV_RGB2GRAY);
 	cv::cvtColor(image2, im2gray, CV_RGB2GRAY);
@@ -125,4 +128,23 @@ int main(int argc, char **argv)
 	}
 
 	return 0;
+}
+
+void showPossibleColors()
+{
+	size_t h = 30;
+	size_t w = 400;
+
+	cv::Mat colors(cv::Size(w, h), CV_8UC3);
+	float maxVal = 325125.f;
+
+	for (size_t i = 0; i < w; ++i) {
+		vec3 color = 255.f * hueToRgb(float(i) / float(w));
+		for (size_t j = 0; j < h; ++j) {
+			colors.at<cv::Vec3b>(j, i) = cv::Vec3b(
+				uchar(color.z()), uchar(color.y()), uchar(color.x()));
+		}
+	}
+
+	cv::imshow("Colors", colors);
 }

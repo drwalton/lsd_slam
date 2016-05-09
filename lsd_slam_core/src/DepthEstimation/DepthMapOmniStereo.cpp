@@ -241,9 +241,9 @@ float doOmniStereo(
 		float err = findSsd(valuesToFind, lineValue);
 
 		if (!drawMatch.empty()) {
-			vec3 rgb = 255.f * hueToRgb(err / 50000.f);
+			vec3 rgb = 255.f * hueToRgb(err / 325125.f);
 			vec2 pix = oModel.camToPixel(lineDir[2]);
-			drawMatch.at<cv::Vec3b>(pix.y(), pix.x()) =
+			drawMatch.at<cv::Vec3b>(int(pix.y()), int(pix.x())) =
 				cv::Vec3b(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
 		}
 

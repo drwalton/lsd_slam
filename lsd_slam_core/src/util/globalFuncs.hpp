@@ -66,11 +66,29 @@ inline float getInterpolatedElement(const float *const mat, const vec2 &p, const
 
 inline vec3 hueToRgb(float H)
 {
-	return vec3(
-		fabsf(H*6.f - 3.f) - 1.f,
-		2.f - fabsf(H*6.f - 2.f),
-		2.f - fabsf(H*6.f - 4.f)
-		);
+	H *= 6.f;
+	float s = 1.f;
+	float v = 1.f;
+	int i = int(floor(H));
+	float f = H - i;
+	float p = v * (1 - s);
+	float q = v * (1 - s * f);
+	float t = v * (1 - s * (1 - f));
+
+	switch (i) {
+		case 0:
+			return vec3(v, t, p);
+		case 1:
+			return vec3(q, v, p);
+		case 2:
+			return vec3(p, v, t);
+		case 3:
+			return vec3(p, q, v);
+		case 4:
+			return vec3(t, p, v);
+		default:		// case 5:
+			return vec3(v, p, q);
+	}
 }
 
 inline Eigen::Vector3f getInterpolatedElement43(const Eigen::Vector4f* const mat, const float x, const float y, const int width)
