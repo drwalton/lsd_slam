@@ -62,7 +62,8 @@ float doOmniStereo(
 	float &result_idepth, float &result_var, float &result_eplLength,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
-	cv::Mat &drawMat = emptyMat);
+	cv::Mat &drawMat = emptyMat,
+	bool showMatch = false);
 
 ///\brief Return 5 floating-point values, centered around the given point, 
 ///       along the respective epipolar curve (values should be one pixel apart).
@@ -75,7 +76,12 @@ std::array<float, 5> findValuesToSearchFor(
 	int width,
 	vec3 &pointDir,
 	cv::Mat &visIm = emptyMat);
-
+	
+bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
+	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel, 
+	float u, float v, std::array<float, 5> &valuesToFind,
+	cv::Mat &visIm = emptyMat);
+	
 void findReferenceFrameLineEndpoints(
 	vec3 &pStart, vec3 &pEnd,
 	int u, int v,

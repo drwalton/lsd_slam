@@ -32,7 +32,7 @@ std::string resourcesDir() {
 #ifdef _WIN32
 	static std::string dir = getenv("HOMEDRIVE") + std::string(getenv("HOMEPATH")) + "/Documents/lsd_slam/resources/";
 #else
-	static std::string dir = "~/lsd_slam/resources/";
+	static std::string dir = getenv("HOME") + std::string("/lsd_slam/resources/");
 #endif
 	return dir;
 }

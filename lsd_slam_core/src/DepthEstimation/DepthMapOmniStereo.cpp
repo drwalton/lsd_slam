@@ -16,12 +16,6 @@ namespace lsd_slam {
 ///\note For now, just checks if the endpoints lie in the image.
 bool epipolarLineInImageOmni(vec3 lineStart, vec3 lineEnd, const OmniCameraModel &model);
 
-///\brief Fill an array with the 5 values on the epipolar line surrounding the 
-///       chosen image point. Used by doOmniStereo().
-std::array<float, 5> getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
-	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel,
-	float u, float v);
-
 ///\brief Increase the size of an epipolar line, if its length is found
 ///       to be less than minLength.
 void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
@@ -147,7 +141,7 @@ float doOmniStereo(
 	float &result_idepth, float &result_var, float &result_eplLength,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
-	cv::Mat &drawMatch)
+	cv::Mat &drawMatch, bool plotSearch)
 {
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 
@@ -169,8 +163,22 @@ float doOmniStereo(
 	//Find values to search for in keyframe.
 	//These values are 5 samples, advancing along the epipolar line towards the
 	//epipole, centred at the input point u,v.
-	std::array<float, 5> valuesToFind = getValuesToFindOmni(keyframePointDir,
-		epDir, keyframe, width, oModel, u, v);
+	std::array<float, 5> valuesToFind;
+	if(!getValuesToFindOmni(keyframePointDir,
+		epDir, keyframe, width, oModel, u, v, valuesToFind)) {
+		//5 values centered around point not available.
+		return -1;
+	}
+	
+	if(plotSearch) {
+		cv::Mat findValMat(cv::Size(5,1), CV_8UC1);
+		for(size_t i = 0; i < 5; ++i) {
+			findValMat.at<uchar>(0,i) = uchar(valuesToFind[i]);
+		}
+		cv::Mat showMat;
+		cv::resize(findValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("TO FIND", showMat);
+	}
 
 	vec2 lineStartPix = oModel.camToPixel(lineStartPos);
 	vec2 lineEndPix   = oModel.camToPixel(lineEndPos  );
@@ -192,6 +200,9 @@ float doOmniStereo(
 	vec3 secondBestMatchPos;
 	float centerA = 0.f;
 	int loopCBest = -1, loopCSecondBest = -1;
+	
+	std::vector<float> searchedVals;
+	std::vector<cv::Vec3b> ssdColors;
 
 	//Find first 4 values along line.
 	lineDir[2] = lineStartPos;
@@ -220,6 +231,12 @@ float doOmniStereo(
 		return -1;
 	}
 	lineValue[3] = getInterpolatedElement(referenceFrameImage, linePix[3], width);
+	
+	if(plotSearch) {
+		for(size_t i = 0; i < 4; ++i) {
+			searchedVals.push_back(lineValue[i]);
+		}
+	}
 
 	tracedLineLen = 0.f;
 	//Advance along line.
@@ -236,15 +253,19 @@ float doOmniStereo(
 		}
 
 		lineValue[4] = getInterpolatedElement(referenceFrameImage, linePix[4], width);
+		if(plotSearch) {
+			searchedVals.push_back(lineValue[4]);
+		}
 
 		//Check error
 		float err = findSsd(valuesToFind, lineValue);
 
 		if (!drawMatch.empty()) {
-			vec3 rgb = 255.f * hueToRgb(err / 325125.f);
-			vec2 pix = oModel.camToPixel(lineDir[2]);
-			drawMatch.at<cv::Vec3b>(int(pix.y()), int(pix.x())) =
-				cv::Vec3b(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+			vec3 rgb = 255.f * hueToRgb(0.8f * err / 325125.f);
+			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+			ssdColors.push_back(rgbB);
+			drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x())) =
+				rgbB;
 		}
 
 		if (err < bestMatchErr) {
@@ -276,6 +297,23 @@ float doOmniStereo(
 		tracedLineLen += (linePix[2] - linePix[1]).norm();
 		++loopC;
 	}
+	
+	if(plotSearch) {
+		cv::Mat searchValMat(cv::Size(searchedVals.size(), 1), CV_8UC1);
+		for(size_t i = 0; i < searchedVals.size(); ++i) {
+			searchValMat.at<uchar>(0,i) = uchar(searchedVals[i]);
+		}
+		cv::Mat showMat;
+		cv::resize(searchValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("SEARCHED", showMat);
+		cv::Mat ssdMat(cv::Size(ssdColors.size(), 1), CV_8UC3);
+		for(size_t i = 0; i < ssdColors.size(); ++i) {
+			ssdMat.at<cv::Vec3b>(0, i) = ssdColors[i];
+		}
+		cv::resize(ssdMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("ERRS", showMat);
+	}
+	
 	//Check if epipolar line left image before any error vals could be found.
 	if (loopCBest < 0) {
 		if (enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
@@ -386,30 +424,40 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 	}
 }
 
-std::array<float, 5> getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
+bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel, 
-	float u, float v)
+	float u, float v, std::array<float, 5> &valuesToFind, cv::Mat &visIm)
 {
-
-	std::array<float, 5> valuesToFind;
 	valuesToFind[2] = getInterpolatedElement(activeKeyFrameImageData, u, v, width);
-	float a = 1.f; vec3 dir; vec2 pixel;
-	a += oModel.getEpipolarParamIncrement(a, keyframePointDir, epDir, GRADIENT_SAMPLE_DIST);
-	dir = a*keyframePointDir + (1.f - a)*epDir;
-	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
-	a += oModel.getEpipolarParamIncrement(a, keyframePointDir, epDir, GRADIENT_SAMPLE_DIST);
-	dir = a*keyframePointDir + (1.f - a)*epDir;
-	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
+	float a = 0.f; vec3 dir; vec2 pixel;
+	vec3 otherDir = 2.f*keyframePointDir - epDir;
+	
+	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
+	dir = a*otherDir + (1.f - a)*keyframePointDir;
+	if(!oModel.pointInImage(dir, &pixel)) return false;
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
+	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	
+	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
+	dir = a*otherDir + (1.f - a)*keyframePointDir;
+	if(!oModel.pointInImage(dir, &pixel)) return false;
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
+	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 
 	a = 0.f;
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
-	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
+	if(!oModel.pointInImage(dir, &pixel)) return false;
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
+	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
-	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, oModel.camToPixel(dir), width);
-
-	return valuesToFind;
+	if(!oModel.pointInImage(dir, &pixel)) return false;
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
+	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	
+	return true;
 }
 
 bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const ref,
@@ -585,25 +633,6 @@ std::array<float, 5> findValuesToSearchFor(
 	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
 	vec3 bwdDir2 = a*otherDir + (1.f - a)*pointDir;
 	
-#if SHOW_DEBUG_IMAGES
-	cv::Mat lineImage(480, 640, CV_8UC1);
-	lineImage.setTo(0);
-	
-	std::vector<vec3> dirs = {
-		bwdDir2, bwdDir1, pointDir, fwdDir1, fwdDir2
-	};
-	
-	for(vec3 &v : dirs) {
-		vec2 img = model.camToPixel(v);
-		static int i = 0;
-		std::cout << "Point " << i++ << ": " << int(img.x()) << ", " << int(img.y()) << std::endl;
-		lineImage.at<uchar>(int(img.y()), int(img.x())) = 255;
-	}
-	
-	cv::imshow("LINE", lineImage);
-	cv::waitKey();
-#endif
-
 	if (!visIm.empty()) {
 		vec2 pix = model.camToPixel(bwdDir2);
 		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);

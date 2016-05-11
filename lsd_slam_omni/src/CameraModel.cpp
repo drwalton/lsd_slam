@@ -17,7 +17,11 @@ CameraModel::~CameraModel()
 std::unique_ptr<CameraModel> CameraModel::loadFromFile(
 	const std::string &filename)
 {
-	std::ifstream file(filename);
+	std::ifstream file;
+	file.open(filename, std::ios::in);
+	if(!file.is_open()) {
+		throw std::runtime_error("Unable to read from camera model file");
+	}
 	std::string type;
 	std::getline(file, type);
 
@@ -37,7 +41,7 @@ std::unique_ptr<CameraModel> CameraModel::loadFromFile(
 			new ProjCameraModel(fx, fy, cx, cy, w, h));
 	}
 	else {
-		throw std::runtime_error("Unable to read camera model file.");
+		throw std::runtime_error("Invalid camera model file.");
 	}
 }
 

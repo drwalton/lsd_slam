@@ -22,13 +22,15 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 		showIm1.convertTo(showIm1, CV_8UC3);
 		vec3 a;
-		findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
+		//findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
+		vec3 dir = omCamModel->pixelToCam(vec2(x, y));
+		std::array<float, 5> valsToFind;
+		getValuesToFindOmni(dir, keyframeToReference.translation, fltIm1.ptr<float>(0), fltIm1.cols, *omCamModel, x, y, valsToFind, showIm1);
 		//cv::circle(showIm1, cv::Point(x, y), 3, cv::Scalar(255, 0, 0));
 		cv::imshow("Im1", showIm1);
 		
 		float depth = depth1.at<float>(y, x);
 		std::cout << "Clicked depth: " << depth << std::endl;
-		float minSsd;
 		
 		vec3 matchDir; vec2 matchPixel;
 		cv::cvtColor(fltIm2, showIm2, CV_GRAY2BGR);
@@ -37,8 +39,11 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		float r_idepth, r_var, r_eplLength;
 		float r_gradAlongLine, r_lineLen;
 		RunningStats s;
+		if(!fltIm1.isContinuous() || !fltIm2.isContinuous()) {
+			throw std::runtime_error("Need continuous mats!");
+		}
 		float err = doOmniStereo(
-			x, y, matchDir,
+			x, y, keyframeToReference.translation,
 			1.f / (depth * DEPTH_SEARCH_RANGE), 
 			1.f / (depth),
 			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)),
@@ -47,7 +52,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 			&s, *omCamModel, fltIm1.cols,
 			matchPixel, matchDir, 
 			r_gradAlongLine, r_lineLen,
-			showIm2);
+			showIm2, true);
 		if(err < 0.f) {
 			std::cout << "Stereo match failed! Code: " << err << std::endl;
 		} else {
@@ -65,7 +70,7 @@ int main(int argc, char **argv)
 	if(argc < 3 || argv[1] == std::string("-h")) {
 		std::cout << "TestOmniStereo: render two views of a model using"
 			" a supplied camera model, and perform omnidirectional stereo."
-			"\nUsage: ./RenderAndTestSE3Tracking [camModel]"
+			"\nUsage: ./TestOmniStereo [camModel]"
 			" [3dModel]" << std::endl;
 		return 0;
 	}
@@ -118,6 +123,12 @@ int main(int argc, char **argv)
 	cv::imshow("Im2", im2gray);
 	cv::moveWindow("Im1", 0, 30);
 	cv::moveWindow("Im2", fltIm1.cols, 30);
+	cv::namedWindow("TO FIND");
+	cv::moveWindow("TO FIND", 0, 60+fltIm1.rows);
+	cv::namedWindow("SEARCHED");
+	cv::moveWindow("SEARCHED", fltIm1.cols, 60+fltIm1.rows);
+	cv::namedWindow("ERRS");
+	cv::moveWindow("ERRS", fltIm1.cols, 100+fltIm1.rows);
 	
 	cv::waitKey(1);
 	cv::setMouseCallback("Im1", im1MouseCallback);
@@ -139,12 +150,13 @@ void showPossibleColors()
 	float maxVal = 325125.f;
 
 	for (size_t i = 0; i < w; ++i) {
-		vec3 color = 255.f * hueToRgb(float(i) / float(w));
+		vec3 color = 255.f * hueToRgb(0.8f * float(i) / float(w));
 		for (size_t j = 0; j < h; ++j) {
 			colors.at<cv::Vec3b>(j, i) = cv::Vec3b(
 				uchar(color.z()), uchar(color.y()), uchar(color.x()));
 		}
 	}
 
-	cv::imshow("Colors", colors);
+	cv::imshow("Err Scale (Min-Max)", colors);
+	cv::moveWindow("Err Scale (Min-Max)", 0, 800);
 }
