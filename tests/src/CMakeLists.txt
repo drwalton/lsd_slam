@@ -36,6 +36,18 @@ target_link_libraries(TestOmniStereo
 	${OPENGL_gl_LIBRARY}
 )
 
+add_executable(TestRayIntersection
+	TestRayIntersection.cpp
+)
+
+target_link_libraries(TestRayIntersection
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
 
 add_executable(TestDepthMapGeneration
 	TestDepthMapGeneration.cpp

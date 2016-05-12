@@ -11,19 +11,22 @@ cv::Mat showIm1, showIm2;
 RigidTransform keyframeToReference;
 OmniCameraModel *omCamModel;
 vec3 pointDir;
+bool addNoise = true;
+int lastClickedX = -1, lastClickedY = -1;
 
-const float DEPTH_SEARCH_RANGE = 0.2f;
+const float DEPTH_SEARCH_RANGE = 0.4f;
 void showPossibleColors();
 
 void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 	if(event == CV_EVENT_LBUTTONDOWN) {
-		std::cout << "Clicked (" << x << "," << y << "), dir:\n" <<
-			pointDir << std::endl;
+		lastClickedX = x, lastClickedY = y;
 		cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 		showIm1.convertTo(showIm1, CV_8UC3);
 		vec3 a;
 		//findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
 		vec3 dir = omCamModel->pixelToCam(vec2(x, y));
+		std::cout << "Clicked (" << x << "," << y << "), dir:\n" <<
+			dir << std::endl;
 		std::array<float, 5> valsToFind;
 		getValuesToFindOmni(dir, keyframeToReference.translation, fltIm1.ptr<float>(0), fltIm1.cols, *omCamModel, x, y, valsToFind, showIm1);
 		//cv::circle(showIm1, cv::Point(x, y), 3, cv::Scalar(255, 0, 0));
@@ -32,7 +35,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		float depth = depth1.at<float>(y, x);
 		std::cout << "Clicked depth: " << depth << std::endl;
 		
-		vec3 matchDir; vec2 matchPixel;
+		vec3 matchDir; vec2 epDir;
 		cv::cvtColor(fltIm2, showIm2, CV_GRAY2BGR);
 		showIm2.convertTo(showIm2, CV_8UC3);
 		
@@ -42,26 +45,69 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		if(!fltIm1.isContinuous() || !fltIm2.isContinuous()) {
 			throw std::runtime_error("Need continuous mats!");
 		}
+
+		std::cout << "Depth range: " << depth * DEPTH_SEARCH_RANGE
+			<< ", " << depth << ", " << depth * (2.f - DEPTH_SEARCH_RANGE)
+			<< std::endl;
+
 		float err = doOmniStereo(
-			x, y, keyframeToReference.translation,
+			x, y, -keyframeToReference.translation,
 			1.f / (depth * DEPTH_SEARCH_RANGE), 
 			1.f / (depth),
 			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)),
 			fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
-			keyframeToReference, r_idepth, r_var, r_eplLength,
+			keyframeToReference,
 			&s, *omCamModel, fltIm1.cols,
-			matchPixel, matchDir, 
+			epDir, matchDir, 
 			r_gradAlongLine, r_lineLen,
 			showIm2, true);
+
 		if(err < 0.f) {
 			std::cout << "Stereo match failed! Code: " << err << std::endl;
+			switch (int(err)) {
+				case -3:
+					std::cout << "Error too large!" << std::endl;
+					break;
+				case -2:
+					std::cout << "Winner not clear enough!" << std::endl;
+					break;
+				case -1:
+					std::cout << "One of lines went outside image!" << std::endl;
+					break;
+			}
 		} else {
+			float r_alpha;
+			r_idepth = findDepthOmni(x, y, matchDir, omCamModel, keyframeToReference.inverse(),
+				&s, &r_alpha);
+			vec2 matchPixel = omCamModel->camToPixel(matchDir);
 			std::cout << "Match found: " << matchPixel << std::endl;
-			matchPixel = omCamModel->camToPixel(matchDir);
 			cv::circle(showIm2, cv::Point(matchPixel.x(), matchPixel.y()), 3, cv::Scalar(0,255,0));
+			std::cout << "\t* Estimated inverse depth: " << r_idepth <<
+				"\n\t* Estimated depth: " << 1.f / r_idepth << 
+				//"\n\t* Estimated variance: " << r_var <<
+				"\n\t* Grad along line: " << r_gradAlongLine <<
+				"\n\t* Line Length: " << r_lineLen << std::endl;
 		}
 		cv::imshow("Im2", showIm2);
 		cv::waitKey(1);
+	}
+}
+
+void im2MouseCallback(int event, int x, int y, int flags, void *userData) {
+	if (event == CV_EVENT_LBUTTONDOWN) {
+		if (lastClickedX >= 0 && lastClickedY >= 0) {
+			vec3 im1ClickedDir = omCamModel->pixelToCam(vec2(lastClickedX, lastClickedY));
+			vec3 im2ClickedDir = omCamModel->pixelToCam(vec2(x, y));
+			im2ClickedDir = keyframeToReference.rotation.inverse() * im2ClickedDir;
+			Ray im1Ray, im2Ray;
+			im1Ray.origin = vec3::Zero(); im1Ray.dir = im1ClickedDir;
+			im2Ray.origin = -keyframeToReference.translation; im2Ray.dir = im2ClickedDir;
+
+			RayIntersectionResult result = computeRayIntersection(im1Ray, im2Ray);
+
+			std::cout << "Clicked points intersection: " << result <<
+				"\nDist: " << result.position.norm() << std::endl;
+		}
 	}
 }
 
@@ -90,10 +136,10 @@ int main(int argc, char **argv)
 	std::cout << "Vertices: \n" << m.vertices();
 
 	SE3 transform;
-	transform.translation() = Eigen::Vector3d(0.05, 0., 0.);
 	WorldToCamTransform t1;
 	WorldToCamTransform t2;
-	t2.translation = vec3(0.15f, 0.f, 0.f);
+	t2.translation = vec3(-0.15f, 0.f, 0.f);
+	transform.translation() = t2.translation.cast<double>();
 	std::vector<cv::Vec3b> colors;
 	for (auto & color : m.vertColors()) {
 		colors.push_back(cv::Vec3b(
@@ -115,6 +161,14 @@ int main(int argc, char **argv)
 	cv::cvtColor(image2, im2gray, CV_RGB2GRAY);
 	im1gray.convertTo(fltIm1, CV_32FC1);
 	im2gray.convertTo(fltIm2, CV_32FC1);
+	if (addNoise) {
+		float noiseMean = 10.f;
+		cv::Mat randIm(fltIm1.size(), CV_32FC1);
+		cv::randn(randIm, 0.f, noiseMean);
+		fltIm1 += randIm;
+		cv::randn(randIm, 0.f, noiseMean);
+		fltIm2 += randIm;
+	}
 
 	keyframeToReference.translation = transform.translation().cast<float>();
 	keyframeToReference.rotation = transform.rotationMatrix().cast<float>();
@@ -132,6 +186,7 @@ int main(int argc, char **argv)
 	
 	cv::waitKey(1);
 	cv::setMouseCallback("Im1", im1MouseCallback);
+	cv::setMouseCallback("Im2", im2MouseCallback);
 
 	int key = 0;
 	while(key != 27) {

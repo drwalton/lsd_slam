@@ -5,13 +5,9 @@
 #include "VectorTypes.hpp"
 #include "CameraModel.hpp"
 #include "Constants.hpp"
+#include "DepthEstimation/DepthMapOmniStereo.hpp"
 
 namespace lsd_slam {
-
-struct Ray {
-	vec3 origin;
-	vec3 dir;
-};
 
 ///\brief Generate a raycasted image given a triangle mesh and a camera model.
 ///       Optionally also generate depth maps.

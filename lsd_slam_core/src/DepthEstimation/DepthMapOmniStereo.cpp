@@ -27,21 +27,40 @@ bool subpixelMatchOmni() {
 	//TODO
 	return false;
 }
-struct Ray {
-	vec3 origin;
-	vec3 dir;
-};
 
-struct RayIntersectionResult {
-	enum Outcome {
-		VALID, BEHIND, PARALLEL
-	};
-	Outcome valid;
-	float distance;
-	vec3 position;
-	std::string to_string() const;
-};
+std::string Ray::to_string() const
+{
+	std::stringstream ss;
+	ss << origin << "\n" << dir;
+	return ss.str();
+}
 
+std::string RayIntersectionResult::to_string() const
+{
+	std::stringstream ss;
+	switch (valid) {
+	case VALID:
+		ss << "VALID\n"; break;
+	case BEHIND:
+		ss << "BEHIND\n"; break;
+	case PARALLEL:
+		ss << "PARALLEL\n"; break;
+	}
+	if (valid == VALID || valid == BEHIND) {
+		ss << distance << "\n" << position << "\n";
+	}
+	return ss.str();
+}
+std::ostream &operator <<(std::ostream &s, const Ray &r)
+{
+	s << r.to_string();
+	return s;
+}
+std::ostream &operator <<(std::ostream &s, const RayIntersectionResult &r)
+{
+	s << r.to_string();
+	return s;
+}
 RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2)
 {
 	RayIntersectionResult ans;
@@ -82,21 +101,18 @@ RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2)
 	return ans;
 }
 
-float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
-	float *resultIDepth, float *resultVar,
-	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,
-	float sampleDist, bool didSubpixel, float tracedLineLen,
-	OmniCameraModel *model,
-	RunningStats *stats)
+float findDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
+	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats,
+	float *r_alpha) 
 {
 	// ================= calc depth (in KF) ====================
 	float idnew_best_match;	// depth in the new image
 	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
 	vec3 findDirKf = model->pixelToCam(vec2(u, v));
-	vec3 bestMatchDirKf = referenceFrame->thisToOther_R * bestMatchDir;
+	vec3 bestMatchDirKf = refToKeyframe.rotation * bestMatchDir;
 	Ray findRay, matchRay;
 	findRay.dir = findDirKf; findRay.origin = vec3::Zero();
-	matchRay.dir = bestMatchDirKf; matchRay.origin = referenceFrame->thisToOther_t;
+	matchRay.dir = bestMatchDirKf; matchRay.origin = refToKeyframe.translation;
 	RayIntersectionResult r = computeRayIntersection(findRay, matchRay);
 
 	if (r.valid == RayIntersectionResult::Outcome::BEHIND) {
@@ -109,7 +125,29 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 	}
 	alpha = r.position.norm();
 	idnew_best_match = 1.f / alpha;
-	alpha /= tracedLineLen;
+	*r_alpha = alpha;
+	return idnew_best_match;
+}
+
+float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
+	float *resultIDepth, float *resultVar,
+	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,
+	float sampleDist, bool didSubpixel, float tracedLineLen,
+	OmniCameraModel *model,
+	RunningStats *stats)
+{
+	// ================= calc depth (in KF) ====================
+	float idnew_best_match;	// depth in the new image
+	RigidTransform refToKeyframe;
+	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
+	refToKeyframe.rotation = referenceFrame->thisToOther_R;
+	refToKeyframe.translation = referenceFrame->thisToOther_t;
+	idnew_best_match = findDepthOmni(u, v, bestMatchDir, model, refToKeyframe,
+		stats, &alpha);
+	if (idnew_best_match < 0.f) {
+		//Error code was returned - pass this on.
+		return idnew_best_match;
+	}
 	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
 
 	// ================= calc var (in NEW image) ====================
@@ -129,7 +167,6 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 
 	*resultIDepth = idnew_best_match;
 
-
 	return 0.f;
 }
 
@@ -138,7 +175,6 @@ float doOmniStereo(
 	const float min_idepth, const float prior_idepth, float max_idepth,
 	const float* const keyframe, const float* referenceFrameImage,
 	const RigidTransform &keyframeToReference,
-	float &result_idepth, float &result_var, float &result_eplLength,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
 	cv::Mat &drawMatch, bool plotSearch)
@@ -184,6 +220,13 @@ float doOmniStereo(
 	vec2 lineEndPix   = oModel.camToPixel(lineEndPos  );
 	padEpipolarLineOmni(&lineStartPos, &lineEndPos, &lineStartPix, &lineEndPix,
 		MIN_EPL_LENGTH_CROP, oModel);
+	if (!drawMatch.empty()){
+		cv::circle(drawMatch, cv::Point(lineStartPix.x(), lineStartPix.y()), 3, cv::Scalar(255, 0, 0));
+		cv::circle(drawMatch, cv::Point(lineEndPix.x(), lineEndPix.y()), 3, cv::Scalar(255, 0, 0));
+		vec3 lineMidPos   = keyframeToReference * vec3(keyframePointDir / prior_idepth);
+		vec2 lineMidPix = oModel.camToPixel(lineMidPos);
+		cv::circle(drawMatch, cv::Point(lineMidPix.x(), lineMidPix.y()), 3, cv::Scalar(0, 0, 255));
+	}
 
 	//Check padded line still in image.
 	if (!epipolarLineInImageOmni(lineStartPos, lineEndPos, oModel))	{
@@ -324,6 +367,11 @@ float doOmniStereo(
 	if (bestMatchErr > 4.0f*(float)MAX_ERROR_STEREO)
 	{
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
+		if (plotSearch) {
+			std::cout << "Stereo failed due to large absolute error value: "
+				<< bestMatchErr << " > " << 4.0f * float(MAX_ERROR_STEREO)
+				<< std::endl;
+		}
 		return -3;
 	}
 
@@ -332,6 +380,14 @@ float doOmniStereo(
 		if (abs(loopCBest - loopCSecondBest) > 1.0f && 
 			MIN_DISTANCE_ERROR_STEREO * bestMatchErr > secondBestMatchErr) {
 			if (enablePrintDebugInfo) stats->num_stereo_invalid_unclear_winner++;
+			if (plotSearch) {
+				std::cout << "Stereo failed due to unclear winner: "
+					<< "First and second best are "
+					<< abs(loopCBest - loopCSecondBest)
+					<< " apart, and errors are " << bestMatchErr << " * "
+					<< MIN_DISTANCE_ERROR_STEREO << " > " << secondBestMatchErr
+					<< std::endl;
+			}
 			return -2;
 		}
 	}
@@ -353,6 +409,11 @@ float doOmniStereo(
 	// check if interpolated error is OK. use evil hack to allow more error if there is a lot of gradient.
 	if (bestMatchErr > (float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20) {
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
+		if (plotSearch) {
+			std::cout << "Stereo failed: absolute error too large (second check)"
+				<< bestMatchErr << " > " << MAX_ERROR_STEREO << " + "
+				<< sqrtf(gradAlongLine) << " * " << 20 << std::endl;
+		}
 		return -3;
 	}
 
@@ -378,7 +439,6 @@ float DepthMap::doOmniStereo(
 	float gradAlongLine, tracedLineLen;
 	float bestMatchErr = lsd_slam::doOmniStereo(u, v, epDir, min_idepth, prior_idepth, max_idepth,
 		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-		result_idepth, result_var, result_eplLength,
 		stats, oModel, referenceFrame->width(), bestEpDir, bestMatchPos, gradAlongLine, tracedLineLen);
 
 	bestEpDir.normalize();
@@ -435,27 +495,27 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*otherDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir, &pixel)) return false;
-	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
-	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
+	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*otherDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir, &pixel)) return false;
-	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
-	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
+	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 
 	a = 0.f;
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir, &pixel)) return false;
-	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
-	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
+	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir, &pixel)) return false;
-	if(!visIm.empty()) visIm.at<cv::Vec3b>(pixel.y(), pixel.x()) = cv::Vec3b(0,255,0);
-	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
+	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	return true;
 }
