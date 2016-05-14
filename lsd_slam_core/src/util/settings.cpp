@@ -57,7 +57,7 @@ bool printRegularizeStatistics = false;
 bool printLineStereoStatistics = false;
 bool printLineStereoFails = false;
 
-bool printTrackingIterationInfo = false;
+bool printTrackingIterationInfo = true;
 
 bool printFrameBuildDebugInfo = false;
 bool printMemoryDebugInfo = false;

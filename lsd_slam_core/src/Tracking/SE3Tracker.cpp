@@ -596,7 +596,6 @@ float SE3Tracker::calcResidualAndBuffers(
 
 	int w = frame->width(level);
 	int h = frame->height(level);
-	//TODO adapt the CameraModel for levels of the pyramid.
 	const CameraModel &m = frame->model(level);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();

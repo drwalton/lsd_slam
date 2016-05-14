@@ -49,3 +49,10 @@ std::ostream &operator << (std::ostream &s, const SE3 &t) {
 		<< "\ntranslation\n" << t.translation() << "\n";
 	return s;
 }
+
+std::ostream &operator << (std::ostream &s, const Sim3 &t) {
+	s << "SE3 Element:\nRotation:\n" << t.rotationMatrix()
+		<< "\ntranslation\n" << t.translation()
+		<< "\nscale: " << t.scale() << "\n";
+	return s;
+}

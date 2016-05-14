@@ -51,6 +51,7 @@
 #endif
 
 std::ostream &operator << (std::ostream &s, const SE3 &t);
+std::ostream &operator << (std::ostream &s, const Sim3 &t);
 
 namespace lsd_slam
 {
