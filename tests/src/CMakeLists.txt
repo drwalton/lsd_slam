@@ -23,6 +23,32 @@ target_link_libraries(MakeRaycastedVideo
 	${libtiff_LIBRARIES}
 )
 
+add_executable(TestOmniStereoWholeIm
+	TestOmniStereoWholeIm.cpp
+)
+
+target_link_libraries(TestOmniStereoWholeIm
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
+
+add_executable(TestProjStereoWholeIm
+	TestProjStereoWholeIm.cpp
+)
+
+target_link_libraries(TestProjStereoWholeIm
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
+
 add_executable(TestOmniStereo
 	TestOmniStereo.cpp
 )

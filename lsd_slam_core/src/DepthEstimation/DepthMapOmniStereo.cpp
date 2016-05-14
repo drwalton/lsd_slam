@@ -9,6 +9,7 @@
 /// camera models.
 
 #define SHOW_DEBUG_IMAGES 0
+#define EPIPOLE_MAX_CLOSENESS (0.7f) //Max dot product with epipole in stereo.
 
 namespace lsd_slam {
 
@@ -185,6 +186,18 @@ float doOmniStereo(
 	// the reference image.
 	//N.B. This line moves away from the epipole in the reference image.
 	vec3 keyframePointDir = oModel.pixelToCam(vec2(u, v), 1.f);
+
+	float epipoleCloseness = fabsf(keyframePointDir.dot(epDir));
+	if (epipoleCloseness > EPIPOLE_MAX_CLOSENESS) {
+		//This point is too near an epipole - we won't get any reliable depth
+		// values from it!
+		if (enablePrintDebugInfo) ++stats->num_stereo_inf_oob;
+		if (plotSearch) {
+			std::cout << "Stereo failed due to proximity to epipole!" << std::endl;
+		}
+		return -1;
+	}
+
 //	vec3 expectedMatchPos = referenceFrame->otherToThis_R
 //		* (keyframePointDir / prior_idepth) 
 //		+ referenceFrame->otherToThis_t;
@@ -221,11 +234,11 @@ float doOmniStereo(
 	padEpipolarLineOmni(&lineStartPos, &lineEndPos, &lineStartPix, &lineEndPix,
 		MIN_EPL_LENGTH_CROP, oModel);
 	if (!drawMatch.empty()){
-		cv::circle(drawMatch, cv::Point(lineStartPix.x(), lineStartPix.y()), 3, cv::Scalar(255, 0, 0));
-		cv::circle(drawMatch, cv::Point(lineEndPix.x(), lineEndPix.y()), 3, cv::Scalar(255, 0, 0));
+		cv::circle(drawMatch, vec2Point(lineStartPix), 3, cv::Scalar(255, 0, 0));
+		cv::circle(drawMatch, vec2Point(lineEndPix), 3, cv::Scalar(255, 0, 0));
 		vec3 lineMidPos   = keyframeToReference * vec3(keyframePointDir / prior_idepth);
 		vec2 lineMidPix = oModel.camToPixel(lineMidPos);
-		cv::circle(drawMatch, cv::Point(lineMidPix.x(), lineMidPix.y()), 3, cv::Scalar(0, 0, 255));
+		cv::circle(drawMatch, vec2Point(lineMidPix), 3, cv::Scalar(0, 0, 255));
 	}
 
 	//Check padded line still in image.

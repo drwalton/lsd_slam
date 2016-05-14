@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <ostream>
+#include <opencv2/core.hpp>
 
 namespace lsd_slam {
 
@@ -34,6 +35,8 @@ public:
 std::ostream &operator <<(std::ostream &stream, const RigidTransform &rhs);
 
 typedef RigidTransform WorldToCamTransform;
+
+cv::Point vec2Point(const vec2 &v);
 
 }
 

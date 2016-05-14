@@ -45,4 +45,9 @@ std::ostream &operator <<(std::ostream &stream, const RigidTransform &rhs)
 	return stream;
 }
 
+cv::Point vec2Point(const vec2 &v)
+{
+	return cv::Point(int(v.x()), int(v.y()));
+}
+
 }

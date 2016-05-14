@@ -81,7 +81,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 				&s, &r_alpha);
 			vec2 matchPixel = omCamModel->camToPixel(matchDir);
 			std::cout << "Match found: " << matchPixel << std::endl;
-			cv::circle(showIm2, cv::Point(matchPixel.x(), matchPixel.y()), 3, cv::Scalar(0,255,0));
+			cv::circle(showIm2, vec2Point(matchPixel), 3, cv::Scalar(0,255,0));
 			std::cout << "\t* Estimated inverse depth: " << r_idepth <<
 				"\n\t* Estimated depth: " << 1.f / r_idepth << 
 				//"\n\t* Estimated variance: " << r_var <<
