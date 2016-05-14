@@ -10,6 +10,16 @@
 
 using namespace lsd_slam;
 
+cv::Mat depth1;
+
+void depthMouseCallback(int event, int x, int y, int flags, void *userData)
+{
+	if(event == CV_EVENT_LBUTTONDOWN) {
+		float depth = depth1.at<float>(y,x);
+		std::cout << "CLICKED DEPTH: " << depth << std::endl;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	if(argc < 3 || argv[1] == std::string("-h")) {
@@ -30,8 +40,6 @@ int main(int argc, char **argv)
 
 	std::unique_ptr<CameraModel> model = CameraModel::loadFromFile(resourcesDir() + argv[1]);
 
-	SE3 transform;
-	transform.translation() = Eigen::Vector3d(0.05, 0., 0.);
 	WorldToCamTransform t1;
 	WorldToCamTransform t2;
 	t2.translation = vec3(0.1f, 0.f, 0.f);
@@ -42,15 +50,17 @@ int main(int argc, char **argv)
 			static_cast<uchar>(color.y() * 255.f), 
 			static_cast<uchar>(color.z() * 255.f)));
 	}
-	cv::Mat depth1;
 
 	std::cout << "Rendering..." << std::endl;
 
 	cv::Mat image1 = raycast(m.vertices(), m.indices(), colors, t1, *model, true, depth1);
+	depth1.setTo(1.f, depth1 == -1);
 	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *model);
 
 	cv::imshow("Im1", image1);
+	cv::moveWindow("Im1", 0, 30);
 	cv::imshow("Im2", image2);
+	cv::moveWindow("Im2", image1.cols, 30);
 	cv::waitKey(1);
 
 	std::cout << "Real transform applied:\n" << t2 << std::endl;
@@ -62,49 +72,80 @@ int main(int argc, char **argv)
 
 	lsd_slam::Frame keyframe(0, *model, 0.0, fltImage1.ptr<float>(0));
 
-	{
-		lsd_slam::DepthMapPixelHypothesis *arr = new lsd_slam::DepthMapPixelHypothesis[model->w*model->h];
+//	{
+//		lsd_slam::DepthMapPixelHypothesis *arr = new lsd_slam::DepthMapPixelHypothesis[model->w*model->h];
+//
+//		for (size_t r = 0; r < model->h; ++r) {
+//			for (size_t c = 0; c < model->w; ++c) {
+//				arr[r*model->w + c].idepth =
+//					arr[r*model->w + c].idepth_smoothed = 
+//					1.f / depth1.at<float>(r, c);
+//				arr[r*model->w + c].idepth_var = 
+//					arr[r*model->w + c].idepth_var_smoothed = 0.01f;
+//				arr[r*model->w + c].isValid = true;
+//			}
+//		}
+//
+//		keyframe.setDepth(arr);
+//
+//
+//		delete[] arr;
+//	}
 
-		for (size_t r = 0; r < model->h; ++r) {
-			for (size_t c = 0; c < model->w; ++c) {
-				arr[r*model->w + c].idepth =
-					arr[r*model->w + c].idepth_smoothed = 
-					1.f / depth1.at<float>(r, c);
-				arr[r*model->w + c].idepth_var = 
-					arr[r*model->w + c].idepth_var_smoothed = 0.01f;
-				arr[r*model->w + c].isValid = true;
-			}
-		}
+	double min, max;
+	cv::minMaxLoc(depth1, &min, &max);
+	std::cout << "Depths: Min: " << min << " Max: " << max << std::endl;
+	cv::imshow("Depth", depth1 / max);
+	cv::setMouseCallback("Depth", depthMouseCallback);
+	cv::moveWindow("Depth", 0, 30*2 + image1.rows);
+	keyframe.setDepthFromGroundTruth(depth1.ptr<float>(0));
 
-		keyframe.setDepth(arr);
-
-
-		delete[] arr;
-	}
-
-	lsd_slam::DepthMap depthMap(*model);
-	depthMap.initializeFromGTDepth(&keyframe);
+//	lsd_slam::DepthMap depthMap(*model);
+//	depthMap.initializeFromGTDepth(&keyframe);
 
 	lsd_slam::TrackingReference reference;
 	reference.importFrame(&keyframe);
+	keyframe.depthHasBeenUpdatedFlag = false;
 
 	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
 
 	SE3 initialEstimate;
-	initialEstimate.translation() += Eigen::Vector3d(.1, 0., 0.);
+	initialEstimate.translation() += Eigen::Vector3d(0., 0., 0.);
 
 	SE3Tracker tracker(*model);
 
+	std::cout << "**** TRACKING FRAME ****" << std::endl;
 	SE3 trackedEstimate = tracker.trackFrame(&reference, &newFrame, initialEstimate);
+	
+	if(tracker.diverged) {
+		std::cout << "Tracking Lost!" << std::endl;
+		return -1;
+	}
+	std::cout << "**** FINISHED TRACKING ****" << std::endl;
 
+	std::cout << "Value returned from tracker.trackFrame():\n";
 	std::cout << trackedEstimate;
+	std::cout << "\nNew frame's transform:\n"
+		<< newFrame.pose->thisToParent_raw << std::endl;
+	
 
 	WorldToCamTransform estTransform;
 	estTransform.rotation = trackedEstimate.rotationMatrix().cast<float>();
 	estTransform.translation = trackedEstimate.translation().cast<float>();
-	cv::Mat image3 = raycast(m.vertices(), m.indices(), colors, estTransform, *model);
+	
+	std::cout << estTransform << std::endl;
+	
+	cv::Mat image3 = raycast(m.vertices(), m.indices(), colors,
+		estTransform, *model);
 
 	cv::imshow("Estimated transform visualisation (should be same as Im2)", image3);
+	cv::moveWindow("Estimated transform visualisation (should be same as Im2)",
+		image1.cols+image2.cols, 30);
+
+	cv::imshow("Difference from Im2", image3 != image2);
+	cv::moveWindow("Difference from Im2",image1.cols, 60 + image1.rows);
+	cv::imshow("Difference from Im1", image3 != image1);
+	cv::moveWindow("Difference from Im1",image1.cols+image2.cols, 60 + image1.rows);
 
 	cv::waitKey();
 

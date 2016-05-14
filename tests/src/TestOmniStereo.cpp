@@ -39,7 +39,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		cv::cvtColor(fltIm2, showIm2, CV_GRAY2BGR);
 		showIm2.convertTo(showIm2, CV_8UC3);
 		
-		float r_idepth, r_var, r_eplLength;
+		float r_idepth;
 		float r_gradAlongLine, r_lineLen;
 		RunningStats s;
 		if(!fltIm1.isContinuous() || !fltIm2.isContinuous()) {
@@ -202,7 +202,6 @@ void showPossibleColors()
 	size_t w = 400;
 
 	cv::Mat colors(cv::Size(w, h), CV_8UC3);
-	float maxVal = 325125.f;
 
 	for (size_t i = 0; i < w; ++i) {
 		vec3 color = 255.f * hueToRgb(0.8f * float(i) / float(w));
