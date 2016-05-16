@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 	std::cout << "Loading scene from file: " << argv[1] << std::endl;
 
 	ModelLoader m;
-	m.loadFile(argv[2]);
+	m.loadFile(lsd_slam::resourcesDir() + argv[2]);
 
 	std::cout << "Vertices: \n" << m.vertices();
 

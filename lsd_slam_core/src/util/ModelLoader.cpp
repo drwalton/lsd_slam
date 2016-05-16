@@ -29,11 +29,11 @@ struct ModelLoader::Impl
 
 void ModelLoader::Impl::loadFile(const std::string &filename)
 {
-	if(filename.substr(filename.length() - 4, filename.length()) == "ply") {
-		loadPlyFile(filename);
-	} else {
+	//if(filename.substr(filename.length() - 3, filename.length()) == "ply") {
+	//	loadPlyFile(filename);
+	//} else {
 		loadFileAssimp(filename);
-	}
+	//}
 }
 
 void ModelLoader::Impl::saveFile(const std::string &filename)
@@ -280,6 +280,7 @@ void ModelLoader::Impl::loadPlyFile(const std::string &filename)
 {
 	std::ifstream f(filename);
 	std::string line;
+	std::getline(f, line);
 	std::getline(f, line);
 	if(line != "ply") {
 		throw std::runtime_error("Bad PLY format!");
