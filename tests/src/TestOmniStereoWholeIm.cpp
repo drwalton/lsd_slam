@@ -94,7 +94,6 @@ int main(int argc, char **argv)
 	cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 	showIm1.convertTo(showIm1, CV_8UC3);
 	RunningStats stats;
-	float r_idepth, r_var, r_eplLength;
 	float r_gradAlongLine, r_lineLen;
 
 	cv::Mat estDepths(fltIm1.size(), CV_32FC1);
@@ -105,7 +104,6 @@ int main(int argc, char **argv)
 		processImageWithProgressBar(fltIm1.size(), [&](int r, int c) {
 			vec3 a;
 			//findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
-			vec3 dir = omCamModel->pixelToCam(vec2(c, r));
 
 			float depth = depth1.at<float>(r, c);
 
@@ -179,7 +177,6 @@ void showPossibleColors()
 	size_t w = 400;
 
 	cv::Mat colors(cv::Size(w, h), CV_8UC3);
-	float maxVal = 325125.f;
 
 	for (size_t i = 0; i < w; ++i) {
 		vec3 color = 255.f * hueToRgb(0.8f * float(i) / float(w));

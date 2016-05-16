@@ -92,8 +92,8 @@ int main(int argc, char **argv)
 	cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 	showIm1.convertTo(showIm1, CV_8UC3);
 	RunningStats stats;
-	float r_idepth, r_var, r_eplLength;
-	float r_gradAlongLine, r_lineLen;
+	float r_idepth, r_var;
+	float r_lineLen;
 
 	std::cout << "Computing Stereo..." << std::endl;
 	try{
@@ -101,8 +101,6 @@ int main(int argc, char **argv)
 			vec3 a;
 			//findValuesToSearchFor(keyframeToReference, *omCamModel, 
 			//	fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
-			vec3 dir = pjCamModel->pixelToCam(vec2(c, r));
-
 			float depth = depth1.at<float>(r, c);
 
 			vec3 matchDir; vec2 epDir;

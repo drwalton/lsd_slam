@@ -5,6 +5,7 @@
 #include <assimp/scene.h>
 #include <assimp/mesh.h>
 #include <iostream>
+#include <fstream>
 
 namespace lsd_slam {
 
@@ -21,13 +22,18 @@ struct ModelLoader::Impl
 	bool plyIsPointCloud(const std::string &filename);
 	void loadFileAssimp(const std::string &filename);
 	void saveFileAssimp(const std::string &filename);
+	void loadPlyFile(const std::string &filename);
 	void centerMesh();
 };
 
 
 void ModelLoader::Impl::loadFile(const std::string &filename)
 {
-	loadFileAssimp(filename);
+	if(filename.substr(filename.length() - 4, filename.length()) == "ply") {
+		loadPlyFile(filename);
+	} else {
+		loadFileAssimp(filename);
+	}
 }
 
 void ModelLoader::Impl::saveFile(const std::string &filename)
@@ -268,6 +274,76 @@ bool ModelLoader::hasVertColors() const
 std::vector<vec3> &ModelLoader::vertColors()
 {
 	return pimpl_->vertColors;
+}
+
+
+void ModelLoader::Impl::loadPlyFile(const std::string &filename)
+{
+	std::ifstream f(filename);
+	std::string line;
+	std::getline(f, line);
+	if(line != "ply") {
+		throw std::runtime_error("Bad PLY format!");
+	}
+	
+	std::string formatLine;
+	std::getline(f, formatLine);
+	if(formatLine == "format ascii 1.0") {
+		//ASCII
+	} else if(formatLine == "format binary 1.0") {
+		//BINARY
+		throw std::runtime_error("importing binary ply files not implemented yet!");
+	} else {
+		throw std::runtime_error("bad format line!");
+	}
+	
+	size_t nVerts = 0, nElems = 0;
+	bool hasNorms = false, hasColors = false;
+	std::getline(f, line);
+	while(line != "end_header") {
+		if(line.substr(0, 14) == "element vertex") {
+			nVerts = atoi((line.substr(14, line.size())).c_str());
+		} else if(line.substr(0, 12) == "element face") {
+			nElems = 3 * atoi((line.substr(12, line.size())).c_str());
+		} else if(line == "property float nx") {
+			hasNorms = true;
+		} else if(line == "property uchar red") {
+			hasColors = true;
+		}
+		
+		std::getline(f, line);
+	}
+	
+	//Get Verts
+	verts.resize(nVerts);
+	if(hasNorms) normals.resize(nVerts);
+	if(hasColors) vertColors.resize(nVerts);
+	for(size_t v = 0; v < nVerts; ++v) {
+		f >> verts[v].x();
+		f >> verts[v].y();
+		f >> verts[v].z();
+		if(hasNorms) {
+    		f >> normals[v].x();
+    		f >> normals[v].y();
+    		f >> normals[v].z();
+		}
+		if(hasColors) {
+			f >> vertColors[v].x();
+			f >> vertColors[v].y();
+			f >> vertColors[v].z();
+		}
+	}
+	
+	//Get Elems
+	indices.resize(nElems);
+	size_t nIndicesInFace;
+	for(size_t e = 0; e < nElems / 3; ++e) {
+		f >> nIndicesInFace;
+		if(nIndicesInFace != 4) throw std::runtime_error("Can't deal with faces of more than 3 indices!");
+		f >> indices[e*3];
+		f >> indices[e*3 + 1];
+		f >> indices[e*3 + 2];
+	}
 }
 
 }
