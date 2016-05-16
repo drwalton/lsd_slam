@@ -40,6 +40,8 @@ namespace lsd_slam {
 		bool hasVertColors() const;
 		std::vector<Eigen::Vector3f> &vertColors();
 	private:
+	
+		void loadPlyFile(const std::string &filename);
 
 		struct Impl;
 		std::shared_ptr<Impl> pimpl_;
