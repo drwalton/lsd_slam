@@ -542,7 +542,8 @@ float doLineStereo(
 	float r = findDepthAndVarProj(&result_idepth, &result_var, u, v, epxn,
 		epyn, best_match_x, best_match_y, best_match_err,
 		incx, incy, didSubpixel, KinvP, pClose, pFar,
-		gradAlongLine, sampleDist, &model, referenceFrameImage, keyframeImage,
+		gradAlongLine, sampleDist, &model, keyframeToReference,
+		referenceFrameImage, keyframeImage,
 		initialTrackedResidual, keyframeGradients, stats);
 	if (r != 0.f) {
 		return r;
@@ -1114,7 +1115,7 @@ float findDepthAndVarProj(
 	const float *referenceFrame,
 	const float *activeKeyFrame,
 	float initialTrackedResidual,
-	Eigen::Vector4f *keyframeGradients,
+	const Eigen::Vector4f *keyframeGradients,
 	RunningStats *stats)
 {
 

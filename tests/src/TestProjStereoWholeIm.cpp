@@ -94,6 +94,7 @@ int main(int argc, char **argv)
 	float r_idepth, r_var, r_eplLength;
 	float r_gradAlongLine, r_lineLen;
 
+	std::cout << "Computing Stereo..." << std::endl;
 	try{
 		for (size_t r = 0; r < fltIm1.rows; ++r) {
 			for (size_t c = 0; c < fltIm1.cols; ++c) {
@@ -110,9 +111,10 @@ int main(int argc, char **argv)
 					keyframeToReference,
 					&epxn, &epyn, &stats, *pjCamModel);
 
-				//TODO
+				//TODO: Init gradients properly
 				std::vector<Eigen::Vector4f> gradients;
-				float initialTrackedResidual;
+				//TODO: Choose good residual.
+				float initialTrackedResidual = 0.f;
 
 				float estDepth = doLineStereo(
 					c, r, epxn, epyn,
@@ -137,6 +139,8 @@ int main(int argc, char **argv)
 		std::cin.get();
 		return -1;
 	}
+	
+	std::cout << "Stereo Done!" << std::endl;
 
 	cv::imshow("MATCHES & DEPTHS", showIm1);
 

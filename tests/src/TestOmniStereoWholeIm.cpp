@@ -97,6 +97,7 @@ int main(int argc, char **argv)
 	float r_gradAlongLine, r_lineLen;
 
 	try{
+		std::cout << "Computing Stereo..." << std::endl;
 		for (size_t r = 0; r < fltIm1.rows; ++r) {
 			for (size_t c = 0; c < fltIm1.cols; ++c) {
 				vec3 a;
@@ -133,6 +134,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	std::cout << "Stereo Done!" << std::endl;
 	cv::imshow("MATCHES & DEPTHS", showIm1);
 
 	int key = 0;
