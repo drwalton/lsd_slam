@@ -182,4 +182,6 @@ std::ostream &operator << (std::ostream &s, std::array<T, N> &t) {
 	return s;
 }
 
+void processImageWithProgressBar(cv::Size size, std::function<void(int, int)> procPixel);
+
 }

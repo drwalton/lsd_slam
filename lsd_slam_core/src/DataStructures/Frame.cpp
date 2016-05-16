@@ -304,10 +304,9 @@ void Frame::prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const Ca
 	otherToThis_R = otherToThis.rotationMatrix().cast<float>();
 	otherToThis_t = otherToThis.translation().cast<float>();
 
-
-
 	thisToOther_t = thisToOther.translation().cast<float>();
-	thisToOther_R = thisToOther.rotationMatrix().cast<float>() * thisToOther.scale();
+	thisToOther_R = thisToOther.rotationMatrix().cast<float>() * 
+		static_cast<float>(thisToOther.scale());
 	otherToThis_R_row0 = thisToOther_R.col(0);
 	otherToThis_R_row1 = thisToOther_R.col(1);
 	otherToThis_R_row2 = thisToOther_R.col(2);
@@ -599,26 +598,12 @@ void Frame::releaseImage(int level)
 	data.image[level] = 0;
 }
 
-void Frame::buildGradients(int level)
+void calculateImageGradients(const float *image, Eigen::Vector4f *gradients,
+	size_t width, size_t height)
 {
-	require(IMAGE, level);
-	boost::unique_lock<boost::mutex> lock2(buildMutex);
-
-	if(data.gradientsValid[level])
-		return;
-
-	if(enablePrintDebugInfo && printFrameBuildDebugInfo)
-		printf("CREATE Gradients lvl %d for frame %d\n", level, id());
-
-	int width = this->width(level);
-	int height = this->height(level);
-	if (data.gradients[level] == 0) {
-		data.gradients[level] = (Eigen::Vector4f*)FrameMemory::getInstance()
-			.getBuffer(sizeof(Eigen::Vector4f) * width * height);
-	}
-	const float* img_pt = data.image[level] + width;
-	const float* img_pt_max = data.image[level] + width*(height-1);
-	Eigen::Vector4f* gradxyii_pt = data.gradients[level] + width;
+	const float* img_pt = image + width;
+	const float* img_pt_max = image + width*(height-1);
+	Eigen::Vector4f* gradxyii_pt = gradients + width;
 	
 	// in each iteration i need -1,0,p1,mw,pw
 	float val_m1 = *(img_pt-1);
@@ -636,6 +621,27 @@ void Frame::buildGradients(int level)
 		val_m1 = val_00;
 		val_00 = val_p1;
 	}
+}
+
+void Frame::buildGradients(int level)
+{
+	require(IMAGE, level);
+	boost::unique_lock<boost::mutex> lock2(buildMutex);
+
+	if (data.gradientsValid[level])
+		return;
+
+	if (enablePrintDebugInfo && printFrameBuildDebugInfo)
+		printf("CREATE Gradients lvl %d for frame %d\n", level, id());
+
+	int width = this->width(level);
+	int height = this->height(level);
+	if (data.gradients[level] == 0) {
+		data.gradients[level] = (Eigen::Vector4f*)FrameMemory::getInstance()
+			.getBuffer(sizeof(Eigen::Vector4f) * width * height);
+	}
+
+	calculateImageGradients(data.image[level], data.gradients[level], width, height);
 
 	data.gradientsValid[level] = true;
 }

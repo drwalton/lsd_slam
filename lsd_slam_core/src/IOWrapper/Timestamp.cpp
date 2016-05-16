@@ -53,7 +53,13 @@ std::string Timestamp::toDateStr(const char* format) const
 	
 	boost::unique_lock<boost::mutex> lock(localtimeMutex);
 	// localtime is not re-entrant.
+#ifdef _WIN32
+	struct tm loc_time_t_r;
+	loc_time_t = &loc_time_t_r;
+	localtime_s(loc_time_t, &in_time_t);
+#else
 	loc_time_t = std::localtime(&in_time_t);
+#endif
 	char buffer[128];
 	std::strftime(buffer, 128, format, loc_time_t);
 	lock.unlock();

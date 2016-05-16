@@ -220,7 +220,6 @@ public:
    */
   inline
   const Transformation matrix() const {
-    //ToDO: implement this directly!
     Scalar scale = quaternion().norm();
     Quaternion<Scalar> norm_quad = quaternion();
     norm_quad.coeffs() /= scale;
@@ -261,7 +260,6 @@ public:
    */
   inline
   const Point operator*(const Point & p) const {
-    //ToDO: implement this directly!
     Scalar scale = quaternion().norm();
     Quaternion<Scalar> norm_quad = quaternion();
     norm_quad.coeffs() /= scale;

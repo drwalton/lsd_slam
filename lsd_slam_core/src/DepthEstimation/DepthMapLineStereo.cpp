@@ -89,6 +89,7 @@ bool makeAndCheckEPL(const int x, const int y, const float* const ref,
 	const ProjCameraModel &model)
 {
 	int idx = x+y*model.w;
+	if (size_t(idx) <= model.w) return false;
 
 	// ======= make epl ========
 	float epx = - model.fx * keyframeToReference.translation[0] + keyframeToReference.translation[2]*(x - model.cx);
@@ -128,7 +129,6 @@ bool makeAndCheckEPL(const int x, const int y, const float* const ref,
 	}
 
 
-	///TODO: rescaling like this assumes the EPL is straight - change this part.
 	// ===== DONE - return "normalized" epl =====
 	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
 	*pepx = epx * fac;
@@ -180,7 +180,6 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	}
 
 
-	///TODO: rescaling like this assumes the EPL is straight - change this part.
 	// ===== DONE - return "normalized" epl =====
 	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
 	*pepx = epx * fac;

@@ -35,6 +35,7 @@ target_link_libraries(TestOmniStereoWholeIm
 	${libtiff_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 )
+link_libs_exec_debug(TestOmniStereoWholeIm FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
 
 add_executable(TestProjStereoWholeIm
 	TestProjStereoWholeIm.cpp
@@ -48,6 +49,7 @@ target_link_libraries(TestProjStereoWholeIm
 	${libtiff_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 )
+link_libs_exec_debug(TestProjStereoWholeIm FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
 
 add_executable(TestOmniStereo
 	TestOmniStereo.cpp
@@ -115,5 +117,6 @@ target_link_libraries(RenderAndTestSE3Tracking
 	${libtiff_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 )
+link_libs_exec_debug(RenderAndTestSE3Tracking FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
 link_libs_exec_debug(RenderAndTestSE3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 

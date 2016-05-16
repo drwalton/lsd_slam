@@ -162,4 +162,21 @@ cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width,
 
 	return res;
 }
+
+void processImageWithProgressBar(cv::Size size, std::function<void(int, int)> procPixel)
+{
+	size_t currPercent = 0;
+	for (size_t r = 0; r < size_t(size.height); ++r) {
+		size_t percent = size_t((float(r) / float(size.height)) * 100.f);
+		if (percent > currPercent) {
+			std::cout << "\b\b\b\b" << percent << "%";
+			std::cout.flush();
+			percent = currPercent;
+		}
+		for (size_t c = 0; c < size_t(size.width); ++c) {
+			procPixel(r, c);
+		}
+	}
+	std::cout << "\b\b\b\b100%" << std::endl;
+}
 }

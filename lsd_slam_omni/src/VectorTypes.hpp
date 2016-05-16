@@ -37,6 +37,7 @@ std::ostream &operator <<(std::ostream &stream, const RigidTransform &rhs);
 typedef RigidTransform WorldToCamTransform;
 
 cv::Point vec2Point(const vec2 &v);
+cv::Vec3b vec3ToColor(const vec3 &v);
 
 }
 

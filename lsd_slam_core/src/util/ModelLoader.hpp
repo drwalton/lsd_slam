@@ -25,10 +25,8 @@ namespace lsd_slam {
 		///\brief Move the centroid of the supplied mesh to the model-space origin.
 		void center();
 
-		///\brief Apply uniform scaling to a mesh so that all its points lie within
-		/// an axis-aligned cube centred at the origin.
-		///\param dim The length of a side of the cube.
-		void scale(float dim = 2.0f);
+		///\brief Apply uniform scaling to a mesh .
+		void uniformScale(float dim = 2.0f);
 
 		std::vector<Eigen::Vector3f> &vertices();
 		std::vector<GLuint> &indices();

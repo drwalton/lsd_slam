@@ -90,7 +90,6 @@ int main(int argc, char **argv) {
 	
 	size_t imgCounter = 0;
 	for (size_t i = 0; i < numFrames; ++i) {
-		//TODO also record depth, for initialising when testing tracking.
 		image = raycast(m.vertices(), m.indices(), colors, camMotion->getNextTransform(), 
 			*model, true, depth);
 		cv::imshow("Color", image);

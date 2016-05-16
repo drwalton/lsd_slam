@@ -3,6 +3,7 @@
 #include "globalFuncs.hpp"
 #include "ModelLoader.hpp"
 #include "Raycast.hpp"
+#include "DataStructures/Frame.hpp"
 
 using namespace lsd_slam;
 
@@ -96,43 +97,43 @@ int main(int argc, char **argv)
 
 	std::cout << "Computing Stereo..." << std::endl;
 	try{
-		for (size_t r = 0; r < fltIm1.rows; ++r) {
-			for (size_t c = 0; c < fltIm1.cols; ++c) {
-				vec3 a;
-				//findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
-				vec3 dir = pjCamModel->pixelToCam(vec2(c, r));
+		processImageWithProgressBar(fltIm1.size(), [&](int r, int c) {
+			vec3 a;
+			//findValuesToSearchFor(keyframeToReference, *omCamModel, 
+			//	fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
+			vec3 dir = pjCamModel->pixelToCam(vec2(c, r));
 
-				float depth = depth1.at<float>(r, c);
+			float depth = depth1.at<float>(r, c);
 
-				vec3 matchDir; vec2 epDir;
+			vec3 matchDir; vec2 epDir;
 
-				float epxn, epyn;
-				makeAndCheckEPL(c, r, fltIm2.ptr<float>(0), fltIm1.ptr<float>(0),
-					keyframeToReference,
-					&epxn, &epyn, &stats, *pjCamModel);
+			float epxn, epyn;
+			makeAndCheckEPL(c, r, fltIm2.ptr<float>(0), fltIm1.ptr<float>(0),
+				keyframeToReference,
+				&epxn, &epyn, &stats, *pjCamModel);
 
-				//TODO: Init gradients properly
-				std::vector<Eigen::Vector4f> gradients;
-				//TODO: Choose good residual.
-				float initialTrackedResidual = 0.f;
+			std::vector<Eigen::Vector4f> gradients(fltIm1.cols*fltIm1.rows);
+			calculateImageGradients(fltIm1.ptr<float>(0), gradients.data(),
+				fltIm1.cols, fltIm1.rows);
+			//TODO: Choose good residual.
+			float initialTrackedResidual = 1.f;
 
-				float estDepth = doLineStereo(
-					c, r, epxn, epyn,
-					1.f / (depth * DEPTH_SEARCH_RANGE),
-					1.f / (depth),
-					1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
-					fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
-					*pjCamModel, keyframeToReference,
-					r_idepth, r_var, r_lineLen,
-					gradients.data(),
-					initialTrackedResidual,
-					&stats);
-				if (estDepth > 0) {
-					vec3 color = 255.f * hueToRgb(estDepth / 2.f);
-					showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
-				}
+			float estDepth = doLineStereo(
+				c, r, epxn, epyn,
+				1.f / (depth * DEPTH_SEARCH_RANGE),
+				1.f / (depth),
+				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
+				fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
+				*pjCamModel, keyframeToReference,
+				r_idepth, r_var, r_lineLen,
+				gradients.data(),
+				initialTrackedResidual,
+				&stats);
+			if (estDepth > 0) {
+				vec3 color = 255.f * hueToRgb(estDepth / 2.f);
+				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
 			}
-		}
+		});
 	}
 	catch (cv::Exception &e) {
 		std::cout << e.what() << std::endl;

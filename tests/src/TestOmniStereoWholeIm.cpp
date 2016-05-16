@@ -15,7 +15,8 @@ bool addNoise = true;
 
 const float DEPTH_SEARCH_RANGE = 0.4f;
 void showPossibleColors();
-
+cv::Mat visualizeDepthError(const cv::Mat &estDepth, const cv::Mat &realDepth,
+	float maxDepthError);
 
 int main(int argc, char **argv)
 {
@@ -96,37 +97,39 @@ int main(int argc, char **argv)
 	float r_idepth, r_var, r_eplLength;
 	float r_gradAlongLine, r_lineLen;
 
+	cv::Mat estDepths(fltIm1.size(), CV_32FC1);
+	estDepths.setTo(-1.f);
+
 	try{
 		std::cout << "Computing Stereo..." << std::endl;
-		for (size_t r = 0; r < fltIm1.rows; ++r) {
-			for (size_t c = 0; c < fltIm1.cols; ++c) {
-				vec3 a;
-				//findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
-				vec3 dir = omCamModel->pixelToCam(vec2(c, r));
+		processImageWithProgressBar(fltIm1.size(), [&](int r, int c) {
+			vec3 a;
+			//findValuesToSearchFor(keyframeToReference, *omCamModel, fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
+			vec3 dir = omCamModel->pixelToCam(vec2(c, r));
 
-				float depth = depth1.at<float>(r, c);
+			float depth = depth1.at<float>(r, c);
 
-				vec3 matchDir; vec2 epDir;
+			vec3 matchDir; vec2 epDir;
 
-				float err = doOmniStereo(
-					c, r, -keyframeToReference.translation,
-					1.f / (depth * DEPTH_SEARCH_RANGE),
-					1.f / (depth),
-					1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
-					fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
-					keyframeToReference,
-					&stats, *omCamModel, fltIm1.cols,
-					epDir, matchDir,
-					r_gradAlongLine, r_lineLen);
-				if (err > 0) {
-					float r_alpha;
-					float depth =
-						findDepthOmni(c, r, matchDir, omCamModel, keyframeToReference.inverse(), &stats, &r_alpha);
-					vec3 color = 255.f * hueToRgb(depth / 2.f);
-					showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
-				}
+			float err = doOmniStereo(
+				c, r, (-keyframeToReference.translation).normalized(),
+				1.f / (depth * DEPTH_SEARCH_RANGE),
+				1.f / (depth),
+				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
+				fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
+				keyframeToReference,
+				&stats, *omCamModel, fltIm1.cols,
+				epDir, matchDir,
+				r_gradAlongLine, r_lineLen);
+			if (err > 0) {
+				float r_alpha;
+				float depth =
+					findDepthOmni(c, r, matchDir, omCamModel, keyframeToReference.inverse(), &stats, &r_alpha);
+				vec3 color = 255.f * hueToRgb(depth / 2.f);
+				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
+				estDepths.at<float>(r, c) = depth;
 			}
-		}
+		});
 	}
 	catch (cv::Exception &e) {
 		std::cout << e.what() << std::endl;
@@ -136,6 +139,11 @@ int main(int argc, char **argv)
 
 	std::cout << "Stereo Done!" << std::endl;
 	cv::imshow("MATCHES & DEPTHS", showIm1);
+	cv::moveWindow("MATCHES & DEPTHS", 60 + fltIm1.rows, 0);
+
+	cv::Mat depthErrorIm = visualizeDepthError(estDepths, depth1, 2.f);
+	cv::imshow("Depth Error", depthErrorIm);
+	cv::moveWindow("Depth Error", 60 + fltIm1.rows, showIm1.cols);
 
 	int key = 0;
 	while(key != 27) {
@@ -143,6 +151,26 @@ int main(int argc, char **argv)
 	}
 
 	return 0;
+}
+
+cv::Mat visualizeDepthError(const cv::Mat &estDepth, const cv::Mat &realDepth, 
+	float maxDepthError)
+{
+	if (estDepth.size() != realDepth.size()) {
+		throw std::runtime_error("DIFFERENT SIZES IN visualizeDepthError()!");
+	}
+	cv::Mat visIm(estDepth.size(), CV_8UC3);
+	visIm.setTo(cv::Scalar(0, 0, 0));
+	for (size_t r = 0; r < visIm.rows; ++r) {
+		for (size_t c = 0; c < visIm.cols; ++c) {
+			if (estDepth.at<float>(r, c) <= 0.f) continue;
+			float err = fabsf(realDepth.at<float>(r, c) - estDepth.at<float>(r, c));
+			vec3 color = 255.f * hueToRgb(0.8f*(err) / maxDepthError);
+			visIm.at<cv::Vec3b>(r, c) = vec3ToColor(color);
+		}
+	}
+
+	return visIm;
 }
 
 void showPossibleColors()

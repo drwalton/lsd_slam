@@ -9,7 +9,7 @@
 /// camera models.
 
 #define SHOW_DEBUG_IMAGES 0
-#define EPIPOLE_MAX_CLOSENESS (0.7f) //Max dot product with epipole in stereo.
+#define EPIPOLE_MAX_CLOSENESS (0.95f) //Max dot product with epipole in stereo.
 
 namespace lsd_slam {
 
@@ -480,12 +480,25 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 	float minLength,
 	const OmniCameraModel &oModel)
 {
+//#define DEBUG_PRINT_LINE_PADDING_STUFF
 	//N.B. this may underestimate the length of longer curves, but since
 	// minLength is set to a small value (e.g. 3) this doesn't matter.
 	float eplLength = (*lineEndPix - *lineStartPix).norm(); 
 
 	if (eplLength < minLength)
 	{
+#ifdef DEBUG_PRINT_LINE_PADDING_STUFF
+		std::cout << "Padding line from " << *lineStartPix << " to "
+			<< *lineEndPix << " as length of " << eplLength << " is less"
+			" than required length " << minLength << std::endl;
+#endif
+		float requiredStep = 0.5f*(minLength - eplLength);
+		float a = 1.f;
+		a += oModel.getEpipolarParamIncrement(a, *lineEnd, *lineStart, requiredStep);
+		*lineEnd = a*(*lineEnd) + (1.f - a)*(*lineStart);
+		a = 1.f;
+		a += oModel.getEpipolarParamIncrement(a, *lineStart, *lineEnd, requiredStep);
+		*lineStart = a*(*lineStart) + (1.f - a)*(*lineEnd);
 		// make epl long enough (pad a little bit).
 		//TODO
 //		float pad = (minLength - (eplLength)) / 2.0f;
@@ -494,6 +507,11 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 
 		*lineStartPix = oModel.camToPixel(*lineStart);
 		*lineEndPix = oModel.camToPixel(*lineEnd);
+#ifdef DEBUG_PRINT_LINE_PADDING_STUFF
+		std::cout << "After padding, line runs from " << *lineStartPix 
+			<< " to " << *lineEndPix << " and has length of "
+			<< (*lineStartPix - *lineEndPix).norm() << std::endl;
+#endif
 	}
 }
 

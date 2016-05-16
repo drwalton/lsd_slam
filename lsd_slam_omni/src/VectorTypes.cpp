@@ -50,4 +50,12 @@ cv::Point vec2Point(const vec2 &v)
 	return cv::Point(int(v.x()), int(v.y()));
 }
 
+cv::Vec3b vec3ToColor(const vec3 &v)
+{
+	return cv::Vec3b(
+		static_cast<uchar>(v.x()),
+		static_cast<uchar>(v.y()),
+		static_cast<uchar>(v.z()));
+}
+
 }

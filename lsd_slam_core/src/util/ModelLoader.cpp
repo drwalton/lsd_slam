@@ -222,11 +222,12 @@ void ModelLoader::center()
 	}
 }
 
-void ModelLoader::scale(float dim)
+void ModelLoader::uniformScale(float dim)
 {
 	//float dist = dim * 0.5f;
-	//TODO
-	throw std::runtime_error("ModelLoader::scale NOT IMPLEMENTED");
+	for (vec3 & v : pimpl_->verts) {
+		v *= dim;
+	}
 }
 
 std::vector<vec3> &ModelLoader::vertices()

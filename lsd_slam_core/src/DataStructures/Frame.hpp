@@ -37,6 +37,9 @@ class TrackingReference;
 /**
  */
 
+void calculateImageGradients(const float *image, Eigen::Vector4f *gradients,
+	size_t width, size_t height);
+
 class Frame
 {
 public:
