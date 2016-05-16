@@ -196,7 +196,8 @@ float doLineStereo(
 	float &result_idepth, float &result_var, float &result_eplLength,
 	const Eigen::Vector4f *keyframeGradients,
 	float initialTrackedResidual,
-	RunningStats* const stats)
+	RunningStats* const stats,
+	cv::Mat &drawIm)
 {
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 	vec3 K_otherToThis_t = model.K * keyframeToReference.translation;
@@ -234,6 +235,16 @@ float doLineStereo(
 	float realVal_m2 = getInterpolatedElement(keyframeImage, u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, model.w);
 	float realVal_p2 = getInterpolatedElement(keyframeImage, u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, model.w);
 
+	if (!drawIm.empty()) {
+		std::vector<float> searchVals{ realVal_m2, realVal_m1, realVal, realVal_p1, realVal_p2 };
+		cv::Mat searchValMat(cv::Size(searchVals.size(), 1), CV_8UC1);
+		for(size_t i = 0; i < searchVals.size(); ++i) {
+			searchValMat.at<uchar>(0,i) = uchar(searchVals[i]);
+		}
+		cv::Mat showMat;
+		cv::resize(searchValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("SEARCHED", showMat);
+	}
 	//	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
 
 	Eigen::Vector3f pClose = pInf + K_otherToThis_t*max_idepth;
@@ -379,6 +390,12 @@ float doLineStereo(
 	float val_cp_p2;
 
 
+	std::vector<float> matchVals;
+	if (!drawIm.empty()) {
+		matchVals.push_back(val_cp_m2);
+		matchVals.push_back(val_cp_m1);
+		matchVals.push_back(val_cp);
+	}
 
 	/*
 	* Subsequent exact minimum is found the following way:
@@ -443,6 +460,11 @@ float doLineStereo(
 			e5B = val_cp_m2 - realVal_m2; ee += e5B*e5B;
 		}
 
+		if (!drawIm.empty()) {
+			vec3 rgb = 255.f * hueToRgb(0.8f * ee / 325125.f);
+			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+			drawIm.at<cv::Vec3b>(int(cpy), int(cpx)) = rgbB;
+		}
 
 		// do I have a new winner??
 		// if so: set.
@@ -488,6 +510,9 @@ float doLineStereo(
 		// shift everything one further.
 		eeLast = ee;
 		val_cp_m2 = val_cp_m1; val_cp_m1 = val_cp; val_cp = val_cp_p1; val_cp_p1 = val_cp_p2;
+		if (!drawIm.empty()) {
+			matchVals.push_back(val_cp);
+		}
 
 		if (enablePrintDebugInfo) stats->num_stereo_comparisons++;
 
@@ -495,6 +520,17 @@ float doLineStereo(
 		cpy += incy;
 
 		loopCounter++;
+	}
+	if (!drawIm.empty()) {
+		matchVals.push_back(val_cp_p1);
+		matchVals.push_back(val_cp_p2);
+		cv::Mat searchValMat(cv::Size(matchVals.size(), 1), CV_8UC1);
+		for(size_t i = 0; i < matchVals.size(); ++i) {
+			searchValMat.at<uchar>(0,i) = uchar(matchVals[i]);
+		}
+		cv::Mat showMat;
+		cv::resize(searchValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("MATCHES", showMat);
 	}
 
 	// if error too big, will return -3, otherwise -2.
@@ -546,6 +582,10 @@ float doLineStereo(
 		initialTrackedResidual, keyframeGradients, stats);
 	if (r != 0.f) {
 		return r;
+	}
+
+	if (!drawIm.empty()) {
+		cv::circle(drawIm, cv::Point(int(best_match_x), int(best_match_y)), 5, cv::Scalar(0, 255, 0));
 	}
 
 	result_eplLength = eplLength;

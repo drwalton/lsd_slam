@@ -13,10 +13,74 @@ RigidTransform keyframeToReference;
 ProjCameraModel *pjCamModel;
 vec3 pointDir;
 bool addNoise = true;
+RunningStats stats;
 
-const float DEPTH_SEARCH_RANGE = 0.8f;
+const float DEPTH_SEARCH_RANGE = 0.4f;
 void showPossibleColors();
 
+void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
+	if(event == CV_EVENT_LBUTTONDOWN) {
+		vec3 a;
+		//findValuesToSearchFor(keyframeToReference, *omCamModel, 
+		//	fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
+		vec3 dir = pjCamModel->pixelToCam(vec2(x, y));
+
+		float depth = depth1.at<float>(y, x);
+
+		vec3 matchDir; vec2 epDir;
+
+		float epxn, epyn;
+		makeAndCheckEPL(x, y, fltIm2.ptr<float>(0), fltIm1.ptr<float>(0),
+			keyframeToReference.inverse(),
+			&epxn, &epyn, &stats, *pjCamModel);
+
+		std::vector<Eigen::Vector4f> gradients(fltIm1.cols*fltIm1.rows);
+		calculateImageGradients(fltIm1.ptr<float>(0), gradients.data(),
+			fltIm1.cols, fltIm1.rows);
+		//TODO: Choose good residual.
+		float initialTrackedResidual = 1.f;
+
+		float r_idepth, r_var;
+		float r_lineLen;
+
+		cv::cvtColor(fltIm2, showIm2, CV_GRAY2BGR);
+		showIm2.convertTo(showIm2, CV_8UC3);
+
+		float estDepth = doLineStereo(
+			x, y, epxn, epyn,
+			1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
+			1.f / (depth),
+			1.f / (depth * DEPTH_SEARCH_RANGE),
+			fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
+			*pjCamModel, keyframeToReference,
+			r_idepth, r_var, r_lineLen,
+			gradients.data(),
+			initialTrackedResidual,
+			&stats, showIm2);
+		if (estDepth > 0) {
+			vec3 color = 255.f * hueToRgb(estDepth / 2.f);
+			showIm1.at<cv::Vec3b>(y, x) = cv::Vec3b(color.z(), color.y(), color.x());
+			std::cout << "Stereo match succeeded!" << std::endl;
+		}
+		else {
+			std::cout << "Stereo match failed! Code: " << estDepth << std::endl;
+			switch (int(estDepth)) {
+			case -3:
+				std::cout << "Error too large!" << std::endl;
+				break;
+			case -2:
+				std::cout << "Winner not clear enough!" << std::endl;
+				break;
+			case -1:
+				std::cout << "One of lines went outside image!" << std::endl;
+				break;
+			}
+		}
+		
+		cv::imshow("Im2", showIm2);
+		cv::waitKey(1);
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -61,6 +125,7 @@ int main(int argc, char **argv)
 	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *camModel);
 	std::cout << "Rendering complete!" << std::endl;
 
+	showPossibleColors();
 	cv::Mat im1gray, im2gray;
 	cv::cvtColor(image1, im1gray, CV_RGB2GRAY);
 	cv::cvtColor(image2, im2gray, CV_RGB2GRAY);
@@ -92,59 +157,12 @@ int main(int argc, char **argv)
 	cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 	showIm1.convertTo(showIm1, CV_8UC3);
 	RunningStats stats;
-	float r_idepth, r_var, r_eplLength;
-	float r_gradAlongLine, r_lineLen;
+	float r_idepth;
+	float r_lineLen;
 
-	std::cout << "Computing Stereo..." << std::endl;
-	try{
-		processImageWithProgressBar(fltIm1.size(), [&](int r, int c) {
-			vec3 a;
-			//findValuesToSearchFor(keyframeToReference, *omCamModel, 
-			//	fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
-			vec3 dir = pjCamModel->pixelToCam(vec2(c, r));
+	cv::waitKey(1);
 
-			float depth = depth1.at<float>(r, c);
-
-			vec3 matchDir; vec2 epDir;
-
-			float epxn, epyn;
-			makeAndCheckEPL(c, r, fltIm2.ptr<float>(0), fltIm1.ptr<float>(0),
-				keyframeToReference.inverse(),
-				&epxn, &epyn, &stats, *pjCamModel);
-
-			std::vector<Eigen::Vector4f> gradients(fltIm1.cols*fltIm1.rows);
-			calculateImageGradients(fltIm1.ptr<float>(0), gradients.data(),
-				fltIm1.cols, fltIm1.rows);
-			//TODO: Choose good residual.
-			float initialTrackedResidual = 1.f;
-
-			float err = doLineStereo(
-				c, r, epxn, epyn,
-				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
-				1.f / (depth),
-				1.f / (depth * DEPTH_SEARCH_RANGE),
-				fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
-				*pjCamModel, keyframeToReference,
-				r_idepth, r_var, r_lineLen,
-				gradients.data(),
-				initialTrackedResidual,
-				&stats);
-			if (err >= 0) {
-				float depth = 1.f / r_idepth;
-				vec3 color = 255.f * hueToRgb(depth / 2.f);
-				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
-			}
-		});
-	}
-	catch (cv::Exception &e) {
-		std::cout << e.what() << std::endl;
-		std::cin.get();
-		return -1;
-	}
-	
-	std::cout << "Stereo Done!" << std::endl;
-
-	cv::imshow("MATCHES & DEPTHS", showIm1);
+	cv::setMouseCallback("Im1", im1MouseCallback);
 
 	int key = 0;
 	while(key != 27) {
@@ -152,4 +170,23 @@ int main(int argc, char **argv)
 	}
 
 	return 0;
+}
+
+void showPossibleColors()
+{
+	size_t h = 30;
+	size_t w = 400;
+
+	cv::Mat colors(cv::Size(w, h), CV_8UC3);
+
+	for (size_t i = 0; i < w; ++i) {
+		vec3 color = 255.f * hueToRgb(0.8f * float(i) / float(w));
+		for (size_t j = 0; j < h; ++j) {
+			colors.at<cv::Vec3b>(j, i) = cv::Vec3b(
+				uchar(color.z()), uchar(color.y()), uchar(color.x()));
+		}
+	}
+
+	cv::imshow("Err Scale (Min-Max)", colors);
+	cv::moveWindow("Err Scale (Min-Max)", 0, 800);
 }

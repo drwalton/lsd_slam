@@ -38,17 +38,16 @@ void ModelLoader::Impl::saveFile(const std::string &filename)
 void ModelLoader::Impl::loadFileAssimp(const std::string &filename)
 {
 	Assimp::Importer importer;
-	importer.ReadFile(filename.c_str(),
+	const aiScene *scene = importer.ReadFile(filename.c_str(),
 		aiProcess_GenSmoothNormals |
 		aiProcess_Triangulate |
 		aiProcess_FlipWindingOrder);
 
-	const aiScene *scene = importer.GetScene();
-
 	if (scene == nullptr)
 	{
+		std::string assimpError(importer.GetErrorString());
 		throw std::runtime_error(("File \"" + filename +
-			"\" could not be loaded").c_str());
+			"\" could not be loaded: " + assimpError).c_str());
 	}
 
 	if (scene->mNumMeshes == 0)

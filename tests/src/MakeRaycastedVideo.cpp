@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
 	if (motionType == ELLIPSE) {
 		camMotion.reset(new EllipticalCameraMotion(
-			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), vec3(0.f, 0.25f, 0.f), 100));
+			WorldToCamTransform(worldToCam), vec3(0.25f, 0.f, 0.f), vec3(0.f, 0.125f, 0.f), 300));
 	} else {
 		camMotion.reset(new OscillatingCameraMotion(
 			WorldToCamTransform(worldToCam), vec3(0.5f, 0.f, 0.f), 50));
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 	cv::Size size(atoi(argv[5]), atoi(argv[6]));
 
 	cv::VideoWriter video;
-	video.open(lsd_slam::resourcesDir() + argv[3], cv::VideoWriter::fourcc('M','J','P','G'), 30, size);
+	video.open(vidFilename, cv::VideoWriter::fourcc('M','J','P','G'), 30, size);
 
 	cv::Mat image;
 	cv::Mat depth;
