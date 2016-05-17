@@ -67,9 +67,17 @@ float doOmniStereo(
 	cv::Mat &drawMat = emptyMat,
 	bool showMatch = false);
 
-float findDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
-	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats,
-	float *r_alpha);
+float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
+	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats);
+
+float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
+	float gradAlongLine, const vec2 &bestEpDir,
+	const Eigen::Vector4f *activeKeyFrameGradients,
+	float initialTrackedResidual,
+	float sampleDist, bool didSubpixel,
+	OmniCameraModel *model,
+	RunningStats *stats,
+	float depth);
 
 ///\brief Return 5 floating-point values, centered around the given point, 
 ///       along the respective epipolar curve (values should be one pixel apart).

@@ -28,7 +28,9 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		std::cout << "Clicked (" << x << "," << y << "), dir:\n" <<
 			dir << std::endl;
 		std::array<float, 5> valsToFind;
-		getValuesToFindOmni(dir, keyframeToReference.translation, fltIm1.ptr<float>(0), fltIm1.cols, *omCamModel, x, y, valsToFind, showIm1);
+		getValuesToFindOmni(dir, keyframeToReference.translation, 
+			fltIm1.ptr<float>(0), fltIm1.cols, *omCamModel, float(x), float(y),
+			valsToFind, showIm1);
 		//cv::circle(showIm1, cv::Point(x, y), 3, cv::Scalar(255, 0, 0));
 		cv::imshow("Im1", showIm1);
 		
@@ -51,7 +53,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 			<< std::endl;
 
 		float err = doOmniStereo(
-			x, y, -keyframeToReference.translation,
+			float(x), float(y), -keyframeToReference.translation,
 			1.f / (depth * DEPTH_SEARCH_RANGE), 
 			1.f / (depth),
 			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)),
@@ -76,9 +78,8 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 					break;
 			}
 		} else {
-			float r_alpha;
-			r_idepth = findDepthOmni(x, y, matchDir, omCamModel, keyframeToReference.inverse(),
-				&s, &r_alpha);
+			r_idepth = findInvDepthOmni(float(x), float(y), matchDir, omCamModel, keyframeToReference.inverse(),
+				&s);
 			vec2 matchPixel = omCamModel->camToPixel(matchDir);
 			std::cout << "Match found: " << matchPixel << std::endl;
 			cv::circle(showIm2, vec2Point(matchPixel), 3, cv::Scalar(0,255,0));

@@ -102,12 +102,11 @@ RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2)
 	return ans;
 }
 
-float findDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
-	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats,
-	float *r_alpha) 
+float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
+	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats) 
 {
 	// ================= calc depth (in KF) ====================
-	float idnew_best_match;	// depth in the new image
+	float idepth;	// depth in the new image
 	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
 	vec3 findDirKf = model->pixelToCam(vec2(u, v));
 	vec3 bestMatchDirKf = refToKeyframe.rotation * bestMatchDir;
@@ -125,9 +124,37 @@ float findDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
 		return -2;
 	}
 	alpha = r.position.norm();
-	idnew_best_match = 1.f / alpha;
-	*r_alpha = alpha;
-	return idnew_best_match;
+	idepth = 1.f / alpha;
+	return idepth;
+}
+
+float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
+	float gradAlongLine, const vec2 &bestEpDir, 
+	const Eigen::Vector4f *activeKeyFrameGradients,
+	float initialTrackedResidual,
+	float sampleDist, bool didSubpixel,
+	OmniCameraModel *model,
+	RunningStats *stats,
+	float depth)
+{
+	// ================= calc var (in NEW image) ====================
+
+	// calculate error from photometric noise
+	float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
+	float trackingErrorFac = 0.25f*(1.0f + initialTrackedResidual);
+
+	// calculate error from geometric noise (wrong camera pose / calibration)
+	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrameGradients, u, v, model->w);
+	float geoDispError = (gradsInterp[0] * bestEpDir[0] + 
+		gradsInterp[1] * bestEpDir[1]) + DIVISION_EPS;
+	geoDispError = trackingErrorFac*trackingErrorFac*
+		(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / 
+		(geoDispError*geoDispError);
+
+	// final error consists of a small constant part (discretization error),
+	// geometric and photometric error.
+	return depth*depth*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist
+		+ geoDispError + photoDispError);	// square to make variance
 }
 
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
@@ -137,36 +164,20 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 	OmniCameraModel *model,
 	RunningStats *stats)
 {
-	// ================= calc depth (in KF) ====================
-	float idnew_best_match;	// depth in the new image
-	RigidTransform refToKeyframe;
-	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
-	refToKeyframe.rotation = referenceFrame->thisToOther_R;
-	refToKeyframe.translation = referenceFrame->thisToOther_t;
-	idnew_best_match = findDepthOmni(u, v, bestMatchDir, model, refToKeyframe,
-		stats, &alpha);
-	if (idnew_best_match < 0.f) {
-		//Error code was returned - pass this on.
-		return idnew_best_match;
+	RigidTransform referenceToKeyframe;
+	referenceToKeyframe.rotation = referenceFrame->thisToOther_R;
+	referenceToKeyframe.translation = referenceFrame->thisToOther_t;
+	*resultIDepth = findInvDepthOmni(u, v, bestMatchDir, model,
+		referenceToKeyframe, stats);
+
+	if (*resultIDepth < 0.f) {
+		//Error code returned, return this code.
+		return *resultIDepth;
 	}
-	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
 
-	// ================= calc var (in NEW image) ====================
-
-	// calculate error from photometric noise
-	float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
-	float trackingErrorFac = 0.25f*(1.0f + referenceFrame->initialTrackedResidual);
-
-	// calculate error from geometric noise (wrong camera pose / calibration)
-	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, model->w);
-	float geoDispError = (gradsInterp[0] * bestEpDir[0] + gradsInterp[1] * bestEpDir[1]) + DIVISION_EPS;
-	geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / (geoDispError*geoDispError);
-
-	// final error consists of a small constant part (discretization error),
-	// geometric and photometric error.
-	*resultVar = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
-
-	*resultIDepth = idnew_best_match;
+	*resultVar = findVarOmni(u, v, bestMatchDir, gradAlongLine,
+		bestEpDir, activeKeyFrame->gradients(0), referenceFrame->initialTrackedResidual,
+		sampleDist, didSubpixel, model, stats, 1.f / *resultIDepth);
 
 	return 0.f;
 }

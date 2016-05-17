@@ -8,16 +8,26 @@
 using namespace lsd_slam;
 
 cv::Mat fltIm1, fltIm2, depth1;
-cv::Mat showIm1, showIm2;
+cv::Mat showIm1, showIm2, estDepths;
 RigidTransform keyframeToReference;
 ProjCameraModel *pjCamModel;
 vec3 pointDir;
 bool addNoise = true;
 
-const float DEPTH_SEARCH_RANGE = 0.8f;
+const float DEPTH_SEARCH_RANGE = 0.9f;
 void showPossibleColors();
+cv::Mat visualizeDepthError(const cv::Mat &estDepth, const cv::Mat &realDepth,
+	float maxDepthError);
 
-
+void matchesDepthsMouseCallback(int event, int x, int y, int flags, void *userData)
+{
+	if (event == CV_EVENT_LBUTTONDOWN) {
+		float estDepth = estDepths.at<float>(y, x);
+		float realDepth = depth1.at<float>(y, x);
+		std::cout << "Est depth: " << estDepth << ", Real depth: " << realDepth
+			<< std::endl;
+	}
+}
 int main(int argc, char **argv)
 {
 	if(argc < 3 || argv[1] == std::string("-h")) {
@@ -94,6 +104,8 @@ int main(int argc, char **argv)
 	RunningStats stats;
 	float r_idepth, r_var;
 	float r_lineLen;
+	estDepths = cv::Mat(fltIm1.size(), CV_32FC1);
+	estDepths.setTo(-1.f);
 
 	std::cout << "Computing Stereo..." << std::endl;
 	try{
@@ -129,6 +141,7 @@ int main(int argc, char **argv)
 				&stats);
 			if (err >= 0) {
 				float depth = 1.f / r_idepth;
+				estDepths.at<float>(r, c) = depth;
 				vec3 color = 255.f * hueToRgb(depth / 2.f);
 				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
 			}
@@ -143,6 +156,16 @@ int main(int argc, char **argv)
 	std::cout << "Stereo Done!" << std::endl;
 
 	cv::imshow("MATCHES & DEPTHS", showIm1);
+	cv::setMouseCallback("MATCHES & DEPTHS", matchesDepthsMouseCallback);
+
+	cv::Mat depthErrorIm = visualizeDepthError(estDepths, depth1, 2.f);
+	cv::imshow("Depth Error", depthErrorIm);
+	cv::moveWindow("Depth Error", 60 + fltIm1.rows, showIm1.cols);
+
+	cv::Mat depthPlusMinus(depth1.size(), CV_8UC3);
+	depthPlusMinus.setTo(cv::Vec3b(255, 0, 0), estDepths < depth1);
+	depthPlusMinus.setTo(cv::Vec3b(0, 0, 255), depth1 < estDepths);
+	cv::imshow("+-", depthPlusMinus);
 
 	int key = 0;
 	while(key != 27) {
@@ -150,4 +173,43 @@ int main(int argc, char **argv)
 	}
 
 	return 0;
+}
+
+cv::Mat visualizeDepthError(const cv::Mat &estDepth, const cv::Mat &realDepth, 
+	float maxDepthError)
+{
+	if (estDepth.size() != realDepth.size()) {
+		throw std::runtime_error("DIFFERENT SIZES IN visualizeDepthError()!");
+	}
+	cv::Mat visIm(estDepth.size(), CV_8UC3);
+	visIm.setTo(cv::Scalar(0, 0, 0));
+	for (size_t r = 0; r < size_t(visIm.rows); ++r) {
+		for (size_t c = 0; c < size_t(visIm.cols); ++c) {
+			if (estDepth.at<float>(r, c) <= 0.f) continue;
+			float err = fabsf(realDepth.at<float>(r, c) - estDepth.at<float>(r, c));
+			vec3 color = 255.f * hueToRgb(0.8f*(err) / maxDepthError);
+			visIm.at<cv::Vec3b>(r, c) = vec3ToColor(color);
+		}
+	}
+
+	return visIm;
+}
+
+void showPossibleColors()
+{
+	size_t h = 30;
+	size_t w = 400;
+
+	cv::Mat colors(cv::Size(w, h), CV_8UC3);
+
+	for (size_t i = 0; i < w; ++i) {
+		vec3 color = 255.f * hueToRgb(0.8f * float(i) / float(w));
+		for (size_t j = 0; j < h; ++j) {
+			colors.at<cv::Vec3b>(j, i) = cv::Vec3b(
+				uchar(color.z()), uchar(color.y()), uchar(color.x()));
+		}
+	}
+
+	cv::imshow("Err Scale (Min-Max)", colors);
+	cv::moveWindow("Err Scale (Min-Max)", 0, 800);
 }

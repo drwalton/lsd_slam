@@ -59,7 +59,8 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 			&stats, showIm2);
 		if (estDepth > 0) {
 			vec3 color = 255.f * hueToRgb(estDepth / 2.f);
-			showIm1.at<cv::Vec3b>(y, x) = cv::Vec3b(color.z(), color.y(), color.x());
+			showIm1.at<cv::Vec3b>(y, x) = cv::Vec3b(
+				uchar(color.z()), uchar(color.y()), uchar(color.x()));
 			std::cout << "Stereo match succeeded!" << std::endl;
 		}
 		else {
@@ -157,8 +158,6 @@ int main(int argc, char **argv)
 	cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 	showIm1.convertTo(showIm1, CV_8UC3);
 	RunningStats stats;
-	float r_idepth;
-	float r_lineLen;
 
 	cv::waitKey(1);
 

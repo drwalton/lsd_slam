@@ -3,20 +3,36 @@
 #include "globalFuncs.hpp"
 #include "ModelLoader.hpp"
 #include "Raycast.hpp"
+#include "DataStructures/Frame.hpp"
 
 using namespace lsd_slam;
 
 cv::Mat fltIm1, fltIm2, depth1;
-cv::Mat showIm1, showIm2;
+cv::Mat showIm1, showIm2, varIm, vars;
+cv::Mat estDepths;
 RigidTransform keyframeToReference;
 OmniCameraModel *omCamModel;
 vec3 pointDir;
 bool addNoise = true;
+std::vector<Eigen::Vector4f> keyframeGradients;
 
 const float DEPTH_SEARCH_RANGE = 0.4f;
 void showPossibleColors();
 cv::Mat visualizeDepthError(const cv::Mat &estDepth, const cv::Mat &realDepth,
 	float maxDepthError);
+
+void clickImCallback(int event, int x, int y, int flags, void *userData)
+{
+	if (event == CV_EVENT_LBUTTONDOWN) {
+		std::cout << "Clicked : " << x << "," << y << std::endl;
+		float estDepth = estDepths.at<float>(y, x);
+		float realDepth = depth1.at<float>(y, x);
+		std::cout << "Est depth: " << estDepth << ", Real depth: " << realDepth
+			<< std::endl;
+		float var = vars.at<float>(y, x);
+		std::cout << "Est var: " << var << std::endl;
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -76,6 +92,7 @@ int main(int argc, char **argv)
 		cv::randn(randIm, 0.f, noiseMean);
 		fltIm2 += randIm;
 	}
+	estDepths = cv::Mat(fltIm1.size(), CV_32FC1);
 
 	keyframeToReference.translation = transform.translation().cast<float>();
 	keyframeToReference.rotation = transform.rotationMatrix().cast<float>();
@@ -93,10 +110,15 @@ int main(int argc, char **argv)
 
 	cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 	showIm1.convertTo(showIm1, CV_8UC3);
+	showIm1.copyTo(varIm);
+	vars = cv::Mat(varIm.size(), CV_32FC1);
+	vars.setTo(-1.f);
 	RunningStats stats;
 	float r_gradAlongLine, r_lineLen;
+	keyframeGradients.resize(fltIm1.rows*fltIm1.cols);
+	calculateImageGradients(fltIm1.ptr<float>(0), keyframeGradients.data(),
+		fltIm1.cols, fltIm1.rows);
 
-	cv::Mat estDepths(fltIm1.size(), CV_32FC1);
 	estDepths.setTo(-1.f);
 
 	try{
@@ -110,7 +132,7 @@ int main(int argc, char **argv)
 			vec3 matchDir; vec2 epDir;
 
 			float err = doOmniStereo(
-				c, r, (-keyframeToReference.translation).normalized(),
+				float(c), float(r), (-keyframeToReference.translation).normalized(),
 				1.f / (depth * DEPTH_SEARCH_RANGE),
 				1.f / (depth),
 				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
@@ -120,12 +142,26 @@ int main(int argc, char **argv)
 				epDir, matchDir,
 				r_gradAlongLine, r_lineLen);
 			if (err > 0) {
-				float r_alpha;
-				float depth =
-					findDepthOmni(c, r, matchDir, omCamModel, keyframeToReference.inverse(), &stats, &r_alpha);
+				float idepth =
+					findInvDepthOmni(float(c), float(r), matchDir, omCamModel, 
+						keyframeToReference.inverse(), &stats);
+				float depth = 1.f / idepth;
 				vec3 color = 255.f * hueToRgb(depth / 2.f);
-				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
+				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(
+					uchar(color.z()), uchar(color.y()), uchar(color.x()));
+
 				estDepths.at<float>(r, c) = depth;
+				epDir.normalize();
+				float initialTrackedResidual = 0.f;
+
+				float var = findVarOmni(float(c), float(r), matchDir, 
+					r_gradAlongLine, epDir, keyframeGradients.data(),
+					initialTrackedResidual,
+					GRADIENT_SAMPLE_DIST, false, omCamModel, &stats, depth);
+				color = 255.f * hueToRgb(var / 10.f);
+				varIm.at<cv::Vec3b>(r, c) = cv::Vec3b(
+					uchar(color.z()), uchar(color.y()), uchar(color.x()));
+				vars.at<float>(r, c) = var;
 			}
 		});
 	}
@@ -137,11 +173,20 @@ int main(int argc, char **argv)
 
 	std::cout << "Stereo Done!" << std::endl;
 	cv::imshow("MATCHES & DEPTHS", showIm1);
+	cv::setMouseCallback("MATCHES & DEPTHS", clickImCallback);
 	cv::moveWindow("MATCHES & DEPTHS", 60 + fltIm1.rows, 0);
+	cv::imshow("VAR", varIm);
+	cv::setMouseCallback("VAR", clickImCallback);
+	cv::moveWindow("VAR", 60 + fltIm1.rows, showIm1.cols);
 
 	cv::Mat depthErrorIm = visualizeDepthError(estDepths, depth1, 2.f);
 	cv::imshow("Depth Error", depthErrorIm);
 	cv::moveWindow("Depth Error", 60 + fltIm1.rows, showIm1.cols);
+
+	cv::Mat depthPlusMinus(depth1.size(), CV_8UC3);
+	depthPlusMinus.setTo(cv::Vec3b(255, 0, 0), estDepths < depth1);
+	depthPlusMinus.setTo(cv::Vec3b(0, 0, 255), depth1 < estDepths);
+	cv::imshow("+-", depthPlusMinus);
 
 	int key = 0;
 	while(key != 27) {
@@ -159,8 +204,8 @@ cv::Mat visualizeDepthError(const cv::Mat &estDepth, const cv::Mat &realDepth,
 	}
 	cv::Mat visIm(estDepth.size(), CV_8UC3);
 	visIm.setTo(cv::Scalar(0, 0, 0));
-	for (size_t r = 0; r < visIm.rows; ++r) {
-		for (size_t c = 0; c < visIm.cols; ++c) {
+	for (size_t r = 0; r < size_t(visIm.rows); ++r) {
+		for (size_t c = 0; c < size_t(visIm.cols); ++c) {
 			if (estDepth.at<float>(r, c) <= 0.f) continue;
 			float err = fabsf(realDepth.at<float>(r, c) - estDepth.at<float>(r, c));
 			vec3 color = 255.f * hueToRgb(0.8f*(err) / maxDepthError);
