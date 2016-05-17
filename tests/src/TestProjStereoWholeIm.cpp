@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 			float initialTrackedResidual = 1.f;
 
 			float err = doLineStereo(
-				c, r, epxn, epyn,
+				float(c), float(r), epxn, epyn,
 				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
 				1.f / (depth),
 				1.f / (depth * DEPTH_SEARCH_RANGE),
@@ -143,7 +143,8 @@ int main(int argc, char **argv)
 				float depth = 1.f / r_idepth;
 				estDepths.at<float>(r, c) = depth;
 				vec3 color = 255.f * hueToRgb(depth / 2.f);
-				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(color.z(), color.y(), color.x());
+				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(
+					uchar(color.z()), uchar(color.y()), uchar(color.x()));
 			}
 		});
 	}

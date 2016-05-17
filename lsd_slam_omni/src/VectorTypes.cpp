@@ -58,4 +58,10 @@ cv::Vec3b vec3ToColor(const vec3 &v)
 		static_cast<uchar>(v.z()));
 }
 
+RigidTransform RigidTransform::operator *(const RigidTransform &rhs) const
+{
+	mat4 a = this->operator mat4() * rhs.operator mat4();
+	return RigidTransform(a);
+}
+
 }

@@ -30,6 +30,7 @@ public:
 	vec3 operator *(const vec3 &rhs) const;
 	operator mat4() const;
 	vec4 operator *(const vec4 &rhs) const;
+	RigidTransform operator *(const RigidTransform &rhs) const;
 };
 
 std::ostream &operator <<(std::ostream &stream, const RigidTransform &rhs);
