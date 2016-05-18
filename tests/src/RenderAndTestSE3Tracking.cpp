@@ -10,7 +10,7 @@
 
 using namespace lsd_slam;
 
-cv::Mat depth1;
+cv::Mat depth1, depth2;
 
 void depthMouseCallback(int event, int x, int y, int flags, void *userData)
 {
@@ -41,8 +41,9 @@ int main(int argc, char **argv)
 	std::unique_ptr<CameraModel> model = CameraModel::loadFromFile(resourcesDir() + argv[1]);
 
 	WorldToCamTransform t1;
+	t1.translation = vec3(-0.1f, -0.1f, 0.f);
 	WorldToCamTransform t2;
-	t2.translation = vec3(0.1f, 0.f, 0.f);
+	t2.translation = vec3(0.1f, 0.1f, 0.f);
 	std::vector<cv::Vec3b> colors;
 	for (auto & color : m.vertColors()) {
 		colors.push_back(cv::Vec3b(
@@ -55,7 +56,8 @@ int main(int argc, char **argv)
 
 	cv::Mat image1 = raycast(m.vertices(), m.indices(), colors, t1, *model, true, depth1);
 	depth1.setTo(1.f, depth1 == -1);
-	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *model);
+	cv::Mat image2 = raycast(m.vertices(), m.indices(), colors, t2, *model, true, depth2);
+	depth2.setTo(1.f, depth2 == -1);
 
 	cv::imshow("Im1", image1);
 	cv::moveWindow("Im1", 0, 30);
@@ -71,6 +73,7 @@ int main(int argc, char **argv)
 	image2.convertTo(fltImage2, CV_32FC1);
 
 	lsd_slam::Frame keyframe(0, *model, 0.0, fltImage1.ptr<float>(0));
+	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
 
 //	{
 //		lsd_slam::DepthMapPixelHypothesis *arr = new lsd_slam::DepthMapPixelHypothesis[model->w*model->h];
@@ -99,6 +102,7 @@ int main(int argc, char **argv)
 	cv::setMouseCallback("Depth", depthMouseCallback);
 	cv::moveWindow("Depth", 0, 30*2 + image1.rows);
 	keyframe.setDepthFromGroundTruth(depth1.ptr<float>(0));
+	newFrame.setDepthFromGroundTruth(depth2.ptr<float>(0));
 
 //	lsd_slam::DepthMap depthMap(*model);
 //	depthMap.initializeFromGTDepth(&keyframe);
@@ -107,10 +111,9 @@ int main(int argc, char **argv)
 	reference.importFrame(&keyframe);
 	keyframe.depthHasBeenUpdatedFlag = false;
 
-	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
 
 	SE3 initialEstimate;
-	initialEstimate.translation() += Eigen::Vector3d(0., 0., 0.);
+	initialEstimate.translation() += Eigen::Vector3d(0.05, 0., 0.);
 
 	SE3Tracker tracker(*model);
 
@@ -134,9 +137,13 @@ int main(int argc, char **argv)
 	estTransform.translation = trackedEstimate.translation().cast<float>();
 	
 	std::cout << estTransform << std::endl;
+	std::cout << "newFrame.thisToOther_t: " << newFrame.thisToOther_t << std::endl;
+	std::cout << "newFrame.otherToThis_t : " << newFrame.otherToThis_t << std::endl;
+	std::cout << "newFrame.getScaledCamToWorld().translation() : "
+		<< newFrame.getScaledCamToWorld().translation() << std::endl;
 	
 	cv::Mat image3 = raycast(m.vertices(), m.indices(), colors,
-		estTransform, *model);
+		t1 * estTransform.inverse(), *model);
 
 	cv::imshow("Estimated transform visualisation (should be same as Im2)", image3);
 	cv::moveWindow("Estimated transform visualisation (should be same as Im2)",
