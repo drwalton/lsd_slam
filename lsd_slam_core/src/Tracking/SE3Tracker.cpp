@@ -768,23 +768,29 @@ void SE3Tracker::calculateWarpUpdate(
 			float gy = *(buf_warped_dy + i);
 			// step 3 + step 5 comp 6d error vector
 
-			float z = 1.0f / pz;
 			//float z_sqr = 1.0f / (pz*pz);
-			float n = vec3(px, py, z).norm();
-			float den = 1.f / ((z + n*e)*(z + n*e));
+			float n = vec3(px, py, pz).norm();
+			float in = 1.f / n;
+			float den = 1.f / ((pz + n*e)*(pz + n*e));
 			Vector6 v;
+			
+			float gxd = gx * den, gyd = gy * den;
 
-			v[0] = gx*den*(z + e*(n - (px*px) / n))
-				- (gy*den*e*px*py / n);
+			float J00 = gxd * (pz + e*(n - (px*px)*in));
+			float J01 = -gyd * (e*px*py * in);
+			
+			float J10 = -gxd * (e*px*py * in);
+			float J11 = gyd * (pz + e*(n - (py*py)*in));
+			
+			float J20 = -gxd * px*(1.f + pz*e*in);
+			float J21 = -gyd * py*(1.f + pz*e*in);
 
-			v[1] = -(gx*den*e*px*py / n) +
-				gy*den*(z + e*(n - py*py / n));
+			v[0] = J00 + J01;
+			v[1] = J10 + J11;
+			v[2] = J20 + J21;
 
-			v[2] = -gx*den*px*(1 + z*e / n)
-				- gy*den*py*(1 + z*e / n);
-
-			v[3] = - z*v[1] + py*v[2];
-			v[4] =   z*v[0] - px*v[2];
+			v[3] = - pz*v[1] + py*v[2];
+			v[4] =   pz*v[0] - px*v[2];
 			v[5] = -py*v[0] + px*v[1];
 
 			// step 6: integrate into A and b:
