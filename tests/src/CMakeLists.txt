@@ -133,3 +133,18 @@ target_link_libraries(RenderAndTestSE3Tracking
 link_libs_exec_debug(RenderAndTestSE3Tracking FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
 link_libs_exec_debug(RenderAndTestSE3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
+add_executable(RenderAndTestSim3Tracking
+	RenderAndTestSim3Tracking.cpp
+)
+target_link_libraries(RenderAndTestSim3Tracking
+	${LSD_SLAM_LIBS}
+	lsd_slam_DepthEstimation
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
+link_libs_exec_debug(RenderAndTestSim3Tracking FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
+link_libs_exec_debug(RenderAndTestSim3Tracking G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
+

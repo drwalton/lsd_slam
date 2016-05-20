@@ -807,7 +807,7 @@ void SE3Tracker::calculateWarpUpdate(
 
 			v[3] = - pz*v[1] + py*v[2];
 			v[4] =   pz*v[0] - px*v[2];
-			v[5] = -py*v[0] + px*v[1];
+			v[5] = - py*v[0] + px*v[1];
 
 			// step 6: integrate into A and b:
 			ls.update(v, r, *(buf_weight_p + i));

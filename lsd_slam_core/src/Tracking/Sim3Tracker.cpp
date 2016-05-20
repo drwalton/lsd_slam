@@ -658,8 +658,8 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 {
 	LGS4 ls4;
 	LGS6 ls6;
-	ls6.initialize(width*height);
-	ls4.initialize(width*height);
+	ls6.initialize(model->w*model->h);
+	ls4.initialize(model->w*model->h);
 
 	if (model->getType() == CameraModelType::PROJ) {
 		for (int i = 0; i < buf_warped_size; i++)
@@ -747,7 +747,7 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 
 			v[3] = - pz*v[1] + py*v[2];
 			v[4] =   pz*v[0] - px*v[2];
-			v[5] = -py*v[0] + px*v[1];
+			v[5] = - py*v[0] + px*v[1];
 
 			//TODO: check this is correct for SIM3!
 			Vector4 v4;
