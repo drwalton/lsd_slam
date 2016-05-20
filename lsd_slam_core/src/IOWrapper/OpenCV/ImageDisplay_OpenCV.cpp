@@ -34,7 +34,8 @@ namespace lsd_slam
 namespace Util
 {
 
-	const bool useImageDisplayThread = true;
+	//const bool useImageDisplayThread = true;
+	const bool useImageDisplayThread = false;
 
 
 	std::unordered_set<std::string> openWindows;

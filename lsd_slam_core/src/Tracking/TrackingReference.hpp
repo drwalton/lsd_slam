@@ -20,6 +20,7 @@
 
 #pragma once
 #include "util/settings.hpp"
+#include "util/DenseDepthTrackerSettings.hpp"
 #include "util/EigenCoreInclude.hpp"
 #include "boost/thread/mutex.hpp"
 #include <boost/thread/shared_mutex.hpp>

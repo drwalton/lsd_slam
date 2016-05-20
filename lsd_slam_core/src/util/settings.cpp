@@ -26,7 +26,6 @@
 
 namespace lsd_slam
 {
-RunningStats runningStats;
 
 std::string resourcesDir() {
 #ifdef _WIN32
@@ -75,8 +74,6 @@ bool printOverallTiming = false;
 bool plotTrackingIterationInfo = false;
 bool plotSim3TrackingIterationInfo = false;
 bool plotStereoImages = false;
-bool plotTracking = false;
-
 
 float freeDebugParam1 = 1;
 float freeDebugParam2 = 1;

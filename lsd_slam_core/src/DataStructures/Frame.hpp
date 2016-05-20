@@ -21,6 +21,7 @@
 #pragma once
 #include "util/SophusUtil.hpp"
 #include "util/settings.hpp"
+#include "util/DenseDepthTrackerSettings.hpp"
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include "DataStructures/FramePoseStruct.hpp"

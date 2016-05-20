@@ -38,7 +38,7 @@ namespace lsd_slam
 {
 
 SE3Tracker::SE3Tracker(const CameraModel &model)
-	:model(model.clone())
+	:model(model.clone()), plotTracking(false)
 {
 	settings = DenseDepthTrackerSettings();
 	//settings.maxItsPerLvl[0] = 2;
@@ -663,6 +663,12 @@ float SE3Tracker::calcResidualAndBuffers(
 
 		*(buf_warped_dx+idx) = m.fx * resInterp[0];
 		*(buf_warped_dy+idx) = m.fy * resInterp[1];
+		//const OmniCameraModel *omModel;
+		//if (omModel = dynamic_cast<const OmniCameraModel*>(&m)) {
+		//	float d = Wxp.norm() * omModel->e;
+		//	*(buf_warped_dx+idx) /= d;
+		//	*(buf_warped_dy+idx) /= d;
+		//}
 		*(buf_warped_residual+idx) = residual;
 
 		*(buf_d+idx) = 1.0f / (*refPoint)[2];

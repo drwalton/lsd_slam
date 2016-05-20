@@ -50,7 +50,8 @@ using namespace lsd_slam;
 
 
 SlamSystem::SlamSystem(const CameraModel &model, bool enableSLAM)
-	: model(model.clone()), SLAMEnabled(enableSLAM), relocalizer(model)
+	: model(model.clone()), SLAMEnabled(enableSLAM), relocalizer(model),
+	plotTracking(false)
 {
 	if(model.w%16 != 0 || model.h%16!=0)
 	{

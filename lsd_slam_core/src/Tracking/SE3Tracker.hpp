@@ -21,6 +21,7 @@
 #pragma once
 #include <opencv2/core/core.hpp>
 #include "util/settings.hpp"
+#include "util/DenseDepthTrackerSettings.hpp"
 #include "util/EigenCoreInclude.hpp"
 #include "util/SophusUtil.hpp"
 #include "Tracking/LGSX.hpp"
@@ -94,6 +95,9 @@ public:
 
 	bool diverged;
 	bool trackingWasGood;
+
+	///Used for plotting tracking when debugging.
+	bool plotTracking;
 private:
 
 	//========================= INTERNAL BUFFERS ==============================

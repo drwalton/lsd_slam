@@ -66,50 +66,6 @@ std::string resourcesDir();
 
 #define MIN_BLACKLIST -1	// if blacklist is SMALLER than this, pixel gets ignored. blacklist starts with 0.
 
-
-
-
-/** ============== Depth Variance Handeling ======================= */
-#define SUCC_VAR_INC_FAC (1.01f) // before an ekf-update, the variance is increased by this factor.
-#define FAIL_VAR_INC_FAC 1.1f // after a failed stereo observation, the variance is increased by this factor.
-#define MAX_VAR (0.5f*0.5f) // initial variance on creation - if variance becomes larter than this, hypothesis is removed.
-
-#define VAR_GT_INIT_INITIAL 0.01f*0.01f	// initial variance vor Ground Truth Initialization
-#define VAR_RANDOM_INIT_INITIAL (0.5f*MAX_VAR)	// initial variance vor Random Initialization
-
-
-
-
-
-// Whether to use the gradients of source and target frame for tracking,
-// or only the target frame gradient
-#define USE_ESM_TRACKING 1
-
-
-#ifdef ANDROID
-	// tracking pyramid levels.
-	#define MAPPING_THREADS 2
-	#define RELOCALIZE_THREADS 4
-#else
-	// tracking pyramid levels.
-	#define MAPPING_THREADS 4
-	#define RELOCALIZE_THREADS 6
-#endif
-
-#define SE3TRACKING_MIN_LEVEL 1
-#define SE3TRACKING_MAX_LEVEL 5
-
-#define SIM3TRACKING_MIN_LEVEL 1
-#define SIM3TRACKING_MAX_LEVEL 5
-
-#define QUICK_KF_CHECK_LVL 4
-
-#define PYRAMID_LEVELS (SE3TRACKING_MAX_LEVEL > SIM3TRACKING_MAX_LEVEL ? SE3TRACKING_MAX_LEVEL : SIM3TRACKING_MAX_LEVEL)
-
-
-
-
-
 // ============== stereo & gradient calculation ======================
 #define MIN_DEPTH 0.05f // this is the minimal depth tested for stereo.
 
@@ -130,9 +86,6 @@ std::string resourcesDir();
 // defines how large the stereo-search region is. it is [mean] +/- [std.dev]*STEREO_EPL_VAR_FAC
 #define STEREO_EPL_VAR_FAC 2.0f
 
-
-
-
 // ============== Smoothing and regularization ======================
 // distance factor for regularization.
 // is used as assumed inverse depth variance between neighbouring pixel.
@@ -146,9 +99,6 @@ std::string resourcesDir();
 #define DIFF_FAC_PROP_MERGE (1.0f*1.0f)
 #define DIFF_FAC_INCONSISTENT (1.0f * 1.0f)
 
-
-
-
 // ============== initial stereo pixel selection ======================
 #define MIN_EPL_GRAD_SQUARED (2.0f*2.0f)
 #define MIN_EPL_LENGTH_SQUARED (1.0f*1.0f)
@@ -160,8 +110,6 @@ std::string resourcesDir();
 
 // ============== RE-LOCALIZATION, KF-REACTIVATION etc. ======================
 // defines the level on which we do the quick tracking-check for relocalization.
-
-
 
 #define MAX_DIFF_CONSTANT (40.0f*40.0f)
 #define MAX_DIFF_GRAD_MULT (0.5f*0.5f)
@@ -210,7 +158,6 @@ extern bool printOverallTiming;
 extern bool plotTrackingIterationInfo;
 extern bool plotSim3TrackingIterationInfo;
 extern bool plotStereoImages;
-extern bool plotTracking;
 
 
 extern bool allowNegativeIdepths;
@@ -257,152 +204,7 @@ extern std::string packagePath;
 
 extern bool fullResetRequested;
 extern bool manualTrackingLossIndicated;
-class RunningStats
-{
-public:
-	int num_stereo_comparisons;
-	int num_stereo_calls;
-	int num_pixelInterpolations;
-
-	int num_stereo_rescale_oob;
-	int num_stereo_inf_oob;
-	int num_stereo_near_oob;
-	int num_stereo_invalid_unclear_winner;
-	int num_stereo_invalid_atEnd;
-	int num_stereo_invalid_inexistantCrossing;
-	int num_stereo_invalid_twoCrossing;
-	int num_stereo_invalid_noCrossing;
-	int num_stereo_invalid_bigErr;
-	int num_stereo_interpPre;
-	int num_stereo_interpPost;
-	int num_stereo_interpNone;
-	int num_stereo_negative;
-	int num_stereo_successfull;
-
-
-	int num_observe_created;
-	int num_observe_blacklisted;
-	int num_observe_updated;
-	int num_observe_skipped_small_epl;
-	int num_observe_skipped_small_epl_grad;
-	int num_observe_skipped_small_epl_angle;
-	int num_observe_transit_finalizing;
-	int num_observe_transit_idle_oob;
-	int num_observe_transit_idle_scale_angle;
-	int num_observe_trans_idle_exhausted;
-	int num_observe_inconsistent_finalizing;
-	int num_observe_inconsistent;
-	int num_observe_notfound_finalizing2;
-	int num_observe_notfound_finalizing;
-	int num_observe_notfound;
-	int num_observe_skip_fail;
-	int num_observe_skip_oob;
-	int num_observe_good;
-	int num_observe_good_finalizing;
-	int num_observe_state_finalizing;
-	int num_observe_state_initializing;
-
-
-	int num_observe_skip_alreadyGood;
-	int num_observe_addSkip;
-
-
-
-	int num_observe_no_grad_removed;
-	int num_observe_no_grad_left;
-	int num_observe_update_attempted;
-	int num_observe_create_attempted;
-	int num_observe_updated_ignored;
-	int num_observe_spread_unsuccessfull;
-
-	int num_prop_removed_out_of_bounds;
-	int num_prop_removed_colorDiff;
-	int num_prop_removed_validity;
-	int num_prop_grad_decreased;
-	int num_prop_color_decreased;
-	int num_prop_attempts;
-	int num_prop_occluded;
-	int num_prop_created;
-	int num_prop_merged;
-
-	int num_reg_created;
-	int num_reg_smeared;
-	int num_reg_total;
-	int num_reg_deleted_secondary;
-	int num_reg_deleted_occluded;
-	int num_reg_blacklisted;
-	int num_reg_setBlacklisted;
-
-	inline RunningStats()
-	{
-		setZero();
-	}
-
-	inline void setZero()
-	{
-		memset(this,0,sizeof(RunningStats));
-	}
-
-	inline void add(RunningStats* r)
-	{
-		int* pt = (int*)this;
-		int* pt_r = (int*)r;
-		for(int i=0;i<static_cast<int>(sizeof(RunningStats)/sizeof(int));i++)
-			pt[i] += pt_r[i];
-	}
-};
-
-
-class DenseDepthTrackerSettings
-{
-public:
-	inline DenseDepthTrackerSettings()
-	{
-		// Set default settings
-		if (PYRAMID_LEVELS > 6)
-			printf("WARNING: Sim3Tracker(): default settings are intended for a maximum of 6 levels!");
-
-		lambdaSuccessFac = 0.5f;
-		lambdaFailFac = 2.0f;
-
-		const float stepSizeMinc[6] = {1e-8f, 1e-8f, 1e-8f, 1e-8f, 1e-8f, 1e-8f};
-		const int maxIterations[6] = {5, 20, 50, 100, 100, 100};
-
-
-		for (int level = 0; level < PYRAMID_LEVELS; ++ level)
-		{
-			lambdaInitial[level] = 0;
-			stepSizeMin[level] = stepSizeMinc[level];
-			convergenceEps[level] = 0.999f;
-			maxItsPerLvl[level] = maxIterations[level];
-		}
-
-		lambdaInitialTestTrack = 0;
-		stepSizeMinTestTrack = 1e-3f;
-		convergenceEpsTestTrack = 0.98f;
-		maxItsTestTrack = 5;
-
-		var_weight = 1.0;
-		huber_d = 3;
-	}
-
-	float lambdaSuccessFac;
-	float lambdaFailFac;
-	float lambdaInitial[PYRAMID_LEVELS];
-	float stepSizeMin[PYRAMID_LEVELS];
-	float convergenceEps[PYRAMID_LEVELS];
-	int maxItsPerLvl[PYRAMID_LEVELS];
-
-	float lambdaInitialTestTrack;
-	float stepSizeMinTestTrack;
-	float convergenceEpsTestTrack;
-	float maxItsTestTrack;
-
-	float huber_d;
-	float var_weight;
-};
-
-extern RunningStats runningStats;
 
 void handleKey(char k);
+
 }

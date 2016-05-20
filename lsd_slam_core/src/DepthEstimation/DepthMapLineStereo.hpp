@@ -5,6 +5,7 @@
 #include <array>
 #include "util/Constants.hpp"
 #include "util/settings.hpp"
+#include "util/RunningStats.hpp"
 #include "VectorTypes.hpp"
 
 namespace lsd_slam {

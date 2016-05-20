@@ -20,11 +20,11 @@
 
 #pragma once
 #include "util/settings.hpp"
+#include "util/DenseDepthTrackerSettings.hpp"
+#include "util/RunningStats.hpp"
 #include "boost/thread.hpp"
 #include <stdio.h>
 #include <iostream>
-
-
 
 namespace lsd_slam
 {

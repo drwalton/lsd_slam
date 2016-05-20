@@ -20,6 +20,7 @@
 
 #pragma once
 #include "util/settings.hpp"
+#include "util/DenseDepthTrackerSettings.hpp"
 #include "boost/thread.hpp"
 #include <stdio.h>
 #include <iostream>

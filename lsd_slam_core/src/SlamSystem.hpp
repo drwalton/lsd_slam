@@ -117,6 +117,7 @@ public:
 	float nAvgTrackFrame, nAvgOptimizationIteration, nAvgFindConstraintsItaration, nAvgFindReferences;
 	struct timeval lastHzUpdate;
 
+	bool plotTracking;
 
 private:
 

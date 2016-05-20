@@ -13,6 +13,10 @@ add_library(lsd_slam_util
 	Undistorter.hpp
 	Raycast.cpp
 	Raycast.hpp
+	RunningStats.cpp
+	RunningStats.hpp
+	DenseDepthTrackerSettings.cpp
+	DenseDepthTrackerSettings.hpp
 	ModelLoader.cpp
 	ModelLoader.hpp
 	CameraMotion.cpp

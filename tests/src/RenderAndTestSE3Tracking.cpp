@@ -116,6 +116,7 @@ int main(int argc, char **argv)
 	initialEstimate.translation() += Eigen::Vector3d(0.05, 0., 0.);
 
 	SE3Tracker tracker(*model);
+	tracker.plotTracking = true;
 
 	std::cout << "**** TRACKING FRAME ****" << std::endl;
 	SE3 trackedEstimate = tracker.trackFrame(&reference, &newFrame, initialEstimate);
