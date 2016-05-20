@@ -273,7 +273,7 @@ SE3 SE3Tracker::trackFrame(
 		for (size_t row = 0; row < model->h; ++row) {
 			for (size_t col = 0; col < model->w; ++col) {
 				setPixelInCvMat(&debugImageSecondFrame,
-					getGrayCvPixel(frameImage[col + row*model->w]), col, row, 1);
+					getGrayCvPixel(frameImage[col + row*(model->w)]), col, row, 1);
 			}
 		}
 	}

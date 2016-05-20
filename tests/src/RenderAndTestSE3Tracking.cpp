@@ -67,10 +67,12 @@ int main(int argc, char **argv)
 
 	std::cout << "Real transform applied:\n" << t2 << std::endl;
 
-	cv::Mat fltImage1;
-	image1.convertTo(fltImage1, CV_32FC1);
-	cv::Mat fltImage2;
-	image2.convertTo(fltImage2, CV_32FC1);
+	cv::Mat fltImage1Color, fltImage1;
+	image1.convertTo(fltImage1Color, CV_32FC3);
+	cv::cvtColor(fltImage1Color, fltImage1, CV_BGR2GRAY);
+	cv::Mat fltImage2Color, fltImage2;
+	image2.convertTo(fltImage2Color, CV_32FC3);
+	cv::cvtColor(fltImage2Color, fltImage2, CV_BGR2GRAY);
 
 	lsd_slam::Frame keyframe(0, *model, 0.0, fltImage1.ptr<float>(0));
 	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
