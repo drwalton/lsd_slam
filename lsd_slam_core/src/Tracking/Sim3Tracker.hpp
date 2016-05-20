@@ -138,6 +138,7 @@ public:
 	bool diverged;
 
 	bool plotTrackingIterationInfo;
+	bool plotSim3TrackingIterationInfo;
 
 private:
 

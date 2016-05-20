@@ -71,7 +71,6 @@ bool printThreadingInfo = false;
 bool printMappingTiming = false;
 bool printOverallTiming = false;
 
-bool plotSim3TrackingIterationInfo = false;
 bool plotStereoImages = false;
 
 float freeDebugParam1 = 1;

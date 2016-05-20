@@ -35,9 +35,6 @@ int main(int argc, char **argv)
 	ModelLoader m;
 	m.loadFile(resourcesDir() + argv[2]);
 
-	std::cout << "Vertices: \n" << m.vertices();
-
-
 	std::unique_ptr<CameraModel> model = CameraModel::loadFromFile(resourcesDir() + argv[1]);
 
 	WorldToCamTransform t1;
@@ -77,26 +74,6 @@ int main(int argc, char **argv)
 	lsd_slam::Frame keyframe(0, *model, 0.0, fltImage1.ptr<float>(0));
 	lsd_slam::Frame newFrame(1, *model, 1.0, fltImage2.ptr<float>(0));
 
-//	{
-//		lsd_slam::DepthMapPixelHypothesis *arr = new lsd_slam::DepthMapPixelHypothesis[model->w*model->h];
-//
-//		for (size_t r = 0; r < model->h; ++r) {
-//			for (size_t c = 0; c < model->w; ++c) {
-//				arr[r*model->w + c].idepth =
-//					arr[r*model->w + c].idepth_smoothed = 
-//					1.f / depth1.at<float>(r, c);
-//				arr[r*model->w + c].idepth_var = 
-//					arr[r*model->w + c].idepth_var_smoothed = 0.01f;
-//				arr[r*model->w + c].isValid = true;
-//			}
-//		}
-//
-//		keyframe.setDepth(arr);
-//
-//
-//		delete[] arr;
-//	}
-
 	double min, max;
 	cv::minMaxLoc(depth1, &min, &max);
 	std::cout << "Depths: Min: " << min << " Max: " << max << std::endl;
@@ -106,13 +83,9 @@ int main(int argc, char **argv)
 	keyframe.setDepthFromGroundTruth(depth1.ptr<float>(0));
 	newFrame.setDepthFromGroundTruth(depth2.ptr<float>(0));
 
-//	lsd_slam::DepthMap depthMap(*model);
-//	depthMap.initializeFromGTDepth(&keyframe);
-
 	lsd_slam::TrackingReference reference;
 	reference.importFrame(&keyframe);
 	keyframe.depthHasBeenUpdatedFlag = false;
-
 
 	SE3 initialEstimate;
 	initialEstimate.translation() += Eigen::Vector3d(0.05, 0., 0.);
@@ -131,19 +104,10 @@ int main(int argc, char **argv)
 
 	std::cout << "Value returned from tracker.trackFrame():\n";
 	std::cout << trackedEstimate;
-	std::cout << "\nNew frame's transform:\n"
-		<< newFrame.pose->thisToParent_raw << std::endl;
-	
 
 	WorldToCamTransform estTransform;
 	estTransform.rotation = trackedEstimate.rotationMatrix().cast<float>();
 	estTransform.translation = trackedEstimate.translation().cast<float>();
-	
-	std::cout << estTransform << std::endl;
-	std::cout << "newFrame.thisToOther_t: " << newFrame.thisToOther_t << std::endl;
-	std::cout << "newFrame.otherToThis_t : " << newFrame.otherToThis_t << std::endl;
-	std::cout << "newFrame.getScaledCamToWorld().translation() : "
-		<< newFrame.getScaledCamToWorld().translation() << std::endl;
 	
 	cv::Mat image3 = raycast(m.vertices(), m.indices(), colors,
 		t1 * estTransform.inverse(), *model);

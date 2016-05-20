@@ -155,9 +155,7 @@ extern bool printMemoryDebugInfo;
 
 extern bool printMappingTiming;
 extern bool printOverallTiming;
-extern bool plotSim3TrackingIterationInfo;
 extern bool plotStereoImages;
-
 
 extern bool allowNegativeIdepths;
 extern bool useMotionModel;
@@ -171,14 +169,12 @@ extern float freeDebugParam3;
 extern float freeDebugParam4;
 extern float freeDebugParam5;
 
-
 extern float KFDistWeight;
 extern float KFUsageWeight;
 extern int maxLoopClosureCandidates;
 extern int propagateKeyFrameDepthCount;
 extern float loopclosureStrictness;
 extern float relocalizationTH;
-
 
 extern float minUseGrad;
 extern float cameraPixelNoise2;
