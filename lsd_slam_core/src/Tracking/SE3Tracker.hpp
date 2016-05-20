@@ -98,6 +98,7 @@ public:
 
 	///Used for plotting tracking when debugging.
 	bool plotTracking;
+	bool plotTrackingIterationInfo;
 private:
 
 	//========================= INTERNAL BUFFERS ==============================

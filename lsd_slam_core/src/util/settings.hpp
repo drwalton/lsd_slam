@@ -155,7 +155,6 @@ extern bool printMemoryDebugInfo;
 
 extern bool printMappingTiming;
 extern bool printOverallTiming;
-extern bool plotTrackingIterationInfo;
 extern bool plotSim3TrackingIterationInfo;
 extern bool plotStereoImages;
 
