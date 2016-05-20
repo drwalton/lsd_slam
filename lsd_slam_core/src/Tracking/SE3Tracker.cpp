@@ -344,6 +344,9 @@ SE3 SE3Tracker::trackFrame(
 
 				// apply increment. pretty sure this way round is correct, but hard to test.
 				Sophus::SE3f new_referenceToFrame = Sophus::SE3f::exp((inc)) * referenceToFrame;
+				if (enablePrintDebugInfo) {
+					std::cout << "Calculated warp update: value: " << new_referenceToFrame.translation() << std::endl;
+				}
 				//Sophus::SE3f new_referenceToFrame = referenceToFrame * Sophus::SE3f::exp((inc));
 
 

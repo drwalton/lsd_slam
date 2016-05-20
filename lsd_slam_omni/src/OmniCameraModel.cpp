@@ -59,7 +59,7 @@ std::vector<std::unique_ptr<CameraModel> >
 		float newFy = models.back()->fy * 0.5f;
 		float newCx = (this->cx + 0.5f) / static_cast<float>(1 << level) - 0.5f;
 		float newCy = (this->cy + 0.5f) / static_cast<float>(1 << level) - 0.5f;
-		float newE = static_cast<OmniCameraModel*>(models.back().get())->e * 0.5f;
+		float newE = static_cast<OmniCameraModel*>(models.back().get())->e;
 		vec2 newC = static_cast<OmniCameraModel*>(models.back().get())->c * 0.5f;
 		float newR = static_cast<OmniCameraModel*>(models.back().get())->r * 0.5f;
 
