@@ -139,6 +139,7 @@ public:
 
 	bool plotTrackingIterationInfo;
 	bool plotSim3TrackingIterationInfo;
+	bool printTrackingIterationInfo;
 
 private:
 

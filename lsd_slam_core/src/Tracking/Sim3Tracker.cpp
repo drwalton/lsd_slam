@@ -35,7 +35,7 @@ namespace lsd_slam
 
 Sim3Tracker::Sim3Tracker(const CameraModel &m)
 	:width(m.w), height(m.h), model(m.clone()), plotTrackingIterationInfo(false),
-	plotSim3TrackingIterationInfo(false)
+	plotSim3TrackingIterationInfo(false), printTrackingIterationInfo(false)
 {
 	size_t w = width, h = height;
 	settings = DenseDepthTrackerSettings();
@@ -732,8 +732,8 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 
 
 			float z = 1.0f / pz;
-			float z_sqr = 1.0f / (pz*pz);
 			float n = vec3(px, py, pz).norm();
+			float n_sqr = n*n;
 			float in = 1.f / n;
 			float den = 1.f / ((pz + n*e)*(pz + n*e));
 			Vector6 v;
@@ -761,9 +761,9 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 			Vector4 v4;
 
 			// new:
-			v4[0] = n*n;
-			v4[1] = n*n * py;
-			v4[2] = -n*n * px;
+			v4[0] = n_sqr;
+			v4[1] = n_sqr * py;
+			v4[2] = -n_sqr * px;
 			v4[3] = z;
 
 			ls6.update(v, rp, wp);		// Jac = - v

@@ -38,7 +38,8 @@ namespace lsd_slam
 {
 
 SE3Tracker::SE3Tracker(const CameraModel &model)
-	:model(model.clone()), plotTracking(false), plotTrackingIterationInfo(false)
+	:model(model.clone()), plotTracking(false), plotTrackingIterationInfo(false),
+	printTrackingIterationInfo(false)
 {
 	settings = DenseDepthTrackerSettings();
 	//settings.maxItsPerLvl[0] = 2;

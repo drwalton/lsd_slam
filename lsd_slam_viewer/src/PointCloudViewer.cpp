@@ -119,7 +119,7 @@ void PointCloudViewer::reset()
 
 	resetRequested = false;
 
-	save_folder = "/save/";
+	save_folder = "save/";
 	localMsBetweenSaves = 1;
 	simMsBetweenSaves = 1;
 	lastCamID = -1;

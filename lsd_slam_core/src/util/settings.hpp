@@ -141,7 +141,6 @@ extern bool printRegularizeStatistics;
 extern bool printLineStereoStatistics;
 extern bool printLineStereoFails;
 
-extern bool printTrackingIterationInfo;
 extern bool printThreadingInfo;
 
 extern bool printKeyframeSelectionInfo;
