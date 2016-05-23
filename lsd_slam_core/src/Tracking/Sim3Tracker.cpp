@@ -467,8 +467,8 @@ void Sim3Tracker::calcSim3Buffers(
 		// new (only for Sim3):
 		int idx_rounded = (int)(u_new+0.5f) + w*(int)(v_new+0.5f);
 		float var_frameDepth = frame_idepthVar[idx_rounded];
-		float ref_idepth = 1.0f / Wxp[2];
-		*(buf_d+idx) = 1.0f / (*refPoint)[2];
+		float ref_idepth = 1.0f / Wxp.norm();
+		*(buf_d+idx) = 1.0f / refPoint->norm();
 		if(var_frameDepth > 0)
 		{
 			float residual_d = ref_idepth - frame_idepth[idx_rounded];
@@ -754,9 +754,9 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 			Vector4 v4;
 
 			// new:
-			v4[0] = z_sqr;
-			v4[1] = z_sqr * py;
-			v4[2] = -z_sqr * px;
+			v4[0] = n*n;
+			v4[1] = n*n * py;
+			v4[2] = -n*n * px;
 			v4[3] = z;
 
 			ls6.update(v, rp, wp);		// Jac = - v

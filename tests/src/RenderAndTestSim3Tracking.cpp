@@ -41,8 +41,10 @@ int main(int argc, char **argv)
 
 	WorldToCamTransform t1;
 	t1.translation = vec3(-0.1f, -0.1f, 0.f);
+	//t1.translation = vec3(-0.f, -0.f, 0.f);
 	WorldToCamTransform t2;
 	t2.translation = vec3(0.1f, 0.1f, 0.f);
+	//t2.translation = vec3(0.f, 0.f, 0.f);
 	std::vector<cv::Vec3b> colors;
 	for (auto & color : m.vertColors()) {
 		colors.push_back(cv::Vec3b(
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
 
 
 	Sim3 initialEstimate;
-	initialEstimate.translation() += Eigen::Vector3d(0.05, 0., 0.);
+	initialEstimate.translation() += Eigen::Vector3d(0., 0., 0.);
 
 	Sim3Tracker tracker(*model);
 	tracker.plotTrackingIterationInfo = tracker.plotSim3TrackingIterationInfo = true;
