@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 
 
 	Sim3 initialEstimate;
-	initialEstimate.translation() += Eigen::Vector3d(0., 0., 0.);
+	initialEstimate.translation() += Eigen::Vector3d(-0.05f, 0., 0.);
 
 	Sim3Tracker tracker(*model);
 	tracker.plotTrackingIterationInfo = tracker.plotSim3TrackingIterationInfo = true;

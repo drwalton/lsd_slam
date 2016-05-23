@@ -414,6 +414,7 @@ void Sim3Tracker::calcSim3Buffers(
 	float usageCount = 0;
 
 	int idx=0;
+	bool isOmni = (model->getType() == CameraModelType::OMNI);
 	for(;refPoint<refPoint_max; refPoint++, refGrad++, refColVar++)
 	{
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
@@ -467,8 +468,14 @@ void Sim3Tracker::calcSim3Buffers(
 		// new (only for Sim3):
 		int idx_rounded = (int)(u_new+0.5f) + w*(int)(v_new+0.5f);
 		float var_frameDepth = frame_idepthVar[idx_rounded];
-		float ref_idepth = 1.0f / Wxp.norm();
-		*(buf_d+idx) = 1.0f / refPoint->norm();
+		float ref_idepth;
+		if(isOmni) {
+    		ref_idepth = 1.0f / Wxp.norm();
+    		*(buf_d+idx) = 1.0f / refPoint->norm();
+		} else {
+			ref_idepth = 1.0f / Wxp[2];
+			*(buf_d+idx) = 1.0f / (*refPoint)[2];
+		}
 		if(var_frameDepth > 0)
 		{
 			float residual_d = ref_idepth - frame_idepth[idx_rounded];
