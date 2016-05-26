@@ -18,9 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _UNDISTORTER_HPP_
-#define _UNDISTORTER_HPP_
-
+#pragma once
 #include <opencv2/core/core.hpp>
 
 
@@ -278,4 +276,3 @@ private:
 };
 
 }
-#endif

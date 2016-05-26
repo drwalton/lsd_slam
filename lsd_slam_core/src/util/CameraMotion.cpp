@@ -1,5 +1,5 @@
-#include "CameraMotion.hpp"
-#include "Constants.hpp"
+#include "Util/CameraMotion.hpp"
+#include "Util/Constants.hpp"
 
 namespace lsd_slam {
 

@@ -1,5 +1,4 @@
-#ifndef LSD_OMNI_VECTORTYPES_HPP_INCLUDED
-#define LSD_OMNI_VECTORTYPES_HPP_INCLUDED
+#pragma once
 
 #include <Eigen/Core>
 #include <ostream>
@@ -41,5 +40,3 @@ cv::Point vec2Point(const vec2 &v);
 cv::Vec3b vec3ToColor(const vec3 &v);
 
 }
-
-#endif

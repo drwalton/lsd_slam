@@ -23,7 +23,7 @@
 #include <string>
 #include "IOWrapper/NotifyBuffer.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
-#include "CameraModel.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 namespace lsd_slam
 {

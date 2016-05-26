@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "SophusUtil.hpp"
+#include "Util/SophusUtil.hpp"
 
 // Compile the templates here once so they don't need to be compiled in every
 // other file using them.

@@ -1,5 +1,4 @@
-#ifndef WIN32_COMPATIBILITY_HPP_INCLUDED
-#define WIN32_COMPATIBILITY_HPP_INCLUDED
+#pragma once
 
 #include <string>
 
@@ -20,7 +19,5 @@ std::string pathToForwardSlashes(const std::string &p);
 #define snprintf _snprintf_s
 
 void usleep(__int64 usec);
-
-#endif
 
 #endif

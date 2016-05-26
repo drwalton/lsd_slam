@@ -1,6 +1,4 @@
-#ifndef UTIL_IMGPROC_HPP_INCLUDED
-#define UTIL_IMGPROC_HPP_INCLUDED
-
+#pragma once
 #include <memory>
 #include <opencv2/opencv.hpp>
 
@@ -13,5 +11,3 @@ bool imwriteFloat(const std::string &filename, const cv::Mat &imToSave);
 cv::Mat imreadFloat(const std::string &filename);
 
 }
-
-#endif

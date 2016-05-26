@@ -1,9 +1,9 @@
 #include <iostream>
-#include "Raycast.hpp"
-#include "ModelLoader.hpp"
-#include "OmniCameraModel.hpp"
+#include "Util/Raycast.hpp"
+#include "Util/ModelLoader.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 #include <fstream>
-#include "globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 
 using namespace lsd_slam;
 

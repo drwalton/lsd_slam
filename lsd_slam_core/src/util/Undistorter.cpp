@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Undistorter.hpp"
+#include "Util/Undistorter.hpp"
 
 #include <sstream>
 #include <fstream>
@@ -26,7 +26,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <Eigen/Core>
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 
 namespace lsd_slam
 {

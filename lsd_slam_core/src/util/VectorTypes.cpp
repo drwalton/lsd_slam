@@ -1,4 +1,4 @@
-#include "VectorTypes.hpp"
+#include "Util/VectorTypes.hpp"
 #include <Eigen/Dense>
 
 namespace lsd_slam {

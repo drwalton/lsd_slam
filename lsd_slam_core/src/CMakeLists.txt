@@ -1,9 +1,10 @@
+add_subdirectory(CameraModel)
 add_subdirectory(DataStructures)
 add_subdirectory(DepthEstimation)
 add_subdirectory(GlobalMapping)
 add_subdirectory(IOWrapper)
 add_subdirectory(Tracking)
-add_subdirectory(util)
+add_subdirectory(Util)
 
 set(COMPATIBILITY_SOURCES 
 	Win32Compatibility.hpp

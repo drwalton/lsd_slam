@@ -4,7 +4,7 @@
 #include <array>
 #include <vector>
 #include <cstdint>
-#include "OmniCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 
 namespace lsd_slam {
 

@@ -23,14 +23,14 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <Eigen/StdVector>
-#include "util/SophusUtil.hpp"
-#include "CameraModel.hpp"
+#include "Util/SophusUtil.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 #ifdef HAVE_FABMAP
 	#include "GlobalMapping/FabMap.hpp"
 #endif
 
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 
 
 

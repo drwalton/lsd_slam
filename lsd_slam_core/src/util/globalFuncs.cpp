@@ -18,8 +18,8 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/globalFuncs.hpp"
-#include "util/SophusUtil.hpp"
+#include "Util/globalFuncs.hpp"
+#include "Util/SophusUtil.hpp"
 #include "opencv2/opencv.hpp"
 #include "DataStructures/Frame.hpp"
 

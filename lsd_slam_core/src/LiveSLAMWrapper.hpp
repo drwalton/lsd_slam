@@ -29,8 +29,8 @@
 #include "IOWrapper/Timestamp.hpp"
 #include "IOWrapper/NotifyBuffer.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
-#include "util/SophusUtil.hpp"
-#include "CameraModel.hpp"
+#include "Util/SophusUtil.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 namespace cv {
 	class Mat;

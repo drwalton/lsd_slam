@@ -29,13 +29,13 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
 #include "DataStructures/Frame.hpp"
-#include "util/globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
-#include "ProjCameraModel.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 namespace lsd_slam
 {

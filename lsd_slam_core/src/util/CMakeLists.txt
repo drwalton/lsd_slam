@@ -1,4 +1,4 @@
-add_library(lsd_slam_util
+add_library(lsd_slam_Util
 	Constants.hpp
 	Constants.cpp
 	EigenCoreInclude.hpp
@@ -23,9 +23,11 @@ add_library(lsd_slam_util
 	CameraMotion.hpp
 	ImgProc.cpp
 	ImgProc.hpp
+	VectorTypes.cpp
+	VectorTypes.hpp
 )
 
-target_link_libraries(lsd_slam_util
+target_link_libraries(lsd_slam_Util
 	${ASSIMP_LIBRARY}
 )
 

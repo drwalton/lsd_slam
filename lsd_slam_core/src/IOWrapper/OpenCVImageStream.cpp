@@ -1,7 +1,7 @@
 #include "OpenCVImageStream.hpp"
-#include "util/Undistorter.hpp"
+#include "Util/Undistorter.hpp"
 #include "Win32Compatibility.hpp"
-#include "ProjCameraModel.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 #include <iostream>
 
 const size_t NOTIFY_BUFFER_SIZE = 16;

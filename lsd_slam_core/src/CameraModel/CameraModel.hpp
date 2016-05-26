@@ -1,7 +1,6 @@
-#ifndef LSD_OMNI_CAMERAMODEL_HPP_INCLUDED
-#define LSD_OMNI_CAMERAMODEL_HPP_INCLUDED
+#pragma once
 
-#include "VectorTypes.hpp"
+#include "Util/VectorTypes.hpp"
 #include <vector>
 #include <memory>
 
@@ -52,5 +51,3 @@ public:
 };
 
 }
-
-#endif

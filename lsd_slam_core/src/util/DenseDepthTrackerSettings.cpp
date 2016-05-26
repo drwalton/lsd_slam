@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/DenseDepthTrackerSettings.hpp"
+#include "Util/DenseDepthTrackerSettings.hpp"
 
 namespace lsd_slam
 {

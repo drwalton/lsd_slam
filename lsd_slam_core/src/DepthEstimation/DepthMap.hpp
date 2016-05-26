@@ -20,13 +20,13 @@
 
 #pragma once
 #include <memory>
-#include "util/EigenCoreInclude.hpp"
+#include "Util/EigenCoreInclude.hpp"
 #include "opencv2/core/core.hpp"
-#include "util/settings.hpp"
-#include "util/IndexThreadReduce.hpp"
-#include "util/SophusUtil.hpp"
+#include "Util/settings.hpp"
+#include "Util/IndexThreadReduce.hpp"
+#include "Util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
-#include "CameraModel.hpp"
+#include "CameraModel/CameraModel.hpp"
 #ifdef _WIN32
 using g2o::timeval;
 #endif

@@ -19,16 +19,16 @@
 */
 
 #pragma once
-#include "util/SophusUtil.hpp"
-#include "util/settings.hpp"
-#include "util/DenseDepthTrackerSettings.hpp"
+#include "Util/SophusUtil.hpp"
+#include "Util/settings.hpp"
+#include "Util/DenseDepthTrackerSettings.hpp"
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include "DataStructures/FramePoseStruct.hpp"
 #include "DataStructures/FrameMemory.hpp"
 #include <unordered_set>
-#include "util/settings.hpp"
-#include "CameraModel.hpp"
+#include "Util/settings.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 namespace lsd_slam
 {

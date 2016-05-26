@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/RunningStats.hpp"
+#include "Util/RunningStats.hpp"
 
 namespace lsd_slam
 {

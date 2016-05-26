@@ -20,12 +20,12 @@
 
 #pragma once
 #include <opencv2/core/core.hpp>
-#include "util/settings.hpp"
-#include "util/DenseDepthTrackerSettings.hpp"
-#include "util/EigenCoreInclude.hpp"
-#include "util/SophusUtil.hpp"
+#include "Util/settings.hpp"
+#include "Util/DenseDepthTrackerSettings.hpp"
+#include "Util/EigenCoreInclude.hpp"
+#include "Util/SophusUtil.hpp"
 #include "Tracking/LGSX.hpp"
-#include "OmniCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 
 namespace lsd_slam
 {

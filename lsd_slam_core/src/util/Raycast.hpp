@@ -1,10 +1,8 @@
-#ifndef LSD_SLAM_RAYCAST_HPP_INCLUDED
-#define LSD_SLAM_RAYCAST_HPP_INCLUDED
-
+#pragma once
 #include <opencv2/opencv.hpp>
-#include "VectorTypes.hpp"
-#include "CameraModel.hpp"
-#include "Constants.hpp"
+#include "Util/VectorTypes.hpp"
+#include "CameraModel/CameraModel.hpp"
+#include "Util/Constants.hpp"
 #include "DepthEstimation/DepthMapOmniStereo.hpp"
 
 namespace lsd_slam {
@@ -51,7 +49,3 @@ bool intersectRayWithTriangle(
 mat4 loadCamTransform(const std::string &filename);
 
 }
-
-#endif
-
-

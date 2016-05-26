@@ -1,5 +1,4 @@
-#ifndef LSD_OMNI_OMNICAMERAMODEL_HPP_INCLUDED
-#define LSD_OMNI_OMNICAMERAMODEL_HPP_INCLUDED
+#pragma once
 
 #include "CameraModel.hpp"
 #include <functional>
@@ -82,5 +81,3 @@ public:
 };
 
 }
-
-#endif

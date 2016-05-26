@@ -1,13 +1,13 @@
 #include <iostream>
-#include "Raycast.hpp"
-#include "ModelLoader.hpp"
-#include "OmniCameraModel.hpp"
-#include "CameraMotion.hpp"
+#include "Util/Raycast.hpp"
+#include "Util/ModelLoader.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
+#include "Util/CameraMotion.hpp"
 #include <fstream>
 #include <iomanip>
 #include <boost/filesystem.hpp>
-#include "util/settings.hpp"
-#include "util/ImgProc.hpp"
+#include "Util/settings.hpp"
+#include "Util/ImgProc.hpp"
 
 template<typename T>
 std::ostream &operator << (std::ostream &s, std::vector<T> &t) {

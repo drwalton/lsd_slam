@@ -18,11 +18,7 @@
 * along with dvo. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-#ifndef KEYFRAMEGRAPHDISPLAY_H_
-#define KEYFRAMEGRAPHDISPLAY_H_
-
+#pragma once
 
 #include "keyframeGraphMsg.hpp"
 #include "keyframeMsg.hpp"
@@ -78,5 +74,3 @@ private:
 };
 
 }
-
-#endif /* KEYFRAMEGRAPHDISPLAY_H_ */

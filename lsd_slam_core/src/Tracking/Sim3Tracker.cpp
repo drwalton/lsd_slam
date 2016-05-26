@@ -18,17 +18,15 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//STILL NEEDS UPDATING!!!
-
-#include "Sim3Tracker.hpp"
+#include "Tracking/Sim3Tracker.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include "DataStructures/Frame.hpp"
 #include "Tracking/TrackingReference.hpp"
-#include "util/globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.hpp"
 #include "Win32Compatibility.hpp"
-#include "OmniCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 
 namespace lsd_slam
 {

@@ -1,6 +1,6 @@
-#include "DepthMapOmniStereo.hpp"
-#include "DepthMap.hpp"
-#include "globalFuncs.hpp"
+#include "DepthEstimation/DepthMapOmniStereo.hpp"
+#include "DepthEstimation/DepthMap.hpp"
+#include "Util/globalFuncs.hpp"
 #include "DataStructures/Frame.hpp"
 
 #include <opencv2/opencv.hpp>

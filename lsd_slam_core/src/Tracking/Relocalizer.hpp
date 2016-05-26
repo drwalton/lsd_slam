@@ -19,13 +19,13 @@
 */
 
 #pragma once
-#include "util/settings.hpp"
-#include "util/DenseDepthTrackerSettings.hpp"
-#include "boost/thread.hpp"
+#include "Util/settings.hpp"
+#include "Util/DenseDepthTrackerSettings.hpp"
+#include <boost/thread.hpp>
 #include <stdio.h>
 #include <iostream>
-#include "util/SophusUtil.hpp"
-#include "CameraModel.hpp"
+#include "Util/SophusUtil.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 
 namespace lsd_slam

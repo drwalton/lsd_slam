@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/Constants.hpp"
+#include "Util/Constants.hpp"
 
 namespace lsd_slam
 {

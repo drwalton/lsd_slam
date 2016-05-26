@@ -1,12 +1,12 @@
 #ifndef DEPTHESTIMATION_DEPTHMAPOMNISTEREO_HPP_INCLUDED
 #define DEPTHESTIMATION_DEPTHMAPOMNISTEREO_HPP_INCLUDED
 
-#include "OmniCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 #include <array>
-#include "util/Constants.hpp"
-#include "util/settings.hpp"
-#include "util/RunningStats.hpp"
-#include "VectorTypes.hpp"
+#include "Util/Constants.hpp"
+#include "Util/settings.hpp"
+#include "Util/RunningStats.hpp"
+#include "Util/VectorTypes.hpp"
 
 namespace lsd_slam {
 

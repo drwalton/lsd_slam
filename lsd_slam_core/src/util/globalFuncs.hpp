@@ -22,7 +22,7 @@
 #include <opencv2/core/core.hpp>
 #include "util/settings.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
-#include "util/SophusUtil.hpp"
+#include "Util/SophusUtil.hpp"
 #include "VectorTypes.hpp"
 #include <array>
 

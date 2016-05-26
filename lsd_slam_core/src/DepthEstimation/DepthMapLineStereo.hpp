@@ -1,12 +1,11 @@
-#ifndef DEPTHESTIMATION_DEPTHMAPLINESTEREO_HPP_INCLUDED
-#define DEPTHESTIMATION_DEPTHMAPLINESTEREO_HPP_INCLUDED
+#pragma once
 
-#include "ProjCameraModel.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 #include <array>
-#include "util/Constants.hpp"
-#include "util/settings.hpp"
-#include "util/RunningStats.hpp"
-#include "VectorTypes.hpp"
+#include "Util/Constants.hpp"
+#include "Util/settings.hpp"
+#include "Util/RunningStats.hpp"
+#include "Util/VectorTypes.hpp"
 
 namespace lsd_slam {
 
@@ -47,5 +46,3 @@ float findDepthAndVarProj(
 	const Eigen::Vector4f *keyframeGradients,
 	RunningStats *stats);
 }
-
-#endif

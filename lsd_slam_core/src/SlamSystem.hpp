@@ -26,15 +26,15 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 #include "IOWrapper/Timestamp.hpp"
-#include "opencv2/core/core.hpp"
-#include "CameraModel.hpp"
+#include <opencv2/core/core.hpp>
+#include "CameraModel/CameraModel.hpp"
 
-#include "util/SophusUtil.hpp"
+#include "Util/SophusUtil.hpp"
 
 #include "Tracking/Relocalizer.hpp"
-#include "g2o/stuff/timeutil.h"
+#include <g2o/stuff/timeutil.h>
 #ifdef _WIN32
 using g2o::timeval;
 #endif

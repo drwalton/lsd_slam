@@ -1,4 +1,4 @@
-add_library(lsd_slam_viewer
+add_library(lsd_slam_Viewer
 	KeyFrameDisplay.cpp
 	KeyFrameDisplay.hpp
 	KeyFrameGraphDisplay.cpp

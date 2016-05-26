@@ -1,4 +1,4 @@
-#include "ImgProc.hpp"
+#include "Util/ImgProc.hpp"
 
 //This typedef hack is designed to fix an issue with both libtiff and Eigen3
 // defining int64 and uint64 typedefs. This renames all the libtiff typedefs

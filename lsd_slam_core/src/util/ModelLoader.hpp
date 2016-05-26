@@ -1,5 +1,4 @@
-#ifndef LSD_SLAM_MODELLOADER_HPP_INCLUDED
-#define LSD_SLAM_MODELLOADER_HPP_INCLUDED
+#pragma once
 
 #include "VectorTypes.hpp"
 #include <vector>
@@ -48,6 +47,4 @@ namespace lsd_slam {
 	};
 
 }
-
-#endif
 

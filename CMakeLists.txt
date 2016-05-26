@@ -47,7 +47,6 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/lsd_slam_core/src
 	${CMAKE_SOURCE_DIR}/lsd_slam_viewer/src
 	${CMAKE_SOURCE_DIR}/lsd_slam_omni/src
-	${CMAKE_SOURCE_DIR}/lsd_slam_core/src/util
 	${EIGEN3_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/thirdparty/Sophus
 	${CSPARSE_INCLUDE_DIR} #Has been set by SuiteParse
@@ -63,7 +62,6 @@ include_directories(
 
 add_subdirectory(lsd_slam_core)
 add_subdirectory(lsd_slam_viewer)
-add_subdirectory(lsd_slam_omni)
 
 set(LSD_SLAM_LIBS
 	lsd_slam_System
@@ -72,9 +70,9 @@ set(LSD_SLAM_LIBS
 	lsd_slam_GlobalMapping
 	lsd_slam_IOWrapper
 	lsd_slam_Tracking
-	lsd_slam_util
-	lsd_slam_viewer
-	lsd_slam_omni
+	lsd_slam_Util
+	lsd_slam_Viewer
+	lsd_slam_CameraModel
 )
 
 function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)

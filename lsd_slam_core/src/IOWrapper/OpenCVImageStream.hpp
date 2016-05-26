@@ -1,5 +1,4 @@
-#ifndef LSD_SLAM_OPENCVIMAGESTREAM_HPP_INCLUDED
-#define LSD_SLAM_OPENCVIMAGESTREAM_HPP_INCLUDED
+#pragma once
 
 #include "InputImageStream.hpp"
 #include <opencv2/opencv.hpp>
@@ -39,5 +38,3 @@ private:
 };
 
 }
-
-#endif

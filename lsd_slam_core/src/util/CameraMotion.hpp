@@ -1,6 +1,4 @@
-#ifndef LSD_SLAM_CAMERAMOTION_HPP_INCLUDED
-#define LSD_SLAM_CAMERAMOTION_HPP_INCLUDED
-
+#pragma once
 #include "VectorTypes.hpp"
 
 namespace lsd_slam {
@@ -51,6 +49,3 @@ private:
 };
 
 }
-
-#endif
-
