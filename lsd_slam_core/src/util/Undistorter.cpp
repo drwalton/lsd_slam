@@ -75,6 +75,10 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 		std::getline(f, type);
 		if (type == "NOP") {
 			return new UndistorterNop(w, h);
+		} else if (type == "RESIZE") {
+			int iW, iH;
+			f >> iW >> iH;
+			return new UndistorterResize(iW, iH, w, h);
 		} else {
 			throw std::runtime_error("No omni undistorters except NOP implemented yet.");
 		}
@@ -120,7 +124,8 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 	}
 }
 
-UndistorterNop::UndistorterNop(size_t width, size_t height)
+UndistorterNop::UndistorterNop(
+	size_t width, size_t height)
 	:width_(width), height_(height)
 {}
 
@@ -153,6 +158,46 @@ int UndistorterNop::getInputHeight() const
 }
 
 bool UndistorterNop::isValid() const
+{
+	return true;
+}
+
+UndistorterResize::UndistorterResize(
+	size_t inWidth, size_t inHeight,
+	size_t outWidth, size_t outHeight)
+	:inWidth_(inWidth), inHeight_(inHeight),
+	outWidth_(outWidth), outHeight_(outHeight)
+{}
+
+UndistorterResize::~UndistorterResize()
+{}
+
+void UndistorterResize::undistort(const cv::Mat& image, cv::OutputArray result) const
+{
+	if (image.cols != inWidth_ || image.rows != inHeight_) {
+		throw std::runtime_error("UndistorterResize given image of incorrect size!");
+	}
+	cv::resize(image, result, cv::Size(outWidth_, outHeight_));
+}
+
+int UndistorterResize::getOutputWidth() const
+{
+	return outWidth_;
+}
+int UndistorterResize::getOutputHeight() const
+{
+	return outHeight_;
+}
+int UndistorterResize::getInputWidth() const
+{
+	return inWidth_;
+}
+int UndistorterResize::getInputHeight() const
+{
+	return inHeight_;
+}
+
+bool UndistorterResize::isValid() const
 {
 	return true;
 }

@@ -26,12 +26,16 @@ public:
 	cv::VideoCapture &capture();
 
 	void operator()();
+	bool showRawStream() const;
+	void showRawStream(bool s);
+	bool showUndistortedStream() const;
+	void showUndistortedStream(bool s);
 
 private:
 	cv::VideoCapture cap_;
 	std::unique_ptr<Undistorter> undistorter_;
 	std::unique_ptr<std::thread> thread_;
-	bool running_, hasCalib_;
+	bool running_, hasCalib_, showRawStream_, showUndistortedStream_;
 };
 
 }

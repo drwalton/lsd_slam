@@ -928,6 +928,8 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 	struct timeval tv_start, tv_end;
 	gettimeofday(&tv_start, NULL);
 
+	//TODO: remove following line.
+	tracker->printTrackingIterationInfo = true;
 	SE3 newRefToFrame_poseUpdate = tracker->trackFrame(
 			trackingReference,
 			trackingNewFrame.get(),

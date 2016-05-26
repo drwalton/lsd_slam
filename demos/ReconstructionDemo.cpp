@@ -44,8 +44,7 @@ int main(int argc, char **argv)
 				ch.title("Select video file");
 				ch.show();
 				filename = pathToForwardSlashes(ch.filename());
-				stream.capture().open(lsd_slam::resourcesDir() + filename);
-				stream.capture() = cv::VideoCapture(lsd_slam::resourcesDir() + filename);
+				stream.capture().open(filename);
 				if (stream.capture().isOpened()) {
 					break;
 				}
@@ -56,21 +55,16 @@ int main(int argc, char **argv)
 			else {
 				std::cout << "Could not parse response; please try again..." << std::endl;
 			}
-
-			std::string filename;
-			Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
-			ch.title("Select calibration file");
-			ch.show();
 		}
 	}
-	if (argc > 2) {
+	if (argc >= 2) {
 		stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
 	} else {
 		 std::string filename;
 		 Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
 		 ch.title("Select calibration file");
 		 ch.show();
-		 stream.setCalibration(lsd_slam::resourcesDir() + ch.filename());
+		 stream.setCalibration(ch.filename());
 	}
 
 	stream.run();

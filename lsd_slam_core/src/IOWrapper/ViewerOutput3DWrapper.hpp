@@ -35,6 +35,8 @@ public:
 	ViewerOutput3DWrapper(bool showViewer, int width, int height);
 	virtual ~ViewerOutput3DWrapper();
 
+	void start();
+
 	virtual void publishKeyframeGraph(KeyFrameGraph* graph);
 
 	// publishes a keyframe. if that frame already existis, it is overwritten, otherwise it is added.
@@ -53,6 +55,7 @@ private:
 	std::thread viewerThread_;
 	size_t publishLevel_;
 	PointCloudViewer *viewer_;
+	bool showViewer_;
 
 };
 

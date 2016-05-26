@@ -20,6 +20,7 @@
 
 #include "LiveSLAMWrapper.hpp"
 #include <vector>
+#include <thread>
 #include "util/SophusUtil.hpp"
 
 #include "SlamSystem.hpp"
@@ -73,30 +74,30 @@ LiveSLAMWrapper::~LiveSLAMWrapper()
 
 void LiveSLAMWrapper::Loop()
 {
-	while (true) {
-		boost::unique_lock<boost::recursive_mutex> waitLock(imageStream->getBuffer()->getMutex());
-		while (!fullResetRequested && !(imageStream->getBuffer()->size() > 0)) {
-			notifyCondition.wait(waitLock);
+		while (true) {
+			boost::unique_lock<boost::recursive_mutex> waitLock(imageStream->getBuffer()->getMutex());
+			while (!fullResetRequested && !(imageStream->getBuffer()->size() > 0)) {
+				notifyCondition.wait(waitLock);
+			}
+			waitLock.unlock();
+
+
+			if (fullResetRequested)
+			{
+				resetAll();
+				fullResetRequested = false;
+				if (!(imageStream->getBuffer()->size() > 0))
+					continue;
+			}
+
+			if (!imageStream->running()) break;
+			TimestampedMat image = imageStream->getBuffer()->first();
+			imageStream->getBuffer()->popFront();
+
+			// process image
+			//Util::displayImage("MyVideo", image.data);
+			newImageCallback(image.data, image.timestamp);
 		}
-		waitLock.unlock();
-		
-		
-		if(fullResetRequested)
-		{
-			resetAll();
-			fullResetRequested = false;
-			if (!(imageStream->getBuffer()->size() > 0))
-				continue;
-		}
-		
-		if (!imageStream->running()) break;
-		TimestampedMat image = imageStream->getBuffer()->first();
-		imageStream->getBuffer()->popFront();
-		
-		// process image
-		//Util::displayImage("MyVideo", image.data);
-		newImageCallback(image.data, image.timestamp);
-	}
 	std::cout << "Finishing LiveSLAMWrapper Loop()" << std::endl;
 }
 

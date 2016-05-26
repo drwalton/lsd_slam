@@ -99,6 +99,26 @@ private:
 	size_t width_, height_;
 };
 
+class UndistorterResize : public Undistorter
+{
+public:
+	explicit UndistorterResize(
+		size_t inWidth, size_t inHeight,
+		size_t outWidth, size_t outHeight);
+	virtual ~UndistorterResize() throw();
+
+	virtual void undistort(const cv::Mat &image, cv::OutputArray result) const;
+	virtual int getOutputWidth() const;
+	virtual int getOutputHeight() const;
+	virtual int getInputWidth() const;
+	virtual int getInputHeight() const;
+
+	virtual bool isValid() const;
+private:
+	size_t inWidth_, inHeight_;
+	size_t outWidth_, outHeight_;
+};
+
 class UndistorterPTAM : public Undistorter
 {
 public:
