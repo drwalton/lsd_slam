@@ -2,6 +2,7 @@
 #include "util/Undistorter.hpp"
 #include "Win32Compatibility.hpp"
 #include "ProjCameraModel.hpp"
+#include <iostream>
 
 const size_t NOTIFY_BUFFER_SIZE = 16;
 
@@ -23,6 +24,10 @@ OpenCVImageStream::~OpenCVImageStream() throw()
 
 void OpenCVImageStream::run()
 {
+	if (!cap_.isOpened()) {
+		throw std::runtime_error("Cannot run OpenCVImageStream: video capture"
+			" has not been opened!");
+	}
 	cap_.grab();
 	running_ = true;
 	if (!hasCalib_) throw std::runtime_error(
@@ -38,8 +43,9 @@ bool OpenCVImageStream::running()
 void OpenCVImageStream::stop()
 {
 	running_ = false;
-	thread_->join();
-	thread_.reset(nullptr);
+	if (thread_->joinable()) {
+		thread_->join();
+	}
 }
 
 void OpenCVImageStream::setCalibration(const std::string &file)
@@ -83,6 +89,7 @@ void OpenCVImageStream::showUndistortedStream(bool s)
 
 void OpenCVImageStream::operator()()
 {
+	std::cout << "Starting image retrieving thread..." << std::endl;
 	while(running_) {
 		TimestampedMat newFrame;
 		newFrame.timestamp = Timestamp::now();
@@ -108,10 +115,16 @@ void OpenCVImageStream::operator()()
 			}
 		} else {
 			std::cout << "No new frames available; terminating OpenCVImageStream..." << std::endl;
-			cv::destroyWindow("OpenCVImageStream");
+			if (showRawStream_) {
+				cv::destroyWindow("OpenCVImageStream (Raw)");
+			}
+			if (showUndistortedStream_) {
+				cv::destroyWindow("OpenCVImageStream (Undistorted)");
+			}
 			running_ = false;
 		}
 	}
+	std::cout << "Ending image retrieving thread..." << std::endl;
 }
 
 }

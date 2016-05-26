@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <thread>
 
 #include "IOWrapper/Timestamp.hpp"
 #include "IOWrapper/NotifyBuffer.hpp"
@@ -58,8 +59,8 @@ public:
 	~LiveSLAMWrapper();
 	
 	
-	/** Runs the main processing loop. Will never return. */
-	void Loop();
+	/** Runs the main processing loop. */
+	void start();
 	
 	/** Requests a reset from a different thread. */
 	void requestReset();
@@ -75,9 +76,11 @@ public:
 	
 	
 	inline SlamSystem* getSlamSystem() {return monoOdometry;}
+	void stop();
 	
 private:
 	
+	bool running;
 	InputImageStream* imageStream;
 	Output3DWrapper* outputWrapper;
 
@@ -91,6 +94,7 @@ private:
 
 	std::string outFileName;
 	std::ofstream* outFile;
+	std::thread slamThread;
 	
 	std::unique_ptr<CameraModel> model;
 

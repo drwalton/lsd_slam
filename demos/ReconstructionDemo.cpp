@@ -68,14 +68,14 @@ int main(int argc, char **argv)
 	}
 
 	stream.run();
-	std::unique_ptr<lsd_slam::ViewerOutput3DWrapper> outWrapper(
-		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480));
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());
+	QApplication qapp(argc, argv);
+	lsd_slam::ViewerOutput3DWrapper outWrapper(true, 640, 480);
+	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, &outWrapper);
 
-	slamWrapper.Loop();
+	slamWrapper.start();
+	qapp.exec();
+	slamWrapper.stop();
 	
 	stream.stop();
-	
-	WIN_WAIT_BEFORE_EXIT
 	return 0;
 }

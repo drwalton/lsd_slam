@@ -72,11 +72,14 @@ LiveSLAMWrapper::~LiveSLAMWrapper()
 	}
 }
 
-void LiveSLAMWrapper::Loop()
+void LiveSLAMWrapper::start()
 {
-		while (true) {
+	running = true;
+	slamThread = std::thread([&](){
+		std::cout << "Starting live SLAM thread..." << std::endl;
+		while (running) {
 			boost::unique_lock<boost::recursive_mutex> waitLock(imageStream->getBuffer()->getMutex());
-			while (!fullResetRequested && !(imageStream->getBuffer()->size() > 0)) {
+			while (running && !fullResetRequested && !(imageStream->getBuffer()->size() > 0)) {
 				notifyCondition.wait(waitLock);
 			}
 			waitLock.unlock();
@@ -98,7 +101,15 @@ void LiveSLAMWrapper::Loop()
 			//Util::displayImage("MyVideo", image.data);
 			newImageCallback(image.data, image.timestamp);
 		}
-	std::cout << "Finishing LiveSLAMWrapper Loop()" << std::endl;
+		std::cout << "Finishing live SLAM thread..." << std::endl;
+	});
+}
+
+void LiveSLAMWrapper::stop() 
+{
+	running = false;
+	//
+	slamThread.join();
 }
 
 

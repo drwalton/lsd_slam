@@ -14,6 +14,8 @@ add_library(lsd_slam_System
 	${COMPATIBILITY_SOURCES}
 	LiveSLAMWrapper.cpp
 	LiveSLAMWrapper.hpp
+	LiveSLAMApplication.cpp
+	LiveSLAMApplication.hpp
 	SlamSystem.cpp
 	SlamSystem.hpp
 )
