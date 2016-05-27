@@ -12,7 +12,7 @@ using namespace lsd_slam;
 int main(int argc, char **argv)
 {
 	if (argc < 5)  {
-		std::cout << "TestSE3Tracking - test for the SE3 tracking component"
+		std::cout << "TestSE3Tracking - test for the SE3 tracking component "
 			<< "of LSD-SLAM.\nLoads two images, a corresponding depth image, and "
 			<< "a camera model, and attempts to find the transform between the two "
 			<< "images.\nUsage: ./TestSE3Tracking [im1] [im2] [camModel] [depth1]"

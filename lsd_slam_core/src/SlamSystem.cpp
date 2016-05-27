@@ -653,8 +653,6 @@ void SlamSystem::addTimingSamples()
 
 void SlamSystem::debugDisplayDepthMap()
 {
-
-
 	map->debugPlotDepthMap();
 	double scale = 1;
 	if(currentKeyFrame != 0 && currentKeyFrame != 0)
@@ -929,7 +927,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 	gettimeofday(&tv_start, NULL);
 
 	//TODO: remove following line.
-	tracker->printTrackingIterationInfo = true;
+	//tracker->printTrackingIterationInfo = true;
 	SE3 newRefToFrame_poseUpdate = tracker->trackFrame(
 			trackingReference,
 			trackingNewFrame.get(),

@@ -75,12 +75,16 @@ LiveSLAMWrapper::~LiveSLAMWrapper()
 void LiveSLAMWrapper::start()
 {
 	running = true;
+	paused = false;
 	slamThread = std::thread([&](){
 		std::cout << "Starting live SLAM thread..." << std::endl;
 		while (running) {
 			boost::unique_lock<boost::recursive_mutex> waitLock(imageStream->getBuffer()->getMutex());
 			while (running && !fullResetRequested && !(imageStream->getBuffer()->size() > 0)) {
 				notifyCondition.wait(waitLock);
+				while (paused) {
+
+				}
 			}
 			waitLock.unlock();
 

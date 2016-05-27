@@ -26,6 +26,7 @@
 #include "KeyFrameGraphDisplay.hpp"
 #include "KeyFrameDisplay.hpp"
 #include "settings.hpp"
+#include "Util/settings.hpp"
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -66,7 +67,7 @@ void KeyFrameGraphDisplay::draw()
 		int numpts = 0;
 		{
 			printf("Flushing Pointcloud to %s!\n", "./pc_tmp.ply");
-			std::ofstream f("./pc_tmp.ply", std::ios::binary);
+			std::ofstream f(resourcesDir() + "/pc_tmp.ply", std::ios::binary);
 			for (unsigned int i = 0; i < keyframes.size(); i++)
 			{
 				if ((int)i > cutFirstNKf)
@@ -74,7 +75,7 @@ void KeyFrameGraphDisplay::draw()
 			}
 		}
 
-		std::ofstream f2("./pc.ply", std::ios::binary);
+		std::ofstream f2(resourcesDir() + "/pc.ply", std::ios::binary);
 		f2 << std::string("ply\n");
 		f2 << std::string("format binary_little_endian 1.0\n");
 		f2 << std::string("element vertex ") << numpts << std::string("\n");
@@ -90,7 +91,7 @@ void KeyFrameGraphDisplay::draw()
 		f2.close();
 		f3.close();
 
-		std::remove("./pc_tmp.ply");
+		std::remove((resourcesDir() + "/pc_tmp.ply").c_str());
 		flushPointcloud = false;
 		printf("Done Flushing Pointcloud with %d points!\n", numpts);
 

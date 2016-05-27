@@ -77,6 +77,8 @@ public:
 	
 	inline SlamSystem* getSlamSystem() {return monoOdometry;}
 	void stop();
+
+	bool paused;
 	
 private:
 	

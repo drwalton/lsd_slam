@@ -55,7 +55,7 @@ std::string resourcesDir();
 #define VALIDITY_COUNTER_MAX (5.0f)		// validity will never be higher than this
 #define VALIDITY_COUNTER_MAX_VARIABLE (250.0f)		// validity will never be higher than this
 
-#define VALIDITY_COUNTER_INC 5		// validity is increased by this on sucessfull stereo
+#define VALIDITY_COUNTER_INC 5		// validity is increased by this on sucessful stereo
 #define VALIDITY_COUNTER_DEC 5		// validity is decreased by this on failed stereo
 #define VALIDITY_COUNTER_INITIAL_OBSERVE 5	// initial validity for first observations
 
