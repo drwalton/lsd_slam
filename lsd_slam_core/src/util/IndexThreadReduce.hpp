@@ -19,9 +19,9 @@
 */
 
 #pragma once
-#include "util/settings.hpp"
-#include "util/DenseDepthTrackerSettings.hpp"
-#include "util/RunningStats.hpp"
+#include "Util/settings.hpp"
+#include "Util/DenseDepthTrackerSettings.hpp"
+#include "Util/RunningStats.hpp"
 #include "boost/thread.hpp"
 #include <stdio.h>
 #include <iostream>

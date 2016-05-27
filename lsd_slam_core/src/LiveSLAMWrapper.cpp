@@ -21,14 +21,14 @@
 #include "LiveSLAMWrapper.hpp"
 #include <vector>
 #include <thread>
-#include "util/SophusUtil.hpp"
+#include "Util/SophusUtil.hpp"
 
 #include "SlamSystem.hpp"
 
 #include "IOWrapper/ImageDisplay.hpp"
 #include "IOWrapper/Output3DWrapper.hpp"
 #include "IOWrapper/InputImageStream.hpp"
-#include "util/globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 
 #include <iostream>
 #include <cstdio>

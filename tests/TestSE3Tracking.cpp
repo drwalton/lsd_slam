@@ -3,8 +3,8 @@
 #include "DepthEstimation/DepthMap.hpp"
 #include "DataStructures/Frame.hpp"
 #include <opencv2/opencv.hpp>
-#include "globalFuncs.hpp"
-#include "util/ImgProc.hpp"
+#include "Util/globalFuncs.hpp"
+#include "Util/ImgProc.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
 
 using namespace lsd_slam;

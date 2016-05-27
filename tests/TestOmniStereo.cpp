@@ -1,8 +1,8 @@
 #include "DepthEstimation/DepthMapOmniStereo.hpp"
 #include <opencv2/opencv.hpp>
-#include "globalFuncs.hpp"
-#include "ModelLoader.hpp"
-#include "Raycast.hpp"
+#include "Util/globalFuncs.hpp"
+#include "Util/ModelLoader.hpp"
+#include "Util/Raycast.hpp"
 
 using namespace lsd_slam;
 

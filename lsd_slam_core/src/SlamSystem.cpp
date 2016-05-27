@@ -26,7 +26,7 @@
 #include "DepthEstimation/DepthMap.hpp"
 #include "Tracking/TrackingReference.hpp"
 #include "LiveSLAMWrapper.hpp"
-#include "util/globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "GlobalMapping/TrackableKeyFrameSearch.hpp"
 #include "GlobalMapping/g2oTypeSim3Sophus.hpp"
@@ -34,7 +34,7 @@
 #include "IOWrapper/Output3DWrapper.hpp"
 #include <g2o/core/robust_kernel_impl.h>
 #include "DataStructures/FrameMemory.hpp"
-#include "deque"
+#include <deque>
 
 // for mkdir
 #include <sys/types.h>

@@ -6,7 +6,7 @@
 #include "LiveSLAMWrapper.hpp"
 #include <FL/Fl_Native_File_Chooser.H>
 #include "Win32Compatibility.hpp"
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 
 int main(int argc, char **argv)
 {
