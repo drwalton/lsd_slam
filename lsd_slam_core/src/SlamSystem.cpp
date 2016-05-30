@@ -683,8 +683,9 @@ void SlamSystem::debugDisplayDepthMap()
 
 	if(onSceenInfoDisplay)
 		printMessageOnCVImage(map->debugImageDepth, buf1, buf2);
-	if (displayDepthMap)
-		Util::displayImage( "DebugWindow DEPTH", map->debugImageDepth, false );
+	if (displayDepthMap) {
+		Util::displayImage("DebugWindow DEPTH", map->debugImageDepth, false);
+	}
 
 	int pressedKey = Util::waitKey(1);
 	handleKey(pressedKey);
@@ -928,8 +929,6 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 	struct timeval tv_start, tv_end;
 	gettimeofday(&tv_start, NULL);
 
-	//TODO: remove following line.
-	//tracker->printTrackingIterationInfo = true;
 	SE3 newRefToFrame_poseUpdate = tracker->trackFrame(
 			trackingReference,
 			trackingNewFrame.get(),

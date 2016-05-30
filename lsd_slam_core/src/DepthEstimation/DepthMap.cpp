@@ -37,7 +37,8 @@ namespace lsd_slam
 {
 
 DepthMap::DepthMap(const CameraModel &model)
-	:model(model.clone()), width(model.w), height(model.h)
+	:model(model.clone()), width(model.w), height(model.h),
+	debugShowEstimatedDepths(false)
 {
 	modelType = this->model->getType();
 	size_t width = model.w, height = model.h;
@@ -158,6 +159,12 @@ void DepthMap::observeDepth()
 				runningStats.num_observe_skip_fail,
 				runningStats.num_observe_addSkip
 		);
+	}
+
+	if (debugShowEstimatedDepths) {
+		debugPlotDepthMap();
+		cv::imshow("DebugImageDepth", debugImageDepth);
+		cv::waitKey(1);
 	}
 }
 
@@ -433,6 +440,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 void DepthMap::propagateDepth(Frame* new_keyframe)
 {
+	//TODO write test for depth map propagation
 	runningStats.num_prop_removed_out_of_bounds = 0;
 	runningStats.num_prop_removed_colorDiff = 0;
 	runningStats.num_prop_removed_validity = 0;

@@ -95,6 +95,7 @@ public:
 
 	// pointer to global keyframe graph
 	IndexThreadReduce threadReducer;
+	bool debugShowEstimatedDepths;
 
 private:
 	// camera matrix etc.

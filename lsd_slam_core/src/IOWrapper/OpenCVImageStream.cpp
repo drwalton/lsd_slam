@@ -3,6 +3,7 @@
 #include "Win32Compatibility.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
 #include <iostream>
+#include "IOWrapper/ImageDisplay.hpp"
 
 const size_t NOTIFY_BUFFER_SIZE = 16;
 
@@ -104,8 +105,8 @@ void OpenCVImageStream::operator()()
 			if (undistorter_) {
 				undistorter_->undistort(rawFrame, newFrame.data);
 				if (showUndistortedStream_) {
-					cv::imshow("OpenCVImageStream (Undistorted)", newFrame.data);
-					cv::waitKey(1);
+					Util::displayImage("OpenCVImageStream (Undistorted)", newFrame.data);
+					Util::waitKey(1);
 				}
 			} else {
 				newFrame.data = rawFrame;

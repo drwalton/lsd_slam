@@ -390,7 +390,7 @@ UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 		{
 			ofx = outputCalibration[0] * out_width;
 			ofy = outputCalibration[1] * out_height;
-			ocx = outputCalibration[2] * out_width-0.5f;	// TODO: -0.5 here or not?
+			ocx = outputCalibration[2] * out_width-0.5f;
 			ocy = outputCalibration[3] * out_height-0.5f;
 		}
 

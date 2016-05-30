@@ -419,7 +419,6 @@ float doOmniStereo(
 	//Perform subpixel matching, if necessary.
 	bool didSubpixel = false;
 	if (useSubpixelStereo) {
-		//TODO subpixel matching
 		didSubpixel = subpixelMatchOmni();
 	}
 
@@ -510,11 +509,6 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 		a = 1.f;
 		a += oModel.getEpipolarParamIncrement(a, *lineStart, *lineEnd, requiredStep);
 		*lineStart = a*(*lineStart) + (1.f - a)*(*lineEnd);
-		// make epl long enough (pad a little bit).
-		//TODO
-//		float pad = (minLength - (eplLength)) / 2.0f;
-//		float a = 1.f;
-
 
 		*lineStartPix = oModel.camToPixel(*lineStart);
 		*lineEndPix = oModel.camToPixel(*lineEnd);

@@ -755,7 +755,6 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 			v[4] =   pz*v[0] - px*v[2];
 			v[5] = - py*v[0] + px*v[1];
 
-			//TODO: check this is correct for SIM3!
 			Vector4 v4;
 
 			// new:

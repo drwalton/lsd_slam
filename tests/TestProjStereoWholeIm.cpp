@@ -125,7 +125,6 @@ int main(int argc, char **argv)
 			std::vector<Eigen::Vector4f> gradients(fltIm1.cols*fltIm1.rows);
 			calculateImageGradients(fltIm1.ptr<float>(0), gradients.data(),
 				fltIm1.cols, fltIm1.rows);
-			//TODO: Choose good residual.
 			float initialTrackedResidual = 1.f;
 
 			float err = doLineStereo(

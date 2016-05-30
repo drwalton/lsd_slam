@@ -42,7 +42,6 @@ VertexSim3::VertexSim3() : g2o::BaseVertex<7, Sophus::Sim3d>()
 
 bool VertexSim3::write(std::ostream& os) const
 {
-	// TODO
 	assert(false);
 	return false;
 //     Sim3 cam2world(estimate().inverse());
@@ -63,7 +62,6 @@ bool VertexSim3::write(std::ostream& os) const
 
 bool VertexSim3::read(std::istream& is)
 {
-	// TODO
 	assert(false);
 	return false;
 //     Vector7d cam2world;
@@ -98,7 +96,6 @@ EdgeSim3::EdgeSim3() :
 
 bool EdgeSim3::write(std::ostream& os) const
 {
-	// TODO
 	assert(false);
 	return false;
 //     Sim3 cam2world(measurement().inverse());
@@ -116,7 +113,6 @@ bool EdgeSim3::write(std::ostream& os) const
 
 bool EdgeSim3::read(std::istream& is)
 {
-	// TODO
 	assert(false);
 	return false;
 //     Vector7d v7;
