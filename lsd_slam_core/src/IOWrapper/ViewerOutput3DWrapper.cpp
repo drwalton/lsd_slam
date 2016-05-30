@@ -210,12 +210,14 @@ void ViewerOutput3DWrapper::saveKeyframeCloud(const Frame *kf) const
 		for (size_t c = 0; c < size_t(kf->width()); ++c) {
 			if (kf->model().pixelLocValid(vec2(c, r))) {
 				float depth = 1.f / const_cast<Frame*>(kf)->idepth(0)[r*kf->width() + c];
-				vec3 pt = kf->model().pixelToCam(vec2(c, r), depth);
-				if (pt == pt) {
-					loader.vertices().push_back(pt);
-					loader.vertColors().push_back(
-						const_cast<Frame*>(kf)->image(0)[r*kf->width() + c] *
-						vec3(1.f, 1.f, 1.f));
+				if (depth > 0.f) {
+					vec3 pt = kf->model().pixelToCam(vec2(c, r), depth);
+					if (pt == pt) {
+						loader.vertices().push_back(pt);
+						loader.vertColors().push_back(
+							const_cast<Frame*>(kf)->image(0)[r*kf->width() + c] *
+							vec3(1.f, 1.f, 1.f));
+					}
 				}
 			}
 		}
