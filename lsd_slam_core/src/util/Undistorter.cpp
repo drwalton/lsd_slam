@@ -113,14 +113,20 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 	{
 		printf("found OpenCV camera model, building rectifier.\n");
 		Undistorter* u = new UndistorterOpenCV(completeFileName.c_str());
-		if(!u->isValid()) return 0;
+		if(!u->isValid()) {
+			delete u;
+			return 0;
+		}
 		return u;
 	}
 	else
 	{
 		printf("found ATAN camera model, building rectifier.\n");
 		Undistorter* u = new UndistorterPTAM(completeFileName.c_str());
-		if(!u->isValid()) return 0;
+		if(!u->isValid()) {
+			delete u;
+			return 0;
+		}
 		return u;
 	}
 }
@@ -170,7 +176,7 @@ UndistorterResize::UndistorterResize(
 	outWidth_(outWidth), outHeight_(outHeight)
 {}
 
-UndistorterResize::~UndistorterResize()
+UndistorterResize::~UndistorterResize() throw()
 {}
 
 void UndistorterResize::undistort(const cv::Mat& image, cv::OutputArray result) const
