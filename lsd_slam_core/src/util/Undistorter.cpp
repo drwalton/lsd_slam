@@ -66,7 +66,7 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 	std::string type;
 	std::getline(f, type);
 
-	if (type == "OMNI") {
+	if (type == "OMNI" || type == "OMNI\r") {
 		float fx, fy, cx, cy, e, r, c_x, c_y;
 		int w, h;
 		f >> fx >> fy >> cx >> cy >> w >> h;
@@ -74,9 +74,9 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 
 		std::getline(f, type);
 		std::getline(f, type);
-		if (type == "NOP") {
+		if (type == "NOP" || type == "NOP\r") {
 			return new UndistorterNop(w, h);
-		} else if (type == "RESIZE") {
+		} else if (type == "RESIZE" || type == "RESIZE\r") {
 			int iW, iH;
 			f >> iW >> iH;
 			return new UndistorterResize(iW, iH, w, h);
@@ -84,14 +84,14 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 			throw std::runtime_error("No omni undistorters except NOP implemented yet.");
 		}
 	}
-	else if (type == "PROJ") {
+	else if (type == "PROJ" || type == "PROJ\r") {
 		float fx, fy, cx, cy;
 		int w, h;
 		f >> fx >> fy >> cx >> cy >> w >> h;
 
 		std::getline(f, type);
 		std::getline(f, type);
-		if (type == "NOP") {
+		if (type == "NOP" || type == "NOP\r") {
 			return new UndistorterNop(w, h);
 		} else {
 			throw std::runtime_error("No PROJ undistorters except NOP implemented yet.");

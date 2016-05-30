@@ -1,9 +1,9 @@
 #pragma once
 
+#include <GL/glew.h>
 #include "VectorTypes.hpp"
 #include <vector>
 #include <memory>
-#include <GL/glew.h>
 
 namespace lsd_slam {
 

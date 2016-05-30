@@ -1,3 +1,4 @@
+#include "Util/ModelLoader.hpp"
 #include "ViewerOutput3DWrapper.hpp"
 #include "PointCloudViewer.hpp"
 #include "DataStructures/Frame.hpp"
@@ -5,7 +6,6 @@
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "KeyFrameGraphDisplay.hpp"
 #include <qapplication.h>
-#include "Util/ModelLoader.hpp"
 
 struct Position {
 	float x, y, z;
