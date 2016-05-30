@@ -71,7 +71,7 @@ public:
 
 	///\brief Checks if a pixel location is valid (i.e. lies within the circle
 	///       defined by the parameters c, r.
-	bool pixelLocValid(const vec2 &p) const;
+	virtual bool pixelLocValid(const vec2 &p) const;
 
 	virtual CameraModelType getType() const;
 

@@ -59,6 +59,10 @@ int main(int argc, char **argv)
 	}
 	if (argc >= 2) {
 		stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
+		std::cout << "Calibration file loaded: " << argv[1] <<
+			"\n Width: " << stream.camModel().w << ", Height: " <<
+			stream.camModel().h << std::endl;
+
 	} else {
 		 std::string filename;
 		 Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
@@ -71,6 +75,7 @@ int main(int argc, char **argv)
 	QApplication qapp(argc, argv);
 	lsd_slam::ViewerOutput3DWrapper outWrapper(true, 640, 480);
 	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, &outWrapper);
+	slamWrapper.saveKeyframeCloudsToDisk(true);
 
 	slamWrapper.start();
 	qapp.exec();

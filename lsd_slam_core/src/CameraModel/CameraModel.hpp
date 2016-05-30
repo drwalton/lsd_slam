@@ -48,6 +48,7 @@ public:
 	virtual vec2 getFovAngles() const = 0;
 
 	static std::unique_ptr<CameraModel> loadFromFile(const std::string &filename);
+	virtual bool pixelLocValid(const vec2 &loc) const = 0;
 };
 
 }

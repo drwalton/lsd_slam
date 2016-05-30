@@ -47,7 +47,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		showIm2.convertTo(showIm2, CV_8UC3);
 
 		float estDepth = doLineStereo(
-			x, y, epxn, epyn,
+			float(x), float(y), epxn, epyn,
 			1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
 			1.f / (depth),
 			1.f / (depth * DEPTH_SEARCH_RANGE),

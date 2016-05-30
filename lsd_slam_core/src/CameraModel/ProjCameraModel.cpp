@@ -68,4 +68,9 @@ vec2 ProjCameraModel::getFovAngles() const
 	);
 }
 
+bool ProjCameraModel::pixelLocValid(const vec2 &loc) const
+{
+	return loc.x() > 0.f && loc.x() < w && loc.y() > 0.f && loc.y() < h;
+}
+
 }

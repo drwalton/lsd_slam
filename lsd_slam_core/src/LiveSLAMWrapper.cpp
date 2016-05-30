@@ -38,7 +38,8 @@
 namespace lsd_slam
 {
 
-LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper)
+LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, 
+	Output3DWrapper* outputWrapper)
 	:model(imageStream->camModel().clone())
 {
 	this->imageStream = imageStream;
@@ -191,6 +192,15 @@ void LiveSLAMWrapper::resetAll()
 
 	Util::closeAllWindows();
 
+}
+
+bool LiveSLAMWrapper::saveKeyframeCloudsToDisk() const
+{
+	return outputWrapper->saveKeyframeCloudsToDisk();
+}
+void LiveSLAMWrapper::saveKeyframeCloudsToDisk(bool b)
+{
+	outputWrapper->saveKeyframeCloudsToDisk(b);
 }
 
 }

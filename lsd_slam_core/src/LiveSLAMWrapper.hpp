@@ -79,6 +79,9 @@ public:
 	void stop();
 
 	bool paused;
+
+	bool saveKeyframeCloudsToDisk() const;
+	void saveKeyframeCloudsToDisk(bool);
 	
 private:
 	

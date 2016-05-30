@@ -47,7 +47,6 @@ KeyFrameDisplay::KeyFrameDisplay()
 
 
 	camToWorld = Sophus::Sim3f();
-	width = height = 0;
 
 	my_scaledTH = my_absTH = 0;
 
@@ -73,18 +72,18 @@ void KeyFrameDisplay::setFrom(const keyframeMsg *msg)
 	// copy over campose.
 	memcpy(camToWorld.data(), msg->camToWorld.data(), 7 * sizeof(float));
 
-	fx = msg->fx;
-	fy = msg->fy;
-	cx = msg->cx;
-	cy = msg->cy;
+	if (msg->modelType == CameraModelType::OMNI) {
+		cameraModel_.reset(new OmniCameraModel(
+			msg->fx, msg->fy, msg->cx, msg->cy,
+			msg->width, msg->height, msg->e,
+			vec2(msg->width / 2, msg->height / 2),
+			msg->width / 2));
+	} else /* PROJ */ {
+		cameraModel_.reset(new ProjCameraModel(
+			msg->fx, msg->fy, msg->cx, msg->cy,
+			msg->width, msg->height));
+	}
 
-	fxi = 1 / fx;
-	fyi = 1 / fy;
-	cxi = -cx / fx;
-	cyi = -cy / fy;
-
-	width = msg->width;
-	height = msg->height;
 	id = msg->id;
 	time = msg->time;
 
@@ -92,18 +91,21 @@ void KeyFrameDisplay::setFrom(const keyframeMsg *msg)
 		delete[] originalInput;
 	originalInput = 0;
 
-	if (msg->pointcloud.size() != width*height*sizeof(InputPointDense))
+	if (msg->pointcloud.size() != cameraModel_->w*cameraModel_->h*sizeof(InputPointDense))
 	{
 		if (msg->pointcloud.size() != 0)
 		{
 			printf("WARNING: PC with points, but number of points not right! (is %lu, should be %lu*%dx%d=%lu)\n",
-				msg->pointcloud.size(), sizeof(InputPointDense), width, height, width*height*sizeof(InputPointDense));
+				msg->pointcloud.size(), sizeof(InputPointDense), 
+				cameraModel_->w, cameraModel_->h, 
+				cameraModel_->w * cameraModel_->h * sizeof(InputPointDense));
 		}
 	}
 	else
 	{
-		originalInput = new InputPointDense[width*height];
-		memcpy(originalInput, msg->pointcloud.data(), width*height*sizeof(InputPointDense));
+		originalInput = new InputPointDense[cameraModel_->w*cameraModel_->h];
+		memcpy(originalInput, msg->pointcloud.data(), 
+			cameraModel_->w*cameraModel_->h*sizeof(InputPointDense));
 	}
 
 	glBuffersValid = false;
@@ -142,7 +144,7 @@ void KeyFrameDisplay::refreshPC()
 
 
 	// make data
-	MyVertex* tmpBuffer = new MyVertex[width*height];
+	MyVertex* tmpBuffer = new MyVertex[cameraModel_->w*cameraModel_->h];
 
 	my_scaledTH = scaledDepthVarTH;
 	my_absTH = absDepthVarTH;
@@ -153,23 +155,23 @@ void KeyFrameDisplay::refreshPC()
 	vertexBufferNumPoints = 0;
 
 	int total = 0, displayed = 0;
-	for (int y = 1; y<height - 1; y++)
-		for (int x = 1; x < width - 1; x++)
+	for (size_t y = 1; y<cameraModel_->h - 1; y++)
+		for (size_t x = 1; x < cameraModel_->w - 1; x++)
 		{
-			if (originalInput[x + y*width].idepth <= 0) continue;
+			if (originalInput[x + y*cameraModel_->w].idepth <= 0) continue;
 			total++;
 
 
 			if (my_sparsifyFactor > 1 && rand() % my_sparsifyFactor != 0) continue;
 
-			float depth = 1 / originalInput[x + y*width].idepth;
+			float depth = 1 / originalInput[x + y*cameraModel_->w].idepth;
 			float depth4 = depth*depth; depth4 *= depth4;
 
 
-			if (originalInput[x + y*width].idepth_var * depth4 > my_scaledTH)
+			if (originalInput[x + y*cameraModel_->w].idepth_var * depth4 > my_scaledTH)
 				continue;
 
-			if (originalInput[x + y*width].idepth_var * depth4 * my_scale*my_scale > my_absTH)
+			if (originalInput[x + y*cameraModel_->w].idepth_var * depth4 * my_scale*my_scale > my_absTH)
 				continue;
 
 			if (my_minNearSupport > 1)
@@ -178,11 +180,11 @@ void KeyFrameDisplay::refreshPC()
 				for (int dx = -1; dx < 2; dx++)
 					for (int dy = -1; dy < 2; dy++)
 					{
-						int idx = x + dx + (y + dy)*width;
+						int idx = x + dx + (y + dy)*cameraModel_->w;
 						if (originalInput[idx].idepth > 0)
 						{
 							float diff = originalInput[idx].idepth - 1.0f / depth;
-							if (diff*diff < 2 * originalInput[x + y*width].idepth_var)
+							if (diff*diff < 2 * originalInput[x + y*cameraModel_->w].idepth_var)
 								nearSupport++;
 						}
 					}
@@ -190,15 +192,16 @@ void KeyFrameDisplay::refreshPC()
 				if (nearSupport < my_minNearSupport)
 					continue;
 			}
+			vec3 point = cameraModel_->pixelToCam(vec2(x, y), depth);
 
-			tmpBuffer[vertexBufferNumPoints].point[0] = (x*fxi + cxi) * depth;
-			tmpBuffer[vertexBufferNumPoints].point[1] = (y*fyi + cyi) * depth;
-			tmpBuffer[vertexBufferNumPoints].point[2] = depth;
+			tmpBuffer[vertexBufferNumPoints].point[0] = point[0];
+			tmpBuffer[vertexBufferNumPoints].point[1] = point[1];
+			tmpBuffer[vertexBufferNumPoints].point[2] = point[2];
 
 			tmpBuffer[vertexBufferNumPoints].color[3] = 100;
-			tmpBuffer[vertexBufferNumPoints].color[2] = originalInput[x + y*width].color[0];
-			tmpBuffer[vertexBufferNumPoints].color[1] = originalInput[x + y*width].color[1];
-			tmpBuffer[vertexBufferNumPoints].color[0] = originalInput[x + y*width].color[2];
+			tmpBuffer[vertexBufferNumPoints].color[2] = originalInput[x + y*cameraModel_->w].color[0];
+			tmpBuffer[vertexBufferNumPoints].color[1] = originalInput[x + y*cameraModel_->w].color[1];
+			tmpBuffer[vertexBufferNumPoints].color[0] = originalInput[x + y*cameraModel_->w].color[2];
 
 			vertexBufferNumPoints++;
 			displayed++;
@@ -231,7 +234,7 @@ void KeyFrameDisplay::refreshPC()
 
 void KeyFrameDisplay::drawCam(float lineWidth, float* color)
 {
-	if (width == 0)
+	if (cameraModel_ == nullptr)
 		return;
 
 
@@ -247,27 +250,52 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color)
 
 	glLineWidth(lineWidth);
 	glBegin(GL_LINES);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0.05f*(0 - cx) / fx, 0.05*(height - 1 - cy) / fy, 0.05f);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0.05f*(width - 1 - cx) / fx, 0.05f*(height - 1 - cy) / fy, 0.05f);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0.05f*(width - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+	float fx = cameraModel_->fx, fy = cameraModel_->fy,
+		cx = cameraModel_->cx, cy = cameraModel_->cy; 
+	if (cameraModel_->getType() == CameraModelType::PROJ) {
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) /fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) /fx, 0.05f*(0 - cy) / fy, 0.05f);
 
-	glVertex3f(0.05f*(width - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
-	glVertex3f(0.05f*(width - 1 - cx) / fx, 0.05f*(height - 1 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) /fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) /fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
 
-	glVertex3f(0.05f*(width - 1 - cx) / fx, 0.05f*(height - 1 - cy) / fy, 0.05f);
-	glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(height - 1 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
 
-	glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(height - 1 - cy) / fy, 0.05f);
-	glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
 
-	glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
-	glVertex3f(0.05f*(width - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+	} else /* OMNI */{
 
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(cameraModel_->h - 1 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+
+		glVertex3f(0.05f*(0 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+		glVertex3f(0.05f*(cameraModel_->w - 1 - cx) / fx, 0.05f*(0 - cy) / fy, 0.05f);
+	}
 	glEnd();
 	glPopMatrix();
 }
@@ -275,22 +303,22 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color)
 int KeyFrameDisplay::flushPC(std::ofstream* f)
 {
 
-	MyVertex* tmpBuffer = new MyVertex[width*height];
+	MyVertex* tmpBuffer = new MyVertex[cameraModel_->w*cameraModel_->h];
 	int num = 0;
-	for (int y = 1; y<height - 1; y++)
-		for (int x = 1; x < width - 1; x++)
+	for (size_t y = 1; y<cameraModel_->h - 1; y++)
+		for (size_t x = 1; x < cameraModel_->w - 1; x++)
 		{
-			if (originalInput[x + y*width].idepth <= 0) continue;
+			if (originalInput[x + y*cameraModel_->w].idepth <= 0) continue;
 
 			if (my_sparsifyFactor > 1 && rand() % my_sparsifyFactor != 0) continue;
 
-			float depth = 1 / originalInput[x + y*width].idepth;
+			float depth = 1 / originalInput[x + y*cameraModel_->w].idepth;
 			float depth4 = depth*depth; depth4 *= depth4;
 
-			if (originalInput[x + y*width].idepth_var * depth4 > my_scaledTH)
+			if (originalInput[x + y*cameraModel_->w].idepth_var * depth4 > my_scaledTH)
 				continue;
 
-			if (originalInput[x + y*width].idepth_var * depth4 * my_scale*my_scale > my_absTH)
+			if (originalInput[x + y*cameraModel_->w].idepth_var * depth4 * my_scale*my_scale > my_absTH)
 				continue;
 
 			if (my_minNearSupport > 1)
@@ -299,11 +327,11 @@ int KeyFrameDisplay::flushPC(std::ofstream* f)
 				for (int dx = -1; dx < 2; dx++)
 					for (int dy = -1; dy < 2; dy++)
 					{
-						int idx = x + dx + (y + dy)*width;
+						int idx = x + dx + (y + dy)*cameraModel_->w;
 						if (originalInput[idx].idepth > 0)
 						{
 							float diff = originalInput[idx].idepth - 1.0f / depth;
-							if (diff*diff < 2 * originalInput[x + y*width].idepth_var)
+							if (diff*diff < 2 * originalInput[x + y*cameraModel_->w].idepth_var)
 								nearSupport++;
 						}
 					}
@@ -313,7 +341,7 @@ int KeyFrameDisplay::flushPC(std::ofstream* f)
 			}
 
 
-			Sophus::Vector3f pt = camToWorld * (Sophus::Vector3f((x*fxi + cxi), (y*fyi + cyi), 1) * depth);
+			Sophus::Vector3f pt = camToWorld * cameraModel_->pixelToCam(vec2(x, y), depth);
 			tmpBuffer[num].point[0] = pt[0];
 			tmpBuffer[num].point[1] = pt[1];
 			tmpBuffer[num].point[2] = pt[2];
@@ -321,9 +349,9 @@ int KeyFrameDisplay::flushPC(std::ofstream* f)
 
 
 			tmpBuffer[num].color[3] = 100;
-			tmpBuffer[num].color[2] = originalInput[x + y*width].color[0];
-			tmpBuffer[num].color[1] = originalInput[x + y*width].color[1];
-			tmpBuffer[num].color[0] = originalInput[x + y*width].color[2];
+			tmpBuffer[num].color[2] = originalInput[x + y*cameraModel_->w].color[0];
+			tmpBuffer[num].color[1] = originalInput[x + y*cameraModel_->w].color[1];
+			tmpBuffer[num].color[0] = originalInput[x + y*cameraModel_->w].color[2];
 
 			num++;
 		}
