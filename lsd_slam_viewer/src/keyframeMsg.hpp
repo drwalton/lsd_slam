@@ -1,10 +1,10 @@
-#ifndef KEYFRAMEMSG_HPP_INCLUDED
-#define KEYFRAMEMSG_HPP_INCLUDED
+#pragma once
 
 #include <array>
 #include <vector>
 #include <cstdint>
 #include "CameraModel/OmniCameraModel.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 namespace lsd_slam {
 
@@ -30,5 +30,3 @@ struct keyframeMsg
 };
 
 }
-
-#endif

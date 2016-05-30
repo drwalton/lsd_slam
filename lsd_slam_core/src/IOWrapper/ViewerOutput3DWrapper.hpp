@@ -51,11 +51,15 @@ public:
 
 	virtual void publishDebugInfo(const Eigen::Matrix<float, 20, 1> &data);
 
+	virtual void saveKeyframeCloudsToDisk(bool);
+	virtual bool saveKeyframeCloudsToDisk() const;
+
 private:
 	std::thread viewerThread_;
 	size_t publishLevel_;
 	std::unique_ptr<PointCloudViewer> viewer_;
-	bool showViewer_;
+	bool showViewer_, saveKeyframeCloudsToDisk_;
+	void saveKeyframeCloud(const Frame *kf) const;
 
 };
 

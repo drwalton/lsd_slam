@@ -9,6 +9,14 @@
 
 namespace lsd_slam {
 
+void saveCloudToPlyFile(const std::string &filename,
+	const std::vector<vec3> &positions,
+	const std::vector<vec3> &colors,
+	const std::vector<vec3> &normals,
+	const std::vector<float> &radii,
+	bool binary);
+
+
 struct ModelLoader::Impl
 {
 	std::vector<vec3> verts;
@@ -121,6 +129,8 @@ void ModelLoader::Impl::loadFileAssimp(const std::string &filename)
 
 void ModelLoader::Impl::saveFileAssimp(const std::string &filename)
 {
+	std::vector<float> radii;
+	saveCloudToPlyFile(filename, verts, vertColors, normals, radii, false);
 	/*
 	Assimp::Exporter exporter;
 
@@ -343,6 +353,110 @@ void ModelLoader::Impl::loadPlyFile(const std::string &filename)
 		f >> indices[e*3];
 		f >> indices[e*3 + 1];
 		f >> indices[e*3 + 2];
+	}
+}
+
+void saveCloudToPlyFile(const std::string &filename,
+	const std::vector<vec3> &positions,
+	const std::vector<vec3> &colors,
+	const std::vector<vec3> &normals,
+	const std::vector<float> &radii,
+	bool binary)
+{
+
+	std::ios::openmode flags = std::ios::trunc;
+	if (binary) flags = std::ios::binary | std::ios::trunc;
+	std::ofstream file(filename, flags);
+	if (file.fail()) throw std::runtime_error("Could not open file \"" +
+		filename + "\" to write PLY file.");
+
+	//Write header.
+	file << "ply\n";
+	if (binary) {
+		file << "format binary_little_endian 1.0\n";
+	}
+	else {
+		file << "format ascii 1.0\n";
+	}
+	file
+		<< "comment author: David R. Walton\n"
+		<< "comment object: Saved Reconstruction\n"
+		<< "element vertex " << positions.size() << "\n"
+		<< "property float x\n"
+		<< "property float y\n"
+		<< "property float z\n";
+
+	if (colors.size() == positions.size()) {
+		file
+			<< "property uchar red\n"
+			<< "property uchar green\n"
+			<< "property uchar blue\n";
+	}
+	if (normals.size() == positions.size()) {
+		file
+			<< "property float nx\n"
+			<< "property float ny\n"
+			<< "property float nz\n";
+	}
+	if (radii.size() == positions.size()) {
+		file
+			<< "property float radius\n";
+	}
+	file
+		<< "end_header\n";
+
+	if (binary) {
+		//Write content.
+		for (size_t i = 0; i < positions.size(); ++i) {
+			file.write((const char*)(&(positions[i].x())), sizeof(float))
+				.write((const char*)(&(positions[i].y())), sizeof(float))
+				.write((const char*)(&(positions[i].z())), sizeof(float));
+			if (colors.size() == positions.size()) {
+				cv::Vec3b c(colors[i].x(), colors[i].y(), colors[i].z());
+				file.write((const char*)(&(colors[i][0])), sizeof(char))
+					.write((const char*)(&(colors[i][1])), sizeof(char))
+					.write((const char*)(&(colors[i][2])), sizeof(char));
+			}
+			if (normals.size() == positions.size()) {
+				file.write((const char*)(&(normals[i].x())), sizeof(float))
+					.write((const char*)(&(normals[i].y())), sizeof(float))
+					.write((const char*)(&(normals[i].z())), sizeof(float));
+			}
+			if (radii.size() == positions.size()) {
+				file.write((const char*)(&(radii[i])), sizeof(float));
+			}
+		}
+	}
+	else {
+		file << std::fixed;
+
+		//Write content.
+		for (size_t i = 0; i < positions.size(); ++i) {
+			file
+				<< positions[i].x() << " "
+				<< positions[i].y() << " "
+				<< positions[i].z() << " ";
+			if (colors.size() == positions.size()) {
+				file
+					<< (unsigned int)(colors[i][0]) << " "
+					<< (unsigned int)(colors[i][1]) << " "
+					<< (unsigned int)(colors[i][2]) << " ";
+			}
+			if (normals.size() == positions.size()) {
+				file
+					<< normals[i].x() << " "
+					<< normals[i].y() << " "
+					<< normals[i].z() << " ";
+			}
+			if (radii.size() == positions.size()) {
+				file
+					<< radii[i];
+			} 
+			file << "\n";
+
+		}
+
+		file << "\n";
 	}
 }
 

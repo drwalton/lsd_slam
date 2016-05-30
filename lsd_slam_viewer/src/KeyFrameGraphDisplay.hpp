@@ -60,8 +60,6 @@ public:
 	void addMsg(const keyframeMsg *msg);
 	void addGraphMsg(const keyframeGraphMsg *msg);
 
-
-
 	bool flushPointcloud;
 	bool printNumbers;
 private:

@@ -33,6 +33,8 @@ public:
 	virtual std::unique_ptr<CameraModel> clone() const;
 
 	virtual vec2 getFovAngles() const;
+
+	virtual bool pixelLocValid(const vec2 &loc) const;
 };
 
 }

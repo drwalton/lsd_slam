@@ -46,10 +46,6 @@ class Output3DWrapper
 public:
 	virtual ~Output3DWrapper() {};
 
-
-
-
-
 	virtual void publishKeyframeGraph(KeyFrameGraph* graph) {};
 
 	// publishes a keyframe. if that frame already existis, it is overwritten, otherwise it is added.
@@ -63,6 +59,9 @@ public:
 	virtual void publishTrajectoryIncrement(Eigen::Matrix<float, 3, 1> pt, std::string identifier) {};
 
 	virtual void publishDebugInfo(const Eigen::Matrix<float, 20, 1> &data) {};
+
+	virtual void saveKeyframeCloudsToDisk(bool) = 0;
+	virtual bool saveKeyframeCloudsToDisk() const = 0;
 
 };
 }

@@ -5,6 +5,7 @@
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "KeyFrameGraphDisplay.hpp"
 #include <qapplication.h>
+#include "Util/ModelLoader.hpp"
 
 struct Position {
 	float x, y, z;
@@ -32,7 +33,8 @@ struct PoseStamped {
 namespace lsd_slam {
 
 ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height)
-	:publishLevel_(0), viewer_(nullptr)
+	:publishLevel_(0), viewer_(nullptr),
+	saveKeyframeCloudsToDisk_(false)
 {
 	if (showViewer) {
 		viewer_.reset(new PointCloudViewer());
@@ -118,6 +120,9 @@ void ViewerOutput3DWrapper::publishKeyframe(Frame* kf)
 	}
 	
 	if(viewer_) viewer_->addFrameMsg(&msg);
+	if (saveKeyframeCloudsToDisk_) {
+		saveKeyframeCloud(kf);
+	}
 }
 
 // published a tracked frame that did not become a keyframe (yet; i.e. has no depth data)
@@ -186,6 +191,40 @@ void ViewerOutput3DWrapper::publishTrajectoryIncrement(Eigen::Matrix<float, 3, 1
 void ViewerOutput3DWrapper::publishDebugInfo(const Eigen::Matrix<float, 20, 1> &data)
 {
 
+}
+
+void ViewerOutput3DWrapper::saveKeyframeCloudsToDisk(bool b)
+{
+	saveKeyframeCloudsToDisk_ = b;
+}
+bool ViewerOutput3DWrapper::saveKeyframeCloudsToDisk() const
+{
+	return saveKeyframeCloudsToDisk_;
+}
+
+void ViewerOutput3DWrapper::saveKeyframeCloud(const Frame *kf) const
+{
+	static size_t kfNo = 0;
+	ModelLoader loader;
+	for (size_t r = 0; r < size_t(kf->height()); ++r) {
+		for (size_t c = 0; c < size_t(kf->width()); ++c) {
+			if (kf->model().pixelLocValid(vec2(c, r))) {
+				float depth = 1.f / const_cast<Frame*>(kf)->idepth(0)[r*kf->width() + c];
+				vec3 pt = kf->model().pixelToCam(vec2(c, r), depth);
+				if (pt == pt) {
+					loader.vertices().push_back(pt);
+					loader.vertColors().push_back(
+						const_cast<Frame*>(kf)->image(0)[r*kf->width() + c] *
+						vec3(1.f, 1.f, 1.f));
+				}
+			}
+		}
+	}
+
+	std::string filename = "Keyframe_" + std::to_string(kfNo) + ".ply";
+	loader.saveFile(resourcesDir() + filename);
+	std::cout << "Saved keyframe to pointcloud: " << filename << std::endl;
+	++kfNo;
 }
 
 }
