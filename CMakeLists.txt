@@ -42,6 +42,7 @@ if(APPLE)
 	include_directories(/usr/local/Cellar/qt/4.8.7_2/include)
 endif(APPLE)
 
+set(CMAKE_AUTOMOC ON)
 include_directories(
 	${GLEW_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/lsd_slam_core/src
@@ -59,6 +60,16 @@ include_directories(
 	${ASSIMP_INCLUDE_DIRS}
 	${libtiff_INCLUDE_DIRS}
 )
+set(QT_LIBRARIES_RELEASE
+	${QT_QTCORE_LIBRARY_RELEASE}
+	${QT_QTGUI_LIBRARY_RELEASE}
+	${QT_QTOPENGL_LIBRARY_RELEASE}
+	)
+set(QT_LIBRARIES_DEBUG
+	${QT_QTCORE_LIBRARY_DEBUG}
+	${QT_QTGUI_LIBRARY_DEBUG}
+	${QT_QTOPENGL_LIBRARY_DEBUG}
+	)
 
 add_subdirectory(lsd_slam_core)
 add_subdirectory(lsd_slam_viewer)

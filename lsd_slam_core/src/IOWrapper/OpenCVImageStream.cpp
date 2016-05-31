@@ -4,6 +4,7 @@
 #include "CameraModel/ProjCameraModel.hpp"
 #include <iostream>
 #include "IOWrapper/ImageDisplay.hpp"
+#include "ImageViewer.hpp"
 
 const size_t NOTIFY_BUFFER_SIZE = 16;
 
@@ -11,8 +12,8 @@ namespace lsd_slam {
 
 OpenCVImageStream::OpenCVImageStream()
 	:undistorter_(nullptr), running_(false), hasCalib_(false),
-	showRawStream_(false), showUndistortedStream_(true),
-	dropFrames(true)
+	dropFrames(true), undistortedImageViewer_(nullptr),
+	rawImageViewer_(nullptr)
 {
 	imageBuffer = new NotifyBuffer<TimestampedMat>(
 		NOTIFY_BUFFER_SIZE);
@@ -70,24 +71,6 @@ cv::VideoCapture &OpenCVImageStream::capture()
 	return this->cap_;
 }
 
-bool OpenCVImageStream::showRawStream() const
-{
-	return showRawStream_;
-}
-
-void OpenCVImageStream::showRawStream(bool s)
-{
-	showRawStream_ = s;
-}
-bool OpenCVImageStream::showUndistortedStream() const
-{
-	return showUndistortedStream_;
-}
-
-void OpenCVImageStream::showUndistortedStream(bool s)
-{
-	showUndistortedStream_ = s;
-}
 
 void OpenCVImageStream::operator()()
 {
@@ -105,35 +88,33 @@ void OpenCVImageStream::operator()()
 		if (cap_.grab()) {
 			static cv::Mat rawFrame;
 			cap_.retrieve(rawFrame);
-			if (showRawStream_) {
-				cv::imshow("OpenCVImageStream (Raw)", rawFrame);
-				cv::waitKey(1);
+			if (rawImageViewer_) {
+				rawImageViewer_->setImage(rawFrame);
 			}
 			usleep(33000);
 			if (undistorter_) {
 				undistorter_->undistort(rawFrame, newFrame.data);
-				if (showUndistortedStream_) {
-					Util::displayImage("OpenCVImageStream (Undistorted)", newFrame.data);
-					Util::waitKey(1);
-				}
 			} else {
 				newFrame.data = rawFrame;
+			}
+			if(undistortedImageViewer_) {
+				undistortedImageViewer_->setImage(newFrame.data);
 			}
 			if(!imageBuffer->pushBack(newFrame)) {
 				std::cout << "Frame dropped!\n";
 			}
 		} else {
 			std::cout << "No new frames available; terminating OpenCVImageStream..." << std::endl;
-			if (showRawStream_) {
-				cv::destroyWindow("OpenCVImageStream (Raw)");
-			}
-			if (showUndistortedStream_) {
-				cv::destroyWindow("OpenCVImageStream (Undistorted)");
-			}
 			running_ = false;
 		}
 	}
 	std::cout << "Ending image retrieving thread..." << std::endl;
+}
+
+
+void OpenCVImageStream::undistortedImageViewer(ImageViewer *v)
+{
+	undistortedImageViewer_ = v;
 }
 
 }

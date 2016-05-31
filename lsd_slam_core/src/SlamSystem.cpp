@@ -34,6 +34,7 @@
 #include "IOWrapper/Output3DWrapper.hpp"
 #include <g2o/core/robust_kernel_impl.h>
 #include "DataStructures/FrameMemory.hpp"
+#include "ImageViewer.hpp"
 #include <deque>
 
 // for mkdir
@@ -53,7 +54,8 @@ SlamSystem::SlamSystem(const CameraModel &model, bool enableSLAM)
 	: model(model.clone()),
 	SLAMEnabled(enableSLAM),
 	plotTracking(false),
-	relocalizer(model)
+	relocalizer(model),
+	depthMapImageViewer_(nullptr)
 {
 	if(model.w%16 != 0 || model.h%16!=0)
 	{
@@ -684,11 +686,15 @@ void SlamSystem::debugDisplayDepthMap()
 	if(onSceenInfoDisplay)
 		printMessageOnCVImage(map->debugImageDepth, buf1, buf2);
 	if (displayDepthMap) {
-		Util::displayImage("DebugWindow DEPTH", map->debugImageDepth, false);
+		if(depthMapImageViewer_) {
+			depthMapImageViewer_->setImage(map->debugImageDepth);
+		} else {
+			Util::displayImage("DebugWindow DEPTH", map->debugImageDepth, false);
+        	int pressedKey = Util::waitKey(1);
+        	handleKey(pressedKey);
+		}
 	}
 
-	int pressedKey = Util::waitKey(1);
-	handleKey(pressedKey);
 }
 
 
@@ -1698,4 +1704,9 @@ SE3 SlamSystem::getCurrentPoseEstimate()
 std::vector<FramePoseStruct*> SlamSystem::getAllPoses()
 {
 	return keyFrameGraph->allFramePoses;
+}
+
+void SlamSystem::depthMapImageViewer(lsd_slam::ImageViewer *v)
+{
+	depthMapImageViewer_ = v;
 }

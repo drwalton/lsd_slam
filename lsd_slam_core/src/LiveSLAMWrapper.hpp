@@ -45,6 +45,7 @@ class SlamSystem;
 class LiveSLAMWrapperROS;
 class InputImageStream;
 class Output3DWrapper;
+class ImageViewer;
 
 
 class LiveSLAMWrapper : public Notifiable
@@ -83,6 +84,8 @@ public:
 	bool saveKeyframeCloudsToDisk() const;
 	void saveKeyframeCloudsToDisk(bool);
 	
+	void depthMapImageViewer(ImageViewer *);
+	
 private:
 	
 	bool running;
@@ -104,7 +107,6 @@ private:
 	std::unique_ptr<CameraModel> model;
 
 	int imageSeqNumber;
-
 };
 
 }

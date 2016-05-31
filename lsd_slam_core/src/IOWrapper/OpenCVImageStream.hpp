@@ -7,6 +7,7 @@
 namespace lsd_slam {
 
 class Undistorter;
+class ImageViewer;
 
 class OpenCVImageStream : public InputImageStream
 {
@@ -25,10 +26,6 @@ public:
 	cv::VideoCapture &capture();
 
 	void operator()();
-	bool showRawStream() const;
-	void showRawStream(bool s);
-	bool showUndistortedStream() const;
-	void showUndistortedStream(bool s);
 	
 	///Defines the behaviour when the frame buffer is full (i.e. the processing
 	/// thread is not pulling images quickly enough). If true, frames will be
@@ -37,12 +34,14 @@ public:
 	/// offline processing of videos).
 	bool dropFrames;
 	
+	void undistortedImageViewer(ImageViewer *v);
 
 private:
 	cv::VideoCapture cap_;
 	std::unique_ptr<Undistorter> undistorter_;
 	std::unique_ptr<std::thread> thread_;
-	bool running_, hasCalib_, showRawStream_, showUndistortedStream_;
+	bool running_, hasCalib_;
+	ImageViewer *undistortedImageViewer_, *rawImageViewer_;
 };
 
 }

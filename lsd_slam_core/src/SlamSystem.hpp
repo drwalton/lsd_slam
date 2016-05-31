@@ -54,6 +54,7 @@ class Output3DWrapper;
 class TrackableKeyFrameSearch;
 class FramePoseStruct;
 struct KFConstraintStruct;
+class ImageViewer;
 
 
 typedef Eigen::Matrix<float, 7, 7> Matrix7x7;
@@ -118,6 +119,8 @@ public:
 	struct timeval lastHzUpdate;
 
 	bool plotTracking;
+	
+	void depthMapImageViewer(ImageViewer *v);
 
 private:
 
@@ -270,7 +273,7 @@ private:
 
 	void optimizationThreadLoop();
 
-
+	ImageViewer *depthMapImageViewer_;
 	
 };
 

@@ -203,4 +203,9 @@ void LiveSLAMWrapper::saveKeyframeCloudsToDisk(bool b)
 	outputWrapper->saveKeyframeCloudsToDisk(b);
 }
 
+void LiveSLAMWrapper::depthMapImageViewer(lsd_slam::ImageViewer *v)
+{
+	monoOdometry->depthMapImageViewer(v);
+}
+
 }

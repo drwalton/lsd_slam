@@ -7,6 +7,7 @@
 #include <FL/Fl_Native_File_Chooser.H>
 #include "Win32Compatibility.hpp"
 #include "Util/settings.hpp"
+#include "ImageViewer.hpp"
 
 int main(int argc, char **argv)
 {
@@ -77,7 +78,12 @@ int main(int argc, char **argv)
 	QApplication qapp(argc, argv);
 	lsd_slam::ViewerOutput3DWrapper outWrapper(true, 640, 480);
 	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, &outWrapper);
+	lsd_slam::ImageViewer depthMapViewer("Est. Depth Map");
+	lsd_slam::ImageViewer inputImageViewer("Input (Undistorted)");
 	slamWrapper.saveKeyframeCloudsToDisk(true);
+	slamWrapper.depthMapImageViewer(&depthMapViewer);
+	stream.undistortedImageViewer(&inputImageViewer);
+	
 
 	slamWrapper.start();
 	qapp.exec();
