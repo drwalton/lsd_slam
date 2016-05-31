@@ -29,6 +29,14 @@ public:
 	void showRawStream(bool s);
 	bool showUndistortedStream() const;
 	void showUndistortedStream(bool s);
+	
+	///Defines the behaviour when the frame buffer is full (i.e. the processing
+	/// thread is not pulling images quickly enough). If true, frames will be
+	/// pulled from the capture device but not added to the queue. If false,
+	/// frames will only be pulled when there is space in the buffer (useful for
+	/// offline processing of videos).
+	bool dropFrames;
+	
 
 private:
 	cv::VideoCapture cap_;

@@ -20,6 +20,7 @@ int main(int argc, char **argv)
 
 	if (argc >= 3) {
 		stream.capture().open(lsd_slam::resourcesDir() + argv[2]);
+		stream.dropFrames = false;
 	}
 	else {
 		while (true) {
@@ -45,6 +46,7 @@ int main(int argc, char **argv)
 				ch.show();
 				filename = pathToForwardSlashes(ch.filename());
 				stream.capture().open(filename);
+				stream.dropFrames = false;
 				if (stream.capture().isOpened()) {
 					break;
 				}

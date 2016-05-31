@@ -11,7 +11,8 @@ namespace lsd_slam {
 
 OpenCVImageStream::OpenCVImageStream()
 	:undistorter_(nullptr), running_(false), hasCalib_(false),
-	showRawStream_(false), showUndistortedStream_(true)
+	showRawStream_(false), showUndistortedStream_(true),
+	dropFrames(true)
 {
 	imageBuffer = new NotifyBuffer<TimestampedMat>(
 		NOTIFY_BUFFER_SIZE);
@@ -94,6 +95,13 @@ void OpenCVImageStream::operator()()
 	while(running_) {
 		TimestampedMat newFrame;
 		newFrame.timestamp = Timestamp::now();
+		if(imageBuffer->isFull() && !dropFrames) {
+			//Wait to pull from the capture device until there is space in the
+			// buffer.
+			usleep(33000);
+			continue;
+		}
+		
 		if (cap_.grab()) {
 			static cv::Mat rawFrame;
 			cap_.retrieve(rawFrame);

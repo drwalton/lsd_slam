@@ -152,6 +152,10 @@ public:
 		return bufferMutex;
 	}
 	
+	bool isFull() {
+		return static_cast<int>(queue.size()) >= bufferSize;
+	}
+	
 private:
 	boost::recursive_mutex bufferMutex;
 	boost::condition bufferNonEmptyCondition;
