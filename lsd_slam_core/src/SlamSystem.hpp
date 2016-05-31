@@ -121,9 +121,13 @@ public:
 	bool plotTracking;
 	
 	void depthMapImageViewer(ImageViewer *v);
+	SE3 motionLastFrame();
 
 private:
 
+	void motionLastFrame(const SE3 &motion);
+	SE3 motionLastFrame_;
+	std::mutex motionLastFrameMutex_;
 
 	// ============= EXCLUSIVELY TRACKING THREAD (+ init) ===============
 	TrackingReference* trackingReference; // tracking reference for current keyframe. only used by tracking.

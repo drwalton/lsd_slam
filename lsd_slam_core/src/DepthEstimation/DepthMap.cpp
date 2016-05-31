@@ -32,13 +32,14 @@
 #include "IOWrapper/ImageDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 
 namespace lsd_slam
 {
 
 DepthMap::DepthMap(const CameraModel &model)
 	:model(model.clone()), width(model.w), height(model.h),
-	debugShowEstimatedDepths(false)
+	debugShowEstimatedDepths(false), printPropagationStatistics(false)
 {
 	modelType = this->model->getType();
 	size_t width = model.w, height = model.h;
@@ -478,10 +479,8 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	const float* activeKFImageData = activeKeyFrame->image(0);
 	const float* newKFMaxGrad = new_keyframe->maxGradients(0);
 	const float* newKFImageData = new_keyframe->image(0);
-
-
-
-
+	
+	OmniCameraModel *m = dynamic_cast<OmniCameraModel*>(model.get());
 
 	// go through all pixels of OLD image, propagating forwards.
 	for(size_t y=0;y<height;y++)
@@ -491,21 +490,31 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 			if(!source->isValid)
 				continue;
+			
+			if(! model->pixelLocValid(vec2(x, y))) {
+				continue;
+			}
 
 			if(enablePrintDebugInfo) runningStats.num_prop_attempts++;
 
 
 			Eigen::Vector3f pn = (trafoInv_R * 
-				model->pixelToCam(vec2(x, y))) / source->idepth_smoothed + trafoInv_t;
+				model->pixelToCam(vec2(x, y), 1.f/source->idepth_smoothed)) + trafoInv_t;
 
-			float new_idepth = 1.0f / pn[2];
+			float new_idepth;
+			if(model->getType() == CameraModelType::PROJ) {
+				new_idepth = 1.0f / pn[2];
+			} else {
+				new_idepth = pn.norm();
+			}
 
 			vec2 uv = model->camToPixel(pn);
 			float u_new = uv[0];
 			float v_new = uv[1];
 
 			// check if still within image, if not: DROP.
-			if(!(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f))
+			if((!model->pixelLocValid(uv)) ||
+			  !(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f))
 			{
 				if(enablePrintDebugInfo) runningStats.num_prop_removed_out_of_bounds++;
 				continue;
@@ -1375,7 +1384,9 @@ int DepthMap::debugPlotDepthMap()
 	// debug plot & publish sparse version?
 	int refID = referenceFrameByID_offset;
 
+	
 
+	size_t numValid = 0;
 	for(size_t y=0;y<height;y++)
 		for(size_t x=0;x<width;x++)
 		{
@@ -1387,9 +1398,11 @@ int DepthMap::debugPlotDepthMap()
 			if(!currentDepthMap[idx].isValid) continue;
 
 			cv::Vec3b color = currentDepthMap[idx].getVisualizationColor(refID);
+			++numValid;
 			debugImageDepth.at<cv::Vec3b>(y,x) = color;
 		}
 
+	std::cout << "Valid depths in plot: " << numValid << std::endl;
 
 	return 1;
 }

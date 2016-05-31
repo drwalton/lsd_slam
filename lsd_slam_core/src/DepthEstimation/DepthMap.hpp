@@ -96,6 +96,11 @@ public:
 	// pointer to global keyframe graph
 	IndexThreadReduce threadReducer;
 	bool debugShowEstimatedDepths;
+	bool printPropagationStatistics;
+	
+	
+	void propagateDepth(Frame* new_keyframe);
+	Frame* activeKeyFrame;
 
 private:
 	// camera matrix etc.
@@ -106,7 +111,6 @@ private:
 	// ============= parameter copies for convenience ===========================
 	// these are just copies of the pointers given to this function, for convenience.
 	// these are NOT managed by this object!
-	Frame* activeKeyFrame;
 	boost::shared_lock<boost::shared_mutex> activeKeyFramelock;
 	const float* activeKeyFrameImageData;
 	bool activeKeyFrameIsReactivated;
@@ -155,7 +159,6 @@ private:
 			float &result_idepth, float &result_var, float &result_eplLength,
 			RunningStats* const stats);
 
-	void propagateDepth(Frame* new_keyframe);
 	
 
 	void observeDepth();

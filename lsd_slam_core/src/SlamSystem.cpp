@@ -475,7 +475,7 @@ void SlamSystem::createNewCurrentKeyframe(std::shared_ptr<Frame> newKeyframeCand
 	// propagate & make new.
 	map->createKeyFrame(newKeyframeCandidate.get());
 
-	if(printPropagationStatistics)
+	if(map->printPropagationStatistics)
 	{
 
 		Eigen::Matrix<float, 20, 1> data;
@@ -939,6 +939,9 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 			trackingReference,
 			trackingNewFrame.get(),
 			frameToReference_initialEstimate);
+	
+	motionLastFrame(newRefToFrame_poseUpdate);
+	std::cout << "Motion: " << newRefToFrame_poseUpdate.translation() << std::endl;
 
 
 	gettimeofday(&tv_end, NULL);
@@ -1709,4 +1712,17 @@ std::vector<FramePoseStruct*> SlamSystem::getAllPoses()
 void SlamSystem::depthMapImageViewer(lsd_slam::ImageViewer *v)
 {
 	depthMapImageViewer_ = v;
+}
+
+void SlamSystem::motionLastFrame(const SE3 &motion)
+{
+	motionLastFrameMutex_.lock();
+	motionLastFrame_ = motion;
+	motionLastFrameMutex_.unlock();
+}
+SE3 SlamSystem::motionLastFrame()
+{
+	motionLastFrameMutex_.lock();
+	return motionLastFrame_;
+	motionLastFrameMutex_.unlock();
 }

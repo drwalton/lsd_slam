@@ -165,3 +165,19 @@ link_libs_exec_debug(TestImageViewer FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
 link_libs_exec_debug(TestImageViewer G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 link_libs_exec_debug(TestImageViewer QT_LIBRARIES_RELEASE QT_LIBRARIES_DEBUG)
 
+add_executable(TestDepthMapPropagation
+	TestDepthMapPropagation.cpp
+)
+target_link_libraries(TestDepthMapPropagation
+	${LSD_SLAM_LIBS}
+	lsd_slam_DepthEstimation
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
+link_libs_exec_debug(TestDepthMapPropagation FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
+link_libs_exec_debug(TestDepthMapPropagation G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
+link_libs_exec_debug(TestDepthMapPropagation QT_LIBRARIES_RELEASE QT_LIBRARIES_DEBUG)
+
