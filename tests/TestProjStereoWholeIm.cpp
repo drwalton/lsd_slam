@@ -80,9 +80,9 @@ int main(int argc, char **argv)
 		float noiseMean = 10.f;
 		cv::Mat randIm(fltIm1.size(), CV_32FC1);
 		cv::randn(randIm, 0.f, noiseMean);
-		fltIm1 += randIm;
+		//fltIm1 += randIm;
 		cv::randn(randIm, 0.f, noiseMean);
-		fltIm2 += randIm;
+		//fltIm2 += randIm;
 	}
 
 	keyframeToReference.translation = transform.translation().cast<float>();
@@ -106,6 +106,9 @@ int main(int argc, char **argv)
 	float r_lineLen;
 	estDepths = cv::Mat(fltIm1.size(), CV_32FC1);
 	estDepths.setTo(-1.f);
+
+	ModelLoader modelLoader;
+	ModelLoader gtDepthLoader;
 
 	std::cout << "Computing Stereo..." << std::endl;
 	try{
@@ -144,6 +147,12 @@ int main(int argc, char **argv)
 				vec3 color = 255.f * hueToRgb(depth / 2.f);
 				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(
 					uchar(color.z()), uchar(color.y()), uchar(color.x()));
+
+				modelLoader.vertices().push_back(camModel->pixelToCam(vec2(c, r), depth));
+				modelLoader.vertColors().push_back(
+					255.f*hueToRgb(0.8f*(r_var) /0.001f));
+
+				gtDepthLoader.vertices().push_back(camModel->pixelToCam(vec2(r, c)) * depth1.at<float>(r, c));
 			}
 		});
 	}
@@ -152,6 +161,9 @@ int main(int argc, char **argv)
 		std::cin.get();
 		return -1;
 	}
+
+	modelLoader.saveFile(resourcesDir() + "testStereoCloudProj.ply");
+	gtDepthLoader.saveFile(resourcesDir() + "testStereoCloudProjGt.ply");
 	
 	std::cout << "Stereo Done!" << std::endl;
 
@@ -161,6 +173,7 @@ int main(int argc, char **argv)
 	cv::Mat depthErrorIm = visualizeDepthError(estDepths, depth1, 2.f);
 	cv::imshow("Depth Error", depthErrorIm);
 	cv::moveWindow("Depth Error", 60 + fltIm1.rows, showIm1.cols);
+
 
 	cv::Mat depthPlusMinus(depth1.size(), CV_8UC3);
 	depthPlusMinus.setTo(cv::Vec3b(255, 0, 0), estDepths < depth1);

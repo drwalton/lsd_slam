@@ -35,6 +35,7 @@
 
 #include "Tracking/Relocalizer.hpp"
 #include <g2o/stuff/timeutil.h>
+#include <mutex>
 #ifdef _WIN32
 using g2o::timeval;
 #endif

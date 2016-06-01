@@ -88,9 +88,9 @@ int main(int argc, char **argv)
 		float noiseMean = 10.f;
 		cv::Mat randIm(fltIm1.size(), CV_32FC1);
 		cv::randn(randIm, 0.f, noiseMean);
-		fltIm1 += randIm;
+		//fltIm1 += randIm;
 		cv::randn(randIm, 0.f, noiseMean);
-		fltIm2 += randIm;
+		//fltIm2 += randIm;
 	}
 	estDepths = cv::Mat(fltIm1.size(), CV_32FC1);
 
@@ -120,6 +120,9 @@ int main(int argc, char **argv)
 		fltIm1.cols, fltIm1.rows);
 
 	estDepths.setTo(-1.f);
+
+	ModelLoader modelLoader;
+	ModelLoader depthPointCloud;
 
 	try{
 		std::cout << "Computing Stereo..." << std::endl;
@@ -162,6 +165,13 @@ int main(int argc, char **argv)
 				varIm.at<cv::Vec3b>(r, c) = cv::Vec3b(
 					uchar(color.z()), uchar(color.y()), uchar(color.x()));
 				vars.at<float>(r, c) = var;
+
+				if (var < 10.f) {
+					modelLoader.vertices().push_back(camModel->pixelToCam(vec2(r, c)) * depth);
+					modelLoader.vertColors().push_back(
+						255.f*hueToRgb(0.8f*(var) / 10.f));
+				}
+				depthPointCloud.vertices().push_back(camModel->pixelToCam(vec2(r, c)) * depth1.at<float>(r, c));
 			}
 		});
 	}
@@ -187,6 +197,9 @@ int main(int argc, char **argv)
 	depthPlusMinus.setTo(cv::Vec3b(255, 0, 0), estDepths < depth1);
 	depthPlusMinus.setTo(cv::Vec3b(0, 0, 255), depth1 < estDepths);
 	cv::imshow("+-", depthPlusMinus);
+
+	modelLoader.saveFile(resourcesDir() + "testOmniStereoPointCloud.ply");
+	depthPointCloud.saveFile(resourcesDir() + "testOmniStereoPointCloudGt.ply");
 
 	int key = 0;
 	while(key != 27) {

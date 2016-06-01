@@ -930,8 +930,6 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 			trackingReferencePose->getCamToWorld().inverse() * keyFrameGraph->allFramePoses.back()->getCamToWorld());
 	poseConsistencyMutex.unlock_shared();
 
-
-
 	struct timeval tv_start, tv_end;
 	gettimeofday(&tv_start, NULL);
 
@@ -939,10 +937,6 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 			trackingReference,
 			trackingNewFrame.get(),
 			frameToReference_initialEstimate);
-	
-	motionLastFrame(newRefToFrame_poseUpdate);
-	std::cout << "Motion: " << newRefToFrame_poseUpdate.translation() << std::endl;
-
 
 	gettimeofday(&tv_end, NULL);
 	msTrackFrame = 0.9f*msTrackFrame + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);

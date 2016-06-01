@@ -12,7 +12,7 @@ namespace lsd_slam {
 
 OpenCVImageStream::OpenCVImageStream()
 	:undistorter_(nullptr), running_(false), hasCalib_(false),
-	dropFrames(true), undistortedImageViewer_(nullptr),
+	undistortedImageViewer_(nullptr),
 	rawImageViewer_(nullptr)
 {
 	imageBuffer = new NotifyBuffer<TimestampedMat>(

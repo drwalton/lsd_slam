@@ -1402,8 +1402,6 @@ int DepthMap::debugPlotDepthMap()
 			debugImageDepth.at<cv::Vec3b>(y,x) = color;
 		}
 
-	std::cout << "Valid depths in plot: " << numValid << std::endl;
-
 	return 1;
 }
 
