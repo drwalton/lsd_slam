@@ -25,7 +25,6 @@ public:
 
 private:
 	cv::VideoCapture cap_;
-	bool running_, hasCalib_;
 };
 
 }
