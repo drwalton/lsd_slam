@@ -80,9 +80,11 @@ int main(int argc, char **argv)
 	lsd_slam::LiveSLAMWrapper slamWrapper(stream.get(), &outWrapper);
 	lsd_slam::ImageViewer depthMapViewer("Est. Depth Map");
 	lsd_slam::ImageViewer inputImageViewer("Input (Undistorted)");
+	lsd_slam::ImageViewer rawInputImageViewer("Input (Raw)");
 	slamWrapper.saveKeyframeCloudsToDisk(true);
 	slamWrapper.depthMapImageViewer(&depthMapViewer);
 	stream->undistortedImageViewer(&inputImageViewer);
+	stream->rawImageViewer(&rawInputImageViewer);
 	
 
 	slamWrapper.start();

@@ -20,7 +20,7 @@
 
 #pragma once
 #include <opencv2/core/core.hpp>
-
+#include <array>
 
 
 namespace lsd_slam
@@ -130,6 +130,9 @@ public:
 	 * outputWidth outputHeight
 	 */
 	UndistorterPTAM(const char* configFileName);
+	UndistorterPTAM(const std::array<float, 5> &config, 
+		int in_width, int in_height,
+		int out_width, int out_height);
 	
 	/**
 	 * Destructor.

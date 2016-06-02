@@ -76,10 +76,16 @@ Undistorter* Undistorter::getUndistorterForFile(const char* configFilename)
 		std::getline(f, type);
 		if (type == "NOP" || type == "NOP\r") {
 			return new UndistorterNop(w, h);
-		} else if (type == "RESIZE" || type == "RESIZE\r") {
+		}
+		else if (type == "RESIZE" || type == "RESIZE\r") {
 			int iW, iH;
 			f >> iW >> iH;
 			return new UndistorterResize(iW, iH, w, h);
+		}
+		else if (type == "PTAM" || type == "PTAM\r") {
+			std::array<float, 5> calib;
+			f >> calib[0] >> calib[1] >> calib[2] >> calib[3] >> calib[4];
+			return new UndistorterPTAM(calib, w, h, w, h);
 		} else {
 			throw std::runtime_error("No omni undistorters except NOP implemented yet.");
 		}
@@ -209,6 +215,77 @@ bool UndistorterResize::isValid() const
 	return true;
 }
 
+UndistorterPTAM::UndistorterPTAM(const std::array<float, 5> &config,
+		int in_width, int in_height,
+		int out_width, int out_height)
+		:in_width(in_width), in_height(in_height),
+		out_width(in_width), out_height(in_height)
+{
+	memcpy(inputCalibration, config.data(), 5 * sizeof(float));
+	outputCalibration[0] = -1.f;
+	valid = true;
+	float dist = inputCalibration[4];
+	float d2t = 2.0f * tan(dist / 2.0f);
+
+	// current camera parameters
+	float fx = inputCalibration[0] * in_width;
+	float fy = inputCalibration[1] * in_height;
+	float cx = inputCalibration[2] * in_width - 0.5f;
+	float cy = inputCalibration[3] * in_height - 0.5f;
+	
+	// scale calibration parameters to input size
+	double xfactor = in_width / (1.0 * in_width);
+	double yfactor = in_height / (1.0 * in_height);
+	fx = float(fx * xfactor);
+	fy = float(fy * yfactor);
+	cx = float((cx + 0.5) * xfactor - 0.5);
+	cy = float((cy + 0.5) * yfactor - 0.5);
+
+	// output camera parameters
+	float ofx, ofy, ocx, ocy;
+
+	// find new camera matrix for "crop" and "full"
+	if (inputCalibration[4] == 0)
+	{
+		ofx = inputCalibration[0] * out_width;
+		ofy = inputCalibration[1] * out_height;
+		ocx = (inputCalibration[2] * out_width) - 0.5f;
+		ocy = (inputCalibration[3] * out_height) - 0.5f;
+	}
+	else
+	{
+		// find left-most and right-most radius
+		float left_radius = (cx) / fx;
+		float right_radius = (in_width - 1 - cx) / fx;
+		float top_radius = (cy) / fy;
+		float bottom_radius = (in_height - 1 - cy) / fy;
+
+		float trans_left_radius = tan(left_radius * dist) / d2t;
+		float trans_right_radius = tan(right_radius * dist) / d2t;
+		float trans_top_radius = tan(top_radius * dist) / d2t;
+		float trans_bottom_radius = tan(bottom_radius * dist) / d2t;
+
+		//printf("left_radius: %f -> %f\n", left_radius, trans_left_radius);
+		//printf("right_radius: %f -> %f\n", right_radius, trans_right_radius);
+		//printf("top_radius: %f -> %f\n", top_radius, trans_top_radius);
+		//printf("bottom_radius: %f -> %f\n", bottom_radius, trans_bottom_radius);
+
+
+		ofy = fy * ((top_radius + bottom_radius) / (trans_top_radius + trans_bottom_radius)) * ((float)out_height / (float)in_height);
+		ocy = (trans_top_radius / top_radius) * ofy*cy / fy;
+
+		ofx = fx * ((left_radius + right_radius) / (trans_left_radius + trans_right_radius)) * ((float)out_width / (float)in_width);
+		ocx = (trans_left_radius / left_radius) * ofx*cx / fx;
+
+		printf("new K: %f %f %f %f\n", ofx, ofy, ocx, ocy);
+		printf("old K: %f %f %f %f\n", fx, fy, cx, cy);
+	}
+	outputCalibration[0] = ofx / out_width;
+	outputCalibration[1] = ofy / out_height;
+	outputCalibration[2] = (ocx+0.5f) / out_width;
+	outputCalibration[3] = (ocy+0.5f) / out_height;
+	outputCalibration[4] = 0;
+}
 UndistorterPTAM::UndistorterPTAM(const char* configFileName)
 {
 	valid = true;
