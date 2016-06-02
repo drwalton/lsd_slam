@@ -81,9 +81,6 @@ void Relocalizer::updateCurrentFrame(std::shared_ptr<Frame> currentFrame)
 //			doneLast,
 //			currentFrame->id(), nextRelocIDX, maxRelocIDX);
 
-	if (displayDepthMap)
-		Util::displayImage( "DebugWindow DEPTH", cv::Mat(currentFrame->height(), currentFrame->width(), CV_32F, currentFrame->image())*(1/255.0f), false );
-
 	int pressedKey = Util::waitKey(1);
 	handleKey(pressedKey);
 }

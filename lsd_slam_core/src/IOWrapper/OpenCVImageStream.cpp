@@ -6,23 +6,15 @@
 #include "IOWrapper/ImageDisplay.hpp"
 #include "ImageViewer.hpp"
 
-const size_t NOTIFY_BUFFER_SIZE = 16;
 
 namespace lsd_slam {
 
 OpenCVImageStream::OpenCVImageStream()
-	:undistorter_(nullptr), running_(false), hasCalib_(false),
-	undistortedImageViewer_(nullptr),
-	rawImageViewer_(nullptr)
-{
-	imageBuffer = new NotifyBuffer<TimestampedMat>(
-		NOTIFY_BUFFER_SIZE);
-}
+{}
 
 OpenCVImageStream::~OpenCVImageStream() throw()
 {
 	stop();
-	delete imageBuffer;
 }
 
 void OpenCVImageStream::run()
@@ -38,32 +30,12 @@ void OpenCVImageStream::run()
 	thread_.reset(new std::thread(&OpenCVImageStream::operator(), this));
 }
 
-bool OpenCVImageStream::running()
-{
-	return running_;
-}
-
-void OpenCVImageStream::stop()
-{
-	running_ = false;
-	if (thread_->joinable()) {
-		thread_->join();
-	}
-}
-
 void OpenCVImageStream::setCalibration(const std::string &file)
 {
-	undistorter_.reset(Undistorter::getUndistorterForFile(file.c_str()));
-	model = CameraModel::loadFromFile(file);
+	InputImageStream::setCalibration(file);
 	this->cap_.set(CV_CAP_PROP_FRAME_WIDTH , undistorter_->getInputWidth ());
 	this->cap_.set(CV_CAP_PROP_FRAME_HEIGHT, undistorter_->getInputHeight());
-
-	if (!undistorter_ || !model)
-	{
-		throw std::runtime_error("Unable to read camera calibration from file!");
-	}
-
-	hasCalib_ = true;
+	//TODO check size is correct.
 }
 
 cv::VideoCapture &OpenCVImageStream::capture()
@@ -88,33 +60,24 @@ void OpenCVImageStream::operator()()
 		if (cap_.grab()) {
 			static cv::Mat rawFrame;
 			cap_.retrieve(rawFrame);
-			if (rawImageViewer_) {
-				rawImageViewer_->setImage(rawFrame);
-			}
-			usleep(33000);
 			if (undistorter_) {
 				undistorter_->undistort(rawFrame, newFrame.data);
 			} else {
 				newFrame.data = rawFrame;
 			}
-			if(undistortedImageViewer_) {
-				undistortedImageViewer_->setImage(newFrame.data);
-			}
+
+			tryToShowImages(rawFrame, newFrame.data);
+
 			if(!imageBuffer->pushBack(newFrame)) {
 				std::cout << "Frame dropped!\n";
 			}
+			usleep(33000);
 		} else {
 			std::cout << "No new frames available; terminating OpenCVImageStream..." << std::endl;
 			running_ = false;
 		}
 	}
 	std::cout << "Ending image retrieving thread..." << std::endl;
-}
-
-
-void OpenCVImageStream::undistortedImageViewer(ImageViewer *v)
-{
-	undistortedImageViewer_ = v;
 }
 
 }

@@ -17,11 +17,12 @@ int main(int argc, char **argv)
 			return 1;
 	}
 
-	lsd_slam::OpenCVImageStream stream;
+	std::unique_ptr<lsd_slam::InputImageStream> stream;
 
 	if (argc >= 3) {
-		stream.capture().open(lsd_slam::resourcesDir() + argv[2]);
-		stream.dropFrames = false;
+		stream = lsd_slam::InputImageStream::openImageStream(
+			lsd_slam::resourcesDir() + argv[2]);
+		stream->dropFrames = false;
 	}
 	else {
 		while (true) {
@@ -32,8 +33,10 @@ int main(int argc, char **argv)
 				int i;
 				std::cout << "Please enter number of camera (0=default): ";
 				std::cin >> i;
-				stream.capture().open(i);
-				if (stream.capture().isOpened()) {
+				lsd_slam::OpenCVImageStream *s = new lsd_slam::OpenCVImageStream();
+				s->capture().open(i);
+				stream.reset(s);
+				if (s->capture().isOpened()) {
 					break;
 				}
 				else {
@@ -46,14 +49,11 @@ int main(int argc, char **argv)
 				ch.title("Select video file");
 				ch.show();
 				filename = pathToForwardSlashes(ch.filename());
-				stream.capture().open(filename);
-				stream.dropFrames = false;
-				if (stream.capture().isOpened()) {
-					break;
-				}
-				else {
-					std::cout << "Unable to open file \"" << lsd_slam::resourcesDir() + filename << "\"." << std::endl;
-				}
+
+				stream = lsd_slam::InputImageStream::openImageStream(
+					filename);
+				stream->dropFrames = false;
+				break;
 			}
 			else {
 				std::cout << "Could not parse response; please try again..." << std::endl;
@@ -61,34 +61,34 @@ int main(int argc, char **argv)
 		}
 	}
 	if (argc >= 2) {
-		stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
+		stream->setCalibration(lsd_slam::resourcesDir() + argv[1]);
 		std::cout << "Calibration file loaded: " << argv[1] <<
-			"\n Width: " << stream.camModel().w << ", Height: " <<
-			stream.camModel().h << std::endl;
+			"\n Width: " << stream->camModel().w << ", Height: " <<
+			stream->camModel().h << std::endl;
 
 	} else {
 		 std::string filename;
 		 Fl_Native_File_Chooser ch(Fl_Native_File_Chooser::BROWSE_FILE);
 		 ch.title("Select calibration file");
 		 ch.show();
-		 stream.setCalibration(ch.filename());
+		 stream->setCalibration(ch.filename());
 	}
 
-	stream.run();
+	stream->run();
 	QApplication qapp(argc, argv);
 	lsd_slam::ViewerOutput3DWrapper outWrapper(true, 640, 480);
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, &outWrapper);
+	lsd_slam::LiveSLAMWrapper slamWrapper(stream.get(), &outWrapper);
 	lsd_slam::ImageViewer depthMapViewer("Est. Depth Map");
 	lsd_slam::ImageViewer inputImageViewer("Input (Undistorted)");
 	slamWrapper.saveKeyframeCloudsToDisk(true);
 	slamWrapper.depthMapImageViewer(&depthMapViewer);
-	stream.undistortedImageViewer(&inputImageViewer);
+	stream->undistortedImageViewer(&inputImageViewer);
 	
 
 	slamWrapper.start();
 	qapp.exec();
 	slamWrapper.stop();
 	
-	stream.stop();
+	stream->stop();
 	return 0;
 }
