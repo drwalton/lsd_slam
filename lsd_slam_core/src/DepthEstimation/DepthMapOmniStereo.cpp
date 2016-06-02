@@ -24,9 +24,90 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 	float minLength,
 	const OmniCameraModel &oModel);
 
-bool subpixelMatchOmni() {
-	//TODO
-	return false;
+bool subpixelMatchOmni(
+	vec2 *best_match, const vec2 &best_match_pre, const vec2 &best_match_post,
+	float *best_match_err,
+	float best_match_errPre, float best_match_DiffErrPre,
+	float best_match_errPost, float best_match_DiffErrPost,
+	RunningStats *stats) 
+{
+	bool didSubpixel = false;
+
+	// ================== compute exact match =========================
+	// compute gradients (they are actually only half the real gradient)
+	float gradPre_pre = -(best_match_errPre - best_match_DiffErrPre);
+	float gradPre_this = +(*best_match_err - best_match_DiffErrPre);
+	float gradPost_this = -(*best_match_err - best_match_DiffErrPost);
+	float gradPost_post = +(best_match_errPost - best_match_DiffErrPost);
+
+	// final decisions here.
+	bool interpPost = false;
+	bool interpPre = false;
+
+	// if one is oob: return false.
+	if (enablePrintDebugInfo && (best_match_errPre < 0 || best_match_errPost < 0))
+	{
+		stats->num_stereo_invalid_atEnd++;
+	}
+
+
+	// - if zero-crossing occurs exactly in between (gradient Inconsistent),
+	else if ((gradPost_this < 0) ^ (gradPre_this < 0))
+	{
+		// return exact pos, if both central gradients are small compared to their counterpart.
+		if (enablePrintDebugInfo && (gradPost_this*gradPost_this > 0.1f*0.1f*gradPost_post*gradPost_post ||
+			gradPre_this*gradPre_this > 0.1f*0.1f*gradPre_pre*gradPre_pre))
+			stats->num_stereo_invalid_inexistantCrossing++;
+	}
+
+	// if pre has zero-crossing
+	else if ((gradPre_pre < 0) ^ (gradPre_this < 0))
+	{
+		// if post has zero-crossing
+		if ((gradPost_post < 0) ^ (gradPost_this < 0))
+		{
+			if (enablePrintDebugInfo) stats->num_stereo_invalid_twoCrossing++;
+		} else
+			interpPre = true;
+	}
+
+	// if post has zero-crossing
+	else if ((gradPost_post < 0) ^ (gradPost_this < 0))
+	{
+		interpPost = true;
+	}
+
+	// if none has zero-crossing
+	else
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_invalid_noCrossing++;
+	}
+
+
+	// DO interpolation!
+	// minimum occurs at zero-crossing of gradient, which is a straight line => easy to compute.
+	// the error at that point is also computed by just integrating.
+	if (interpPre)
+	{
+		float d = gradPre_this / (gradPre_this - gradPre_pre);
+		*best_match -= d * (best_match_pre - *best_match);
+		*best_match_err = *best_match_err - 2 * d*gradPre_this - (gradPre_pre - gradPre_this)*d*d;
+		if (enablePrintDebugInfo) stats->num_stereo_interpPre++;
+		didSubpixel = true;
+
+	} else if (interpPost)
+	{
+		float d = gradPost_this / (gradPost_this - gradPost_post);
+		*best_match -= d * (best_match_post - *best_match);
+		*best_match_err = *best_match_err + 2 * d*gradPost_this + (gradPost_post - gradPost_this)*d*d;
+		if (enablePrintDebugInfo) stats->num_stereo_interpPost++;
+		didSubpixel = true;
+	} else
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_interpNone++;
+	}
+
+	return didSubpixel;
 }
 
 std::string Ray::to_string() const
@@ -262,8 +343,12 @@ float doOmniStereo(
 	std::array<vec3, 5> lineDir;
 	std::array<vec2, 5> linePix;
 	std::array<float, 5> lineValue;
+	std::array<float, 5> e0, e1;
+	bool bestWasLastLoop = false;
 	float bestMatchErr = FLT_MAX, secondBestMatchErr = FLT_MAX;
-	vec2 bestMatchPix, secondBestMatchPix;
+	float bestMatchErrPre, bestMatchErrPost, bestMatchDiffErrPre, bestMatchDiffErrPost;
+	vec2 bestMatchPix, secondBestMatchPix; //Pixel locations of best, 2nd best matches.
+	vec2 bestMatchPre, bestMatchPost; //Pixel locs of pixels just before, after best match.
 	vec3 secondBestMatchPos;
 	float centerA = 0.f;
 	int loopCBest = -1, loopCSecondBest = -1;
@@ -308,6 +393,7 @@ float doOmniStereo(
 	tracedLineLen = 0.f;
 	//Advance along line.
 	size_t loopC = 0;
+	float errLast = -1.f;
 	while (centerA <= 1.f) {
 		centerA = a;
 		//Find fifth entry
@@ -325,7 +411,18 @@ float doOmniStereo(
 		}
 
 		//Check error
-		float err = findSsd(valuesToFind, lineValue);
+		float err = 0.f;
+		if (loopC % 2 == 0) {
+			for (size_t i = 0; i < 5; ++i) {
+				e0[i] = lineValue[i] - valuesToFind[i];
+				err += e0[i] * e0[i];
+			}
+		} else {
+			for (size_t i = 0; i < 5; ++i) {
+				e1[i] = lineValue[i] - valuesToFind[i];
+				err += e1[i] * e1[i];
+			}
+		}
 
 		if (!drawMatch.empty()) {
 			vec3 rgb = 255.f * hueToRgb(0.8f * err / 325125.f);
@@ -343,16 +440,41 @@ float doOmniStereo(
 			loopCSecondBest = loopCBest;
 			//Replace best match
 			bestMatchErr = err;
+			bestMatchErrPre = errLast;
+			bestMatchDiffErrPre =
+				e0[0] * e1[0] +
+				e0[1] * e1[1] +
+				e0[2] * e1[2] +
+				e0[3] * e1[3] +
+				e0[4] * e1[4];
+			bestWasLastLoop = true;
+			bestMatchDiffErrPost = -1;
+			bestMatchErrPost = -1;
 			bestMatchPix = linePix[2];
 			bestMatchPos = lineDir[2];
+			bestMatchPre = linePix[1];
+			bestMatchPost = linePix[3];
 			loopCBest = loopC;
 			bestEpDir = linePix[3] - linePix[2];
-		} else if (err < secondBestMatchErr) {
-			//Replace second best match.
-			secondBestMatchErr = err;
-			secondBestMatchPix = linePix[2];
-			secondBestMatchPos = lineDir[2];
-			loopCSecondBest = loopC;
+		} else {
+			if (bestWasLastLoop) {
+				bestMatchErrPost = err;
+				bestMatchDiffErrPre =
+					e0[0] * e1[0] +
+					e0[1] * e1[1] +
+					e0[2] * e1[2] +
+					e0[3] * e1[3] +
+					e0[4] * e1[4];
+				bestWasLastLoop = false;
+			}
+
+			if (err < secondBestMatchErr) {
+				//Replace second best match.
+				secondBestMatchErr = err;
+				secondBestMatchPix = linePix[2];
+				secondBestMatchPos = lineDir[2];
+				loopCSecondBest = loopC;
+			}
 		}
 
 		//Shuffle values down
@@ -363,6 +485,7 @@ float doOmniStereo(
 		}
 		tracedLineLen += (linePix[2] - linePix[1]).norm();
 		++loopC;
+		errLast = err;
 	}
 	
 	if(plotSearch) {
@@ -418,8 +541,18 @@ float doOmniStereo(
 
 	//Perform subpixel matching, if necessary.
 	bool didSubpixel = false;
+	vec2 origpos = bestMatchPix;
 	if (useSubpixelStereo) {
-		didSubpixel = subpixelMatchOmni();
+		didSubpixel = subpixelMatchOmni(
+			&bestMatchPix, bestMatchPre, bestMatchPost,
+			&bestMatchErr, 
+			bestMatchErrPre, bestMatchDiffErrPre,
+			bestMatchErrPost, bestMatchDiffErrPost,
+			stats);
+		if (didSubpixel) {
+			//std::cout << "SUBPIXEL: " << origpos << "\n" << bestMatchPix << std::endl;
+			bestMatchPos = oModel.pixelToCam(bestMatchPix);
+		}
 	}
 
 	gradAlongLine = 0.f;
