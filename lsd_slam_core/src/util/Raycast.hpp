@@ -44,7 +44,9 @@ bool intersectRayWithTriangle(
 	const vec3 &tb,
 	const vec3 &tc,
 	const Ray &ray,
-	float &dist);
+	float &dist,
+	float &baryAB,
+	float &baryAC);
 
 mat4 loadCamTransform(const std::string &filename);
 

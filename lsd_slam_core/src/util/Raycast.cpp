@@ -81,15 +81,21 @@ cv::Vec3b shootRay(
 	float closestIntersectionDist = FLT_MAX;
 	cv::Vec3b color = BACKGROUND_COLOR;
 	for(size_t i = 0; i+2 < indices.size(); i += 3) {
-		float dist;
+		float dist, baryAB, baryAC;
 		if(intersectRayWithTriangle(
 			vertices[indices[i]],
 			vertices[indices[i+1]],
 			vertices[indices[i+2]],
-			ray, dist)) {
+			ray, dist,
+			baryAB, baryAC)) {
 				if(dist < closestIntersectionDist) {
 					closestIntersectionDist = dist;
-					color = colors.at(indices[i]);
+					if ((int(baryAB*10.f) % 2) ^ (int(baryAC*10.f)%2)) {
+						color = colors.at(indices[i]);
+					}
+					else {
+						color = cv::Vec3b(0, 0, 0);
+					}
 				}
 		}
 		else {
@@ -108,7 +114,9 @@ bool intersectRayWithTriangle(
 	const vec3 &tb,
 	const vec3 &tc,
 	const Ray &ray,
-	float &dist)
+	float &dist,
+	float &baryAB,
+	float &baryAC)
 {
 	// Get two edges of the triangle.
 	vec3 e1 = tb - ta;
@@ -141,6 +149,7 @@ bool intersectRayWithTriangle(
 	
 	dist = t;
 	
+	baryAB = u; baryAC = v;
 	return true; // u, v in range - intersection.
 }
 
