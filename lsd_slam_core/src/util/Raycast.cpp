@@ -43,7 +43,19 @@ cv::Mat raycast(
     			ray.origin = origin;
     			ray.dir = /*invRot * */model.pixelToCam(vec2(c,r));
 				float depth;
-				image.at<cv::Vec3b>(r,c) = shootRay(ray, vertices, indices, colors, depth);
+				cv::Vec3b col1 = shootRay(ray, vertices, indices, colors, depth);
+				ray.dir = model.pixelToCam(vec2(c+0.5f, r));
+				cv::Vec3b col2 = shootRay(ray, vertices, indices, colors, depth);
+				ray.dir = model.pixelToCam(vec2(c+0.5f, r+0.5f));
+				cv::Vec3b col3 = shootRay(ray, vertices, indices, colors, depth);
+				ray.dir = model.pixelToCam(vec2(c, r+0.5f));
+				cv::Vec3b col4 = shootRay(ray, vertices, indices, colors, depth);
+				cv::Vec3i colI = col1;
+				colI += col2;
+				colI += col3;
+				colI += col4;
+				colI /= 4;
+				image.at<cv::Vec3b>(r, c) = cv::Vec3b(colI);
 				if (raycastDepths) {
 					depths.at<float>(r, c) = depth;
 				}
