@@ -1101,7 +1101,9 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	gettimeofday(&tv_start, NULL);
 	observeDepth();
 	gettimeofday(&tv_end, NULL);
-	msObserve = 0.9f*msObserve + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msObserve = 0.9f*msObserve + 
+		0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + 
+		(tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nObserve++;
 
 	//if(rand()%10==0)
@@ -1109,7 +1111,9 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 		gettimeofday(&tv_start, NULL);
 		regularizeDepthMapFillHoles();
 		gettimeofday(&tv_end, NULL);
-		msFillHoles = 0.9f*msFillHoles + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		msFillHoles = 0.9f*msFillHoles + 
+			0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + 
+			(tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nFillHoles++;
 	}
 
@@ -1117,7 +1121,9 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	gettimeofday(&tv_start, NULL);
 	regularizeDepthMap(false, VAL_SUM_MIN_FOR_KEEP);
 	gettimeofday(&tv_end, NULL);
-	msRegularize = 0.9f*msRegularize + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+	msRegularize = 0.9f*msRegularize + 
+		0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + 
+		(tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nRegularize++;
 
 	
@@ -1127,13 +1133,17 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 		gettimeofday(&tv_start, NULL);
 		activeKeyFrame->setDepth(currentDepthMap);
 		gettimeofday(&tv_end, NULL);
-		msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		msSetDepth = 0.9f*msSetDepth + 
+			0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + 
+			(tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nSetDepth++;
 	}
 
 
 	gettimeofday(&tv_end_all, NULL);
-	msUpdate = 0.9f*msUpdate + 0.1f*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + (tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
+	msUpdate = 0.9f*msUpdate + 
+		0.1f*((tv_end_all.tv_sec-tv_start_all.tv_sec)*1000.0f + 
+		(tv_end_all.tv_usec-tv_start_all.tv_usec)/1000.0f);
 	nUpdate++;
 
 

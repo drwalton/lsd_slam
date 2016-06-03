@@ -89,8 +89,6 @@ bool useSubpixelStereo = true;
 bool multiThreading = true;
 bool useAffineLightningEstimation = true;
 
-
-
 bool useFabMap = false;
 bool doSlam = true;
 bool doKFReActivation = true;
