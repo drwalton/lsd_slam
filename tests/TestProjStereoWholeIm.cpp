@@ -148,11 +148,13 @@ int main(int argc, char **argv)
 				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(
 					uchar(color.z()), uchar(color.y()), uchar(color.x()));
 
-				modelLoader.vertices().push_back(camModel->pixelToCam(vec2(c, r), depth));
-				modelLoader.vertColors().push_back(
-					255.f*hueToRgb(0.8f*(r_var) /0.001f));
+				if (r_var < 0.001f) {
+					modelLoader.vertices().push_back(camModel->pixelToCam(vec2(c, r), depth));
+					modelLoader.vertColors().push_back(
+						255.f*hueToRgb(0.8f*(r_var) / 0.001f));
 
-				gtDepthLoader.vertices().push_back(camModel->pixelToCam(vec2(r, c)) * depth1.at<float>(r, c));
+					gtDepthLoader.vertices().push_back(camModel->pixelToCam(vec2(r, c)) * depth1.at<float>(r, c));
+				}
 			}
 		});
 	}

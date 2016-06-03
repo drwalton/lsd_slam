@@ -151,7 +151,9 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 	diverged = false;
 	trackingWasGood = true;
 
-	calcResidualAndBuffers(reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, referenceToFrame, QUICK_KF_CHECK_LVL, false);
+	calcResidualAndBuffers(reference->permaRef_posData, 
+		reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, 
+		frame, referenceToFrame, QUICK_KF_CHECK_LVL, false);
 	if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * 
 		(model->w>>QUICK_KF_CHECK_LVL)*(model->h>>QUICK_KF_CHECK_LVL))
 	{
@@ -187,7 +189,10 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 			Sophus::SE3f new_referenceToFrame = Sophus::SE3f::exp((inc)) * referenceToFrame;
 
 			// re-evaluate residual
-			calcResidualAndBuffers(reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, new_referenceToFrame, QUICK_KF_CHECK_LVL, false);
+			calcResidualAndBuffers(reference->permaRef_posData, 
+				reference->permaRef_colorAndVarData, 0, 
+				reference->permaRefNumPts, frame, new_referenceToFrame, 
+				QUICK_KF_CHECK_LVL, false);
 			if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * 
 				(model->w>>QUICK_KF_CHECK_LVL)*(model->h>>QUICK_KF_CHECK_LVL))
 			{

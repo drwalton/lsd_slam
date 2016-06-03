@@ -563,7 +563,7 @@ float doOmniStereo(
 	gradAlongLine /= GRADIENT_SAMPLE_DIST*GRADIENT_SAMPLE_DIST;
 
 	// check if interpolated error is OK. use evil hack to allow more error if there is a lot of gradient.
-	if (bestMatchErr > (float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20) {
+	if (bestMatchErr > (float)MAX_ERROR_STEREO /* + sqrtf(gradAlongLine)*  20*/) {
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
 		if (plotSearch) {
 			std::cout << "Stereo failed: absolute error too large (second check)"
@@ -731,109 +731,6 @@ bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const 
 
 	return true;
 }
-
-/*
-bool omniStereo(
-	const RigidTransform &keyframeToReference,
-	const OmniCameraModel &model,
-	const float* keyframe,
-	const float *reference,
-	int width,
-	int x, int y,
-	float minDepth, float maxDepth,
-	float &minSsd,
-	vec3 &matchDir,
-	vec2 &matchPixel,
-	cv::Mat &drawMatch)
-{
-	vec3 pointDir;
-	std::array<float, 5> searchVals = findValuesToSearchFor(keyframeToReference,
-		model, keyframe, x, y, width, pointDir);
-
-	vec3 minDPointDir = minDepth * pointDir;
-	vec3 maxDPointDir = maxDepth * pointDir;
-
-	//Find start and end of search curve
-	vec3 lineStart = keyframeToReference * minDPointDir;
-	vec3 lineEnd   = keyframeToReference * maxDPointDir;
-	lineStart.normalize(), lineEnd.normalize();
-
-	if (!drawMatch.empty()) {
-		//vec2 pix = model.camToPixel(lineStart);
-		//cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 255, 0));
-		//pix = model.camToPixel(lineEnd);
-		//cv::circle(drawMatch, cv::Point(pix.x(), pix.y()), 3, cv::Scalar(0, 0, 255));
-	}
-	
-	//Get first 5 possible matching values
-	float a = 0.f;//Line parameter
-	std::array<float, 5> matchVals;
-	std::array<vec3, 5> matchDirs;
-	matchVals[2] = getInterpolatedElement(reference, model.camToPixel(lineStart), width);
-	matchDirs[2] = lineStart;
-	
-	//Get two points before line start.
-	vec3 backDir = 2.f * lineStart - lineEnd;
-	a += model.getEpipolarParamIncrement(a, backDir, lineStart);
-	matchDirs[1] = a*backDir + (1.f - a)*lineStart;
-	matchVals[1] = getInterpolatedElement(reference, model.camToPixel(matchDirs[1]), width);
-
-	a += model.getEpipolarParamIncrement(a, backDir, lineStart);
-	matchDirs[0] = a*backDir + (1.f - a)*lineStart;
-	matchVals[0] = getInterpolatedElement(reference, model.camToPixel(matchDirs[0]), width);
-
-	//Get two points after line start.
-	a = 0.f;
-	float prevA = 0.f, prevPrevA = 0.f;
-	a += model.getEpipolarParamIncrement(a, lineEnd, lineStart); 
-	matchDirs[3] = a*lineEnd + (1.f - a)*lineStart;
-	matchVals[3] = getInterpolatedElement(reference, model.camToPixel(matchDirs[3]), width);
-	prevA = a;
-
-	a += model.getEpipolarParamIncrement(a, lineEnd, lineStart);
-	matchDirs[4] = a*lineEnd + (1.f - a)*lineStart;
-	matchVals[4] = getInterpolatedElement(reference, model.camToPixel(matchDirs[4]), width);
-	float ssd = findSsd(searchVals, matchVals);
-
-	matchDir = matchDirs[2];
-	minSsd = ssd;
-
-	//Advance along remainder of line.
-	while (prevPrevA < 1.f) {
-		prevPrevA = prevA;
-		prevA = a;
-		a += model.getEpipolarParamIncrement(a, lineEnd, lineStart);
-		if (prevPrevA > 1.f) break;
-		
-		//Move values along arrays
-		for (size_t i = 0; i < 4; ++i) {
-			matchDirs[i] = matchDirs[i + 1];
-			matchVals[i] = matchVals[i + 1];
-		}
-
-		//Find next value on line.
-		matchDirs[4] = a*lineEnd + (1.f - a) * lineStart;
-		matchVals[4] = getInterpolatedElement(reference, model.camToPixel(matchDirs[4]), width);
-
-		float ssd = findSsd(searchVals, matchVals);
-		if (ssd < minSsd) {
-			minSsd = ssd;
-			matchDir = matchDirs[2];
-		}
-
-		if (!drawMatch.empty()) {
-			vec2 pix = model.camToPixel(matchDirs[2]);
-			vec3 rgb = 255.f * hueToRgb(ssd / 50000.f);
-			drawMatch.at<cv::Vec3b>(int(pix.y()), int(pix.x())) =
-				cv::Vec3b(int(rgb.z()), int(rgb.y()), int(rgb.x()));
-		}
-	}
-
-	matchPixel = model.camToPixel(matchDir);
-
-	return true;
-}
-*/
 
 std::array<float, 5> findValuesToSearchFor(
 	const RigidTransform &keyframeToReference,

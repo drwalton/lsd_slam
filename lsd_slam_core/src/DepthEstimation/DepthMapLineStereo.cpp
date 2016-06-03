@@ -88,8 +88,12 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	int idx = x+y*width;
 
 	// ======= make epl ========
-	float epx = - model->fx * ref->thisToOther_t[0] + ref->thisToOther_t[2]*(x - model->cx);
-	float epy = - model->fy * ref->thisToOther_t[1] + ref->thisToOther_t[2]*(y - model->cy);
+	// calculate the plane spanned by the two camera centers and the point (x,y,1)
+	// intersect it with the keyframe's image plane (at depth=1)
+	float epx = - model->fx * ref->thisToOther_t[0] + 
+		ref->thisToOther_t[2]*(x - model->cx);
+	float epy = - model->fy * ref->thisToOther_t[1] + 
+		ref->thisToOther_t[2]*(y - model->cy);
 
 	if(isnan(epx+epy)) {
 		return false;
@@ -99,20 +103,25 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	float eplLengthSquared = epx*epx+epy*epy;
 	if(eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
 	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
+		if (enablePrintDebugInfo) {
+			stats->num_observe_skipped_small_epl++;
+		}
 		return false;
 	}
 
 
 	// ===== check epl-grad magnitude ======
-	float gx = activeKeyFrameImageData[idx+1    ] - activeKeyFrameImageData[idx-1    ];
-	float gy = activeKeyFrameImageData[idx+width] - activeKeyFrameImageData[idx-width];
+	float gx = activeKeyFrameImageData[idx+1] - activeKeyFrameImageData[idx-1];
+	float gy = activeKeyFrameImageData[idx+width] - 
+		activeKeyFrameImageData[idx-width];
 	float eplGradSquared = gx * epx + gy * epy;
 	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
 
 	if(eplGradSquared < MIN_EPL_GRAD_SQUARED)
 	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_grad++;
+		if (enablePrintDebugInfo) {
+			stats->num_observe_skipped_small_epl_grad++;
+		}
 		return false;
 	}
 
@@ -120,7 +129,9 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	// ===== check epl-grad angle ======
 	if(eplGradSquared / (gx*gx+gy*gy) < MIN_EPL_ANGLE_SQUARED)
 	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_angle++;
+		if (enablePrintDebugInfo) {
+			stats->num_observe_skipped_small_epl_angle++;
+		}
 		return false;
 	}
 
@@ -180,11 +191,15 @@ float DepthMap::doLineStereo(
 	}
 
 	// calculate values to search for
-	float realVal_p1 = getInterpolatedElement(activeKeyFrameImageData, u + epxn*rescaleFactor, v + epyn*rescaleFactor, width);
-	float realVal_m1 = getInterpolatedElement(activeKeyFrameImageData, u - epxn*rescaleFactor, v - epyn*rescaleFactor, width);
+	float realVal_p1 = getInterpolatedElement(activeKeyFrameImageData, 
+		u + epxn*rescaleFactor, v + epyn*rescaleFactor, width);
+	float realVal_m1 = getInterpolatedElement(activeKeyFrameImageData, 
+		u - epxn*rescaleFactor, v - epyn*rescaleFactor, width);
 	float realVal = getInterpolatedElement(activeKeyFrameImageData, u, v, width);
-	float realVal_m2 = getInterpolatedElement(activeKeyFrameImageData, u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, width);
-	float realVal_p2 = getInterpolatedElement(activeKeyFrameImageData, u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, width);
+	float realVal_m2 = getInterpolatedElement(activeKeyFrameImageData, 
+		u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, width);
+	float realVal_p2 = getInterpolatedElement(activeKeyFrameImageData, 
+		u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, width);
 
 	//	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
 
@@ -360,16 +375,19 @@ float DepthMap::doLineStereo(
 	float second_best_match_err = FLT_MAX;
 
 	// best pre and post errors.
-	float best_match_errPre = NAN, best_match_errPost = NAN, best_match_DiffErrPre = NAN, best_match_DiffErrPost = NAN;
+	float best_match_errPre = NAN, best_match_errPost = NAN, 
+		best_match_DiffErrPre = NAN, best_match_DiffErrPost = NAN;
 	bool bestWasLastLoop = false;
 
 	float eeLast = -1; // final error of last comp.
 
 	// alternating intermediate vars
-	float e1A = NAN, e1B = NAN, e2A = NAN, e2B = NAN, e3A = NAN, e3B = NAN, e4A = NAN, e4B = NAN, e5A = NAN, e5B = NAN;
+	float e1A = NAN, e1B = NAN, e2A = NAN, e2B = NAN, e3A = NAN, e3B = NAN, 
+		e4A = NAN, e4B = NAN, e5A = NAN, e5B = NAN;
 
 	int loopCBest = -1, loopCSecond = -1;
-	while (((incx < 0) == (cpx > pClose[0]) && (incy < 0) == (cpy > pClose[1])) || loopCounter == 0)
+	while (((incx < 0) == (cpx > pClose[0]) && 
+		(incy < 0) == (cpy > pClose[1])) || loopCounter == 0)
 	{
 		// interpolate one new point
 		val_cp_p2 = getInterpolatedElement(referenceFrameImage, cpx + 2 * incx, cpy + 2 * incy, width);
@@ -635,7 +653,9 @@ float findDepthAndVarProj(
 		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
 
 		idnew_best_match = (dot1 - oldY*dot2) / nominator;
-		alpha = incy*model->fyi()*(dot1*referenceFrame->otherToThis_t[2] - dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
+		alpha = incy*model->fyi()*
+			(dot1*referenceFrame->otherToThis_t[2] - 
+			dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
 	}
 
 	if (idnew_best_match < 0)
@@ -657,11 +677,14 @@ float findDepthAndVarProj(
 	// calculate error from geometric noise (wrong camera pose / calibration)
 	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, model->w);
 	float geoDispError = (gradsInterp[0] * epxn + gradsInterp[1] * epyn) + DIVISION_EPS;
-	geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / (geoDispError*geoDispError);
+	geoDispError = trackingErrorFac*trackingErrorFac*
+		(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / 
+		(geoDispError*geoDispError);
 
 	// final error consists of a small constant part (discretization error),
 	// geometric and photometric error.
-	*result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
+	*result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*
+		sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
 
 	if (plotStereoImages)
 	{
