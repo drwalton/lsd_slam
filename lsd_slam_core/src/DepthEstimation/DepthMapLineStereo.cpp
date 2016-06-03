@@ -82,17 +82,89 @@ float findDepthAndVarProj(
 	RunningStats *stats,
 	cv::Mat &debugImageStereoLines);
 
+bool makeAndCheckEPL(const int x, const int y, const float* const ref,
+	const float *const keyframe,
+	const RigidTransform &keyframeToReference,
+	float* pepx, float* pepy, RunningStats* const stats,
+	const ProjCameraModel &model);
+
+bool makeAndCheckEPL(const int x, const int y, const float* const ref,
+	const float *const keyframe,
+	const RigidTransform &keyframeToReference,
+	float* pepx, float* pepy, RunningStats* const stats,
+	const ProjCameraModel &model)
+{
+	int idx = x+y*model.w;
+	if (size_t(idx) <= model.w) return false;
+
+	// ======= make epl ========
+	float epx = - model.fx * keyframeToReference.translation[0] +
+		keyframeToReference.translation[2]*(x - model.cx);
+	float epy = - model.fy * keyframeToReference.translation[1] +
+		keyframeToReference.translation[2]*(y - model.cy);
+
+	if(isnan(epx+epy)) {
+		return false;
+	}
+
+	// ======== check epl length =========
+	float eplLengthSquared = epx*epx+epy*epy;
+	if(eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
+		return false;
+	}
+
+
+	// ===== check epl-grad magnitude ======
+	float gx = keyframe[idx+1    ] - keyframe[idx-1    ];
+	float gy = keyframe[idx+model.w] - keyframe[idx-model.w];
+	float eplGradSquared = gx * epx + gy * epy;
+	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
+
+	if(eplGradSquared < MIN_EPL_GRAD_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_grad++;
+		return false;
+	}
+
+
+	// ===== check epl-grad angle ======
+	if(eplGradSquared / (gx*gx+gy*gy) < MIN_EPL_ANGLE_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_angle++;
+		return false;
+	}
+
+
+	// ===== DONE - return "normalized" epl =====
+	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
+	*pepx = epx * fac;
+	*pepy = epy * fac;
+
+	return true;
+}
+
 bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	float* pepx, float* pepy, RunningStats* const stats)
 {
+	RigidTransform keyframeToReference;
+	keyframeToReference.rotation = activeKeyFrame->thisToOther_R;
+	keyframeToReference.translation = activeKeyFrame->thisToOther_t;
+	return lsd_slam::makeAndCheckEPL(x, y, (const_cast<Frame*>(ref)->image()),
+		activeKeyFrameImageData,
+		keyframeToReference,
+		pepx, pepy, stats,
+		*static_cast<ProjCameraModel*>(model.get()));
+
 	int idx = x+y*width;
 
 	// ======= make epl ========
 	// calculate the plane spanned by the two camera centers and the point (x,y,1)
 	// intersect it with the keyframe's image plane (at depth=1)
-	float epx = - model->fx * ref->thisToOther_t[0] + 
+	float epx = - model->fx * ref->thisToOther_t[0] +
 		ref->thisToOther_t[2]*(x - model->cx);
-	float epy = - model->fy * ref->thisToOther_t[1] + 
+	float epy = - model->fy * ref->thisToOther_t[1] +
 		ref->thisToOther_t[2]*(y - model->cy);
 
 	if(isnan(epx+epy)) {
@@ -144,29 +216,23 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 	return true;
 }
 
-// find pixel in image (do stereo along epipolar line).
-// mat: NEW image
-// KinvP: point in OLD image (Kinv * (u_old, v_old, 1)), projected
-// trafo: x_old = trafo * x_new; (from new to old image)
-// realVal: descriptor in OLD image.
-// returns: result_idepth : point depth in new camera's coordinate system
-// returns: result_u/v : point's coordinates in new camera's coordinate system
-// returns: idepth_var: (approximated) measurement variance of inverse depth of result_point_NEW
-// returns error if sucessful; -1 if out of bounds, -2 if not found.
-float DepthMap::doLineStereo(
+float doLineStereo(
 	const float u, const float v, const float epxn, const float epyn,
 	const float min_idepth, const float prior_idepth, float max_idepth,
-	const Frame* const referenceFrame, const float* referenceFrameImage,
+	const float* const keyframeImage, const float* referenceFrameImage,
+	const ProjCameraModel &model, const RigidTransform &keyframeToReference,
 	float &result_idepth, float &result_var, float &result_eplLength,
-	RunningStats* stats)
+	const Eigen::Vector4f *keyframeGradients,
+	float initialTrackedResidual,
+	RunningStats* const stats,
+	cv::Mat &drawIm)
 {
-	ProjCameraModel &pModel = static_cast<ProjCameraModel&>(*model);
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
-	vec3 K_otherToThis_t = pModel.K * referenceFrame->otherToThis_t;
-	mat3 K_otherToThis_R = pModel.K * referenceFrame->otherToThis_R;
+	vec3 K_otherToThis_t = model.K * keyframeToReference.translation;
+	mat3 K_otherToThis_R = model.K * keyframeToReference.rotation;
 
 	// calculate epipolar line start and end point in old image
-	vec3 KinvP = vec3(pModel.fxi()*u+pModel.cxi(), pModel.fyi()*v+pModel.cyi(), 1.f);
+	vec3 KinvP = vec3(model.fxi()*u+model.cxi(), model.fyi()*v+model.cyi(), 1.f);
 	Eigen::Vector3f pInf = K_otherToThis_R * KinvP;
 	Eigen::Vector3f pReal = pInf / prior_idepth + K_otherToThis_t;
 
@@ -176,11 +242,11 @@ float DepthMap::doLineStereo(
 	float firstY = v - 2 * epyn*rescaleFactor;
 	float lastX = u + 2 * epxn*rescaleFactor;
 	float lastY = v + 2 * epyn*rescaleFactor;
-	// model.w - 2 and height - 2 comes from the one-sided gradient calculation at the bottom
-	if (firstX <= 0 || firstX >= width - 2
-		|| firstY <= 0 || firstY >= height - 2
-		|| lastX <= 0 || lastX >= width - 2
-		|| lastY <= 0 || lastY >= height - 2) {
+	// width - 2 and height - 2 comes from the one-sided gradient calculation at the bottom
+	if (firstX <= 0 || firstX >= model.w - 2
+		|| firstY <= 0 || firstY >= model.h - 2
+		|| lastX <= 0 || lastX >= model.w - 2
+		|| lastY <= 0 || lastY >= model.h - 2) {
 		return -1;
 	}
 
@@ -191,16 +257,22 @@ float DepthMap::doLineStereo(
 	}
 
 	// calculate values to search for
-	float realVal_p1 = getInterpolatedElement(activeKeyFrameImageData, 
-		u + epxn*rescaleFactor, v + epyn*rescaleFactor, width);
-	float realVal_m1 = getInterpolatedElement(activeKeyFrameImageData, 
-		u - epxn*rescaleFactor, v - epyn*rescaleFactor, width);
-	float realVal = getInterpolatedElement(activeKeyFrameImageData, u, v, width);
-	float realVal_m2 = getInterpolatedElement(activeKeyFrameImageData, 
-		u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, width);
-	float realVal_p2 = getInterpolatedElement(activeKeyFrameImageData, 
-		u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, width);
+	float realVal_p1 = getInterpolatedElement(keyframeImage, u + epxn*rescaleFactor, v + epyn*rescaleFactor, model.w);
+	float realVal_m1 = getInterpolatedElement(keyframeImage, u - epxn*rescaleFactor, v - epyn*rescaleFactor, model.w);
+	float realVal = getInterpolatedElement(keyframeImage, u, v, model.w);
+	float realVal_m2 = getInterpolatedElement(keyframeImage, u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, model.w);
+	float realVal_p2 = getInterpolatedElement(keyframeImage, u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, model.w);
 
+	if (!drawIm.empty()) {
+		std::vector<float> searchVals{ realVal_m2, realVal_m1, realVal, realVal_p1, realVal_p2 };
+		cv::Mat searchValMat(cv::Size(searchVals.size(), 1), CV_8UC1);
+		for(size_t i = 0; i < searchVals.size(); ++i) {
+			searchValMat.at<uchar>(0,i) = uchar(searchVals[i]);
+		}
+		cv::Mat showMat;
+		cv::resize(searchValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("SEARCHED", showMat);
+	}
 	//	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
 
 	Eigen::Vector3f pClose = pInf + K_otherToThis_t*max_idepth;
@@ -268,9 +340,9 @@ float DepthMap::doLineStereo(
 	// if inf point is outside of image: skip pixel.
 	if (
 		pFar[0] <= SAMPLE_POINT_TO_BORDER ||
-		pFar[0] >= width - SAMPLE_POINT_TO_BORDER ||
+		pFar[0] >= model.w - SAMPLE_POINT_TO_BORDER ||
 		pFar[1] <= SAMPLE_POINT_TO_BORDER ||
-		pFar[1] >= height - SAMPLE_POINT_TO_BORDER)
+		pFar[1] >= model.h - SAMPLE_POINT_TO_BORDER)
 	{
 		if (enablePrintDebugInfo) stats->num_stereo_inf_oob++;
 		return -1;
@@ -279,18 +351,18 @@ float DepthMap::doLineStereo(
 	// if near point is outside: move inside, and test length again.
 	if (
 		pClose[0] <= SAMPLE_POINT_TO_BORDER ||
-		pClose[0] >= width - SAMPLE_POINT_TO_BORDER ||
+		pClose[0] >= model.w - SAMPLE_POINT_TO_BORDER ||
 		pClose[1] <= SAMPLE_POINT_TO_BORDER ||
-		pClose[1] >= height - SAMPLE_POINT_TO_BORDER)
+		pClose[1] >= model.h - SAMPLE_POINT_TO_BORDER)
 	{
 		if (pClose[0] <= SAMPLE_POINT_TO_BORDER)
 		{
 			float toAdd = (SAMPLE_POINT_TO_BORDER - pClose[0]) / incx;
 			pClose[0] += toAdd * incx;
 			pClose[1] += toAdd * incy;
-		} else if (pClose[0] >= width - SAMPLE_POINT_TO_BORDER)
+		} else if (pClose[0] >= model.w - SAMPLE_POINT_TO_BORDER)
 		{
-			float toAdd = (width - SAMPLE_POINT_TO_BORDER - pClose[0]) / incx;
+			float toAdd = (model.w - SAMPLE_POINT_TO_BORDER - pClose[0]) / incx;
 			pClose[0] += toAdd * incx;
 			pClose[1] += toAdd * incy;
 		}
@@ -300,9 +372,9 @@ float DepthMap::doLineStereo(
 			float toAdd = (SAMPLE_POINT_TO_BORDER - pClose[1]) / incy;
 			pClose[0] += toAdd * incx;
 			pClose[1] += toAdd * incy;
-		} else if (pClose[1] >= height - SAMPLE_POINT_TO_BORDER)
+		} else if (pClose[1] >= model.h - SAMPLE_POINT_TO_BORDER)
 		{
-			float toAdd = (height - SAMPLE_POINT_TO_BORDER - pClose[1]) / incy;
+			float toAdd = (model.h - SAMPLE_POINT_TO_BORDER - pClose[1]) / incy;
 			pClose[0] += toAdd * incx;
 			pClose[1] += toAdd * incy;
 		}
@@ -315,9 +387,9 @@ float DepthMap::doLineStereo(
 		// test again
 		if (
 			pClose[0] <= SAMPLE_POINT_TO_BORDER ||
-			pClose[0] >= width - SAMPLE_POINT_TO_BORDER ||
+			pClose[0] >= model.w - SAMPLE_POINT_TO_BORDER ||
 			pClose[1] <= SAMPLE_POINT_TO_BORDER ||
-			pClose[1] >= height - SAMPLE_POINT_TO_BORDER ||
+			pClose[1] >= model.h - SAMPLE_POINT_TO_BORDER ||
 			newEplLength < 8.0f
 			)
 		{
@@ -339,13 +411,19 @@ float DepthMap::doLineStereo(
 	float cpx = pFar[0];
 	float cpy = pFar[1];
 
-	float val_cp_m2 = getInterpolatedElement(referenceFrameImage, cpx - 2.0f*incx, cpy - 2.0f*incy, width);
-	float val_cp_m1 = getInterpolatedElement(referenceFrameImage, cpx - incx, cpy - incy, width);
-	float val_cp = getInterpolatedElement(referenceFrameImage, cpx, cpy, width);
-	float val_cp_p1 = getInterpolatedElement(referenceFrameImage, cpx + incx, cpy + incy, width);
+	float val_cp_m2 = getInterpolatedElement(referenceFrameImage, cpx - 2.0f*incx, cpy - 2.0f*incy, model.w);
+	float val_cp_m1 = getInterpolatedElement(referenceFrameImage, cpx - incx, cpy - incy, model.w);
+	float val_cp = getInterpolatedElement(referenceFrameImage, cpx, cpy, model.w);
+	float val_cp_p1 = getInterpolatedElement(referenceFrameImage, cpx + incx, cpy + incy, model.w);
 	float val_cp_p2;
 
 
+	std::vector<float> matchVals;
+	if (!drawIm.empty()) {
+		matchVals.push_back(val_cp_m2);
+		matchVals.push_back(val_cp_m1);
+		matchVals.push_back(val_cp);
+	}
 
 	/*
 	* Subsequent exact minimum is found the following way:
@@ -375,22 +453,19 @@ float DepthMap::doLineStereo(
 	float second_best_match_err = FLT_MAX;
 
 	// best pre and post errors.
-	float best_match_errPre = NAN, best_match_errPost = NAN, 
-		best_match_DiffErrPre = NAN, best_match_DiffErrPost = NAN;
+	float best_match_errPre = NAN, best_match_errPost = NAN, best_match_DiffErrPre = NAN, best_match_DiffErrPost = NAN;
 	bool bestWasLastLoop = false;
 
 	float eeLast = -1; // final error of last comp.
 
 	// alternating intermediate vars
-	float e1A = NAN, e1B = NAN, e2A = NAN, e2B = NAN, e3A = NAN, e3B = NAN, 
-		e4A = NAN, e4B = NAN, e5A = NAN, e5B = NAN;
+	float e1A = NAN, e1B = NAN, e2A = NAN, e2B = NAN, e3A = NAN, e3B = NAN, e4A = NAN, e4B = NAN, e5A = NAN, e5B = NAN;
 
 	int loopCBest = -1, loopCSecond = -1;
-	while (((incx < 0) == (cpx > pClose[0]) && 
-		(incy < 0) == (cpy > pClose[1])) || loopCounter == 0)
+	while (((incx < 0) == (cpx > pClose[0]) && (incy < 0) == (cpy > pClose[1])) || loopCounter == 0)
 	{
 		// interpolate one new point
-		val_cp_p2 = getInterpolatedElement(referenceFrameImage, cpx + 2 * incx, cpy + 2 * incy, width);
+		val_cp_p2 = getInterpolatedElement(referenceFrameImage, cpx + 2 * incx, cpy + 2 * incy, model.w);
 
 
 		// hacky but fast way to get error and differential error: switch buffer variables for last loop.
@@ -413,6 +488,11 @@ float DepthMap::doLineStereo(
 			e5B = val_cp_m2 - realVal_m2; ee += e5B*e5B;
 		}
 
+		if (!drawIm.empty()) {
+			vec3 rgb = 255.f * hueToRgb(0.8f * ee / 325125.f);
+			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+			drawIm.at<cv::Vec3b>(int(cpy), int(cpx)) = rgbB;
+		}
 
 		// do I have a new winner??
 		// if so: set.
@@ -458,6 +538,9 @@ float DepthMap::doLineStereo(
 		// shift everything one further.
 		eeLast = ee;
 		val_cp_m2 = val_cp_m1; val_cp_m1 = val_cp; val_cp = val_cp_p1; val_cp_p1 = val_cp_p2;
+		if (!drawIm.empty()) {
+			matchVals.push_back(val_cp);
+		}
 
 		if (enablePrintDebugInfo) stats->num_stereo_comparisons++;
 
@@ -465,6 +548,17 @@ float DepthMap::doLineStereo(
 		cpy += incy;
 
 		loopCounter++;
+	}
+	if (!drawIm.empty()) {
+		matchVals.push_back(val_cp_p1);
+		matchVals.push_back(val_cp_p2);
+		cv::Mat searchValMat(cv::Size(matchVals.size(), 1), CV_8UC1);
+		for(size_t i = 0; i < matchVals.size(); ++i) {
+			searchValMat.at<uchar>(0,i) = uchar(matchVals[i]);
+		}
+		cv::Mat showMat;
+		cv::resize(searchValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
+		cv::imshow("MATCHES", showMat);
 	}
 
 	// if error too big, will return -3, otherwise -2.
@@ -511,14 +605,49 @@ float DepthMap::doLineStereo(
 	float r = findDepthAndVarProj(&result_idepth, &result_var, u, v, epxn,
 		epyn, best_match_x, best_match_y, best_match_err,
 		incx, incy, didSubpixel, KinvP, pClose, pFar,
-		gradAlongLine, sampleDist, &pModel, referenceFrame, activeKeyFrame,
-		stats, debugImageStereoLines);
+		gradAlongLine, sampleDist, &model, keyframeToReference,
+		referenceFrameImage, keyframeImage,
+		initialTrackedResidual, keyframeGradients, stats);
 	if (r != 0.f) {
 		return r;
 	}
 
+	if (!drawIm.empty()) {
+		cv::circle(drawIm, cv::Point(int(best_match_x), int(best_match_y)), 5, cv::Scalar(0, 255, 0));
+	}
+
 	result_eplLength = eplLength;
 	return best_match_err;
+}
+// find pixel in image (do stereo along epipolar line).
+// mat: NEW image
+// KinvP: point in OLD image (Kinv * (u_old, v_old, 1)), projected
+// trafo: x_old = trafo * x_new; (from new to old image)
+// realVal: descriptor in OLD image.
+// returns: result_idepth : point depth in new camera's coordinate system
+// returns: result_u/v : point's coordinates in new camera's coordinate system
+// returns: idepth_var: (approximated) measurement variance of inverse depth of result_point_NEW
+// returns error if sucessful; -1 if out of bounds, -2 if not found.
+float DepthMap::doLineStereo(
+	const float u, const float v, const float epxn, const float epyn,
+	const float min_idepth, const float prior_idepth, float max_idepth,
+	const Frame* const referenceFrame, const float* referenceFrameImage,
+	float &result_idepth, float &result_var, float &result_eplLength,
+	RunningStats* stats)
+{
+	RigidTransform keyframeToReference;
+	keyframeToReference.rotation = referenceFrame->otherToThis_R;
+	keyframeToReference.translation = referenceFrame->otherToThis_t;
+	return lsd_slam::doLineStereo(
+		u, v, epxn, epyn,
+		min_idepth, prior_idepth, max_idepth,
+		activeKeyFrameImageData, referenceFrameImage,
+		*static_cast<ProjCameraModel*>(model.get()), keyframeToReference,
+		result_idepth, result_var, result_eplLength,
+		activeKeyFrame->gradients(),
+		referenceFrame->initialTrackedResidual,
+		stats,
+		cv::Mat());
 }
 
 bool subpixelMatchProj(
@@ -701,5 +830,84 @@ float findDepthAndVarProj(
 	*result_idepth = idnew_best_match;
 	return 0.f;
 }
+float findDepthAndVarProj(
+	float *result_idepth, float *result_var,
+	const float u, const float v,
+	const float epxn, const float epyn,
+	const float best_match_x, const float best_match_y,
+	const float best_match_err,
+	const float incx, const float incy,
+	const bool didSubpixel,
+	const vec3 &KinvP,
+	const vec3 &pClose, const vec3 &pFar,
+	const float gradAlongLine,
+	const float sampleDist,
+	const ProjCameraModel *model,
+	const RigidTransform &keyframeToReference,
+	const float *referenceFrame,
+	const float *activeKeyFrame,
+	float initialTrackedResidual,
+	const Eigen::Vector4f *keyframeGradients,
+	RunningStats *stats)
+{
+
+	// ================= calc depth (in KF) ====================
+	// * KinvP = Kinv * (x,y,1); where x,y are pixel coordinates of point we search for, in the KF.
+	// * best_match_x = x-coordinate of found correspondence in the reference frame.
+
+	float idnew_best_match;	// depth in the new image
+	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
+	if (incx*incx > incy*incy)
+	{
+		float oldX = model->fxi()*best_match_x + model->cxi();
+		float nominator = (oldX*keyframeToReference.translation[2]
+			- keyframeToReference.translation[0]);
+		float dot0 = KinvP.dot(keyframeToReference.rotation.block<1, 3>(0, 0));
+		float dot2 = KinvP.dot(keyframeToReference.rotation.block<1, 3>(2, 0));
+
+		idnew_best_match = (dot0 - oldX*dot2) / nominator;
+		alpha = incx*model->fxi()*(dot0*keyframeToReference.translation[2]
+			- dot2*keyframeToReference.translation[0]) / (nominator*nominator);
+	}
+	else {
+		float oldY = model->fxi()*best_match_x + model->cxi();
+
+		float nominator = (oldY*keyframeToReference.translation[2] - keyframeToReference.translation[1]);
+		float dot1 = KinvP.dot(keyframeToReference.rotation.block<1, 3>(1, 0));
+		float dot2 = KinvP.dot(keyframeToReference.rotation.block<1, 3>(2, 0));
+
+		idnew_best_match = (dot1 - oldY*dot2) / nominator;
+		alpha = incy*model->fyi()*(dot1*keyframeToReference.translation[2] - dot2*keyframeToReference.translation[1]) / (nominator*nominator);
+	}
+
+	if (idnew_best_match < 0)
+	{
+		if (enablePrintDebugInfo) stats->num_stereo_negative++;
+		if (!allowNegativeIdepths)
+			return -2;
+	}
+
+	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
+
+	// ================= calc var (in NEW image) ====================
+
+	// calculate error from photometric noise
+	float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
+
+	float trackingErrorFac = 0.25f*(1.0f + initialTrackedResidual);
+
+	// calculate error from geometric noise (wrong camera pose / calibration)
+	Eigen::Vector2f gradsInterp = getInterpolatedElement42(keyframeGradients, u, v, model->w);
+	float geoDispError = (gradsInterp[0] * epxn + gradsInterp[1] * epyn) + DIVISION_EPS;
+	geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / (geoDispError*geoDispError);
+
+	// final error consists of a small constant part (discretization error),
+	// geometric and photometric error.
+	*result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
+
+	*result_idepth = idnew_best_match;
+	return 0.f;
+}
+
 
 }

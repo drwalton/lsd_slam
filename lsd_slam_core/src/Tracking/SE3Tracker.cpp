@@ -18,8 +18,6 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//STILL NEEDS UPDATING!!!
-
 #include "SE3Tracker.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include "DataStructures/Frame.hpp"
