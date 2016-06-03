@@ -72,6 +72,7 @@ float findDepthAndVarProj(
 	const float best_match_err,
 	const float incx, const float incy,
 	const bool didSubpixel,
+	float initialTrackedResidual,
 	const vec3 &KinvP,
 	const vec3 &pClose, const vec3 &pFar,
 	const float gradAlongLine,
@@ -156,64 +157,6 @@ bool DepthMap::makeAndCheckEPL(const int x, const int y, const Frame* const ref,
 		keyframeToReference,
 		pepx, pepy, stats,
 		*static_cast<ProjCameraModel*>(model.get()));
-
-	int idx = x+y*width;
-
-	// ======= make epl ========
-	// calculate the plane spanned by the two camera centers and the point (x,y,1)
-	// intersect it with the keyframe's image plane (at depth=1)
-	float epx = - model->fx * ref->thisToOther_t[0] +
-		ref->thisToOther_t[2]*(x - model->cx);
-	float epy = - model->fy * ref->thisToOther_t[1] +
-		ref->thisToOther_t[2]*(y - model->cy);
-
-	if(isnan(epx+epy)) {
-		return false;
-	}
-
-	// ======== check epl length =========
-	float eplLengthSquared = epx*epx+epy*epy;
-	if(eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
-	{
-		if (enablePrintDebugInfo) {
-			stats->num_observe_skipped_small_epl++;
-		}
-		return false;
-	}
-
-
-	// ===== check epl-grad magnitude ======
-	float gx = activeKeyFrameImageData[idx+1] - activeKeyFrameImageData[idx-1];
-	float gy = activeKeyFrameImageData[idx+width] - 
-		activeKeyFrameImageData[idx-width];
-	float eplGradSquared = gx * epx + gy * epy;
-	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
-
-	if(eplGradSquared < MIN_EPL_GRAD_SQUARED)
-	{
-		if (enablePrintDebugInfo) {
-			stats->num_observe_skipped_small_epl_grad++;
-		}
-		return false;
-	}
-
-
-	// ===== check epl-grad angle ======
-	if(eplGradSquared / (gx*gx+gy*gy) < MIN_EPL_ANGLE_SQUARED)
-	{
-		if (enablePrintDebugInfo) {
-			stats->num_observe_skipped_small_epl_angle++;
-		}
-		return false;
-	}
-
-
-	// ===== DONE - return "normalized" epl =====
-	float fac = GRADIENT_SAMPLE_DIST / sqrt(eplLengthSquared);
-	*pepx = epx * fac;
-	*pepy = epy * fac;
-
-	return true;
 }
 
 float doLineStereo(
@@ -746,6 +689,7 @@ float findDepthAndVarProj(
 	const float best_match_err,
 	const float incx, const float incy,
 	const bool didSubpixel,
+	float initialTrackedResidual,
 	const vec3 &KinvP,
 	const vec3 &pClose, const vec3 &pFar,
 	const float gradAlongLine,
@@ -756,79 +700,28 @@ float findDepthAndVarProj(
 	RunningStats *stats,
 	cv::Mat &debugImageStereoLines)
 {
-
-	// ================= calc depth (in KF) ====================
-	// * KinvP = Kinv * (x,y,1); where x,y are pixel coordinates of point we search for, in the KF.
-	// * best_match_x = x-coordinate of found correspondence in the reference frame.
-
-	float idnew_best_match;	// depth in the new image
-	float alpha; // d(idnew_best_match) / d(disparity in pixel) == conputed inverse depth derived by the pixel-disparity.
-	if (incx*incx > incy*incy)
-	{
-		float oldX = model->fxi()*best_match_x + model->cxi();
-		float nominator = (oldX*referenceFrame->otherToThis_t[2]
-			- referenceFrame->otherToThis_t[0]);
-		float dot0 = KinvP.dot(referenceFrame->otherToThis_R_row0);
-		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
-
-		idnew_best_match = (dot0 - oldX*dot2) / nominator;
-		alpha = incx*model->fxi()*(dot0*referenceFrame->otherToThis_t[2]
-			- dot2*referenceFrame->otherToThis_t[0]) / (nominator*nominator);
-	} else {
-		float oldY = model->fxi()*best_match_x + model->cxi();
-
-		float nominator = (oldY*referenceFrame->otherToThis_t[2] - referenceFrame->otherToThis_t[1]);
-		float dot1 = KinvP.dot(referenceFrame->otherToThis_R_row1);
-		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
-
-		idnew_best_match = (dot1 - oldY*dot2) / nominator;
-		alpha = incy*model->fyi()*
-			(dot1*referenceFrame->otherToThis_t[2] - 
-			dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
-	}
-
-	if (idnew_best_match < 0)
-	{
-		if (enablePrintDebugInfo) stats->num_stereo_negative++;
-		if (!allowNegativeIdepths)
-			return -2;
-	}
-
-	if (enablePrintDebugInfo) stats->num_stereo_successfull++;
-
-	// ================= calc var (in NEW image) ====================
-
-	// calculate error from photometric noise
-	float photoDispError = 4.0f * cameraPixelNoise2 / (gradAlongLine + DIVISION_EPS);
-
-	float trackingErrorFac = 0.25f*(1.0f + referenceFrame->initialTrackedResidual);
-
-	// calculate error from geometric noise (wrong camera pose / calibration)
-	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, model->w);
-	float geoDispError = (gradsInterp[0] * epxn + gradsInterp[1] * epyn) + DIVISION_EPS;
-	geoDispError = trackingErrorFac*trackingErrorFac*
-		(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / 
-		(geoDispError*geoDispError);
-
-	// final error consists of a small constant part (discretization error),
-	// geometric and photometric error.
-	*result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*
-		sampleDist*sampleDist + geoDispError + photoDispError);	// square to make variance
-
-	if (plotStereoImages)
-	{
-		if (rand() % 5 == 0)
-		{
-			float fac = best_match_err / ((float)MAX_ERROR_STEREO + sqrtf(gradAlongLine) * 20);
-
-			cv::Scalar color = cv::Scalar(255 * fac, 255 - 255 * fac, 0);// bw
-
-			cv::line(debugImageStereoLines, cv::Point2f(pClose[0], pClose[1]), cv::Point2f(pFar[0], pFar[1]), color, 1, 8, 0);
-		}
-	}
-
-	*result_idepth = idnew_best_match;
-	return 0.f;
+	RigidTransform keyframeToReference;
+	keyframeToReference.rotation = referenceFrame->otherToThis_R;
+	keyframeToReference.translation = referenceFrame->otherToThis_t;
+	return findDepthAndVarProj(
+		result_idepth, result_var,
+		u, v,
+		epxn, epyn,
+		best_match_x, best_match_y,
+		best_match_err,
+		incx, incy,
+		didSubpixel,
+		KinvP,
+		pClose, pFar,
+		gradAlongLine,
+		sampleDist,
+		model,
+		keyframeToReference,
+		const_cast<Frame*>(referenceFrame)->image(),
+		const_cast<Frame*>(activeKeyFrame)->image(),
+		initialTrackedResidual,
+		activeKeyFrame->gradients(),
+		stats);
 }
 float findDepthAndVarProj(
 	float *result_idepth, float *result_var,
