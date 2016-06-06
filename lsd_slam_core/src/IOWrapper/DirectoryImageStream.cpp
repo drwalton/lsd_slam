@@ -12,7 +12,7 @@ struct DirectoryImageStream::Impl {
 };
 
 DirectoryImageStream::DirectoryImageStream()
-	:dirOpened_(false), pimpl_(new Impl())
+	:pimpl_(new Impl()), dirOpened_(false)
 {}
 
 DirectoryImageStream::~DirectoryImageStream() throw()

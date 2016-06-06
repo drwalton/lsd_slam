@@ -38,8 +38,8 @@ namespace lsd_slam
 {
 
 DepthMap::DepthMap(const CameraModel &model)
-	:model(model.clone()), width(model.w), height(model.h),
-	debugShowEstimatedDepths(false), printPropagationStatistics(false)
+	:debugShowEstimatedDepths(false), printPropagationStatistics(false),
+	model(model.clone()), width(model.w), height(model.h)
 {
 	modelType = this->model->getType();
 	size_t width = model.w, height = model.h;
@@ -480,8 +480,6 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	const float* newKFMaxGrad = new_keyframe->maxGradients(0);
 	const float* newKFImageData = new_keyframe->image(0);
 	
-	OmniCameraModel *m = dynamic_cast<OmniCameraModel*>(model.get());
-
 	// go through all pixels of OLD image, propagating forwards.
 	for(size_t y=0;y<height;y++)
 		for(size_t x=0;x<width;x++)

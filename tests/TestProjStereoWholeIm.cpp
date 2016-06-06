@@ -8,7 +8,7 @@
 using namespace lsd_slam;
 
 cv::Mat fltIm1, fltIm2, depth1;
-cv::Mat showIm1, showIm2, estDepths;
+cv::Mat showIm1, showIm2, estDepths, varIm, vars;
 RigidTransform keyframeToReference;
 ProjCameraModel *pjCamModel;
 vec3 pointDir;
@@ -26,6 +26,8 @@ void matchesDepthsMouseCallback(int event, int x, int y, int flags, void *userDa
 		float realDepth = depth1.at<float>(y, x);
 		std::cout << "Est depth: " << estDepth << ", Real depth: " << realDepth
 			<< std::endl;
+		float var = vars.at<float>(y, x);
+		std::cout << "Est var: " << var << std::endl;
 	}
 }
 int main(int argc, char **argv)
@@ -101,6 +103,9 @@ int main(int argc, char **argv)
 
 	cv::cvtColor(fltIm1, showIm1, CV_GRAY2BGR);
 	showIm1.convertTo(showIm1, CV_8UC3);
+	showIm1.copyTo(varIm);
+	vars = cv::Mat(varIm.size(), CV_32FC1);
+	vars.setTo(-1.f);
 	RunningStats stats;
 	float r_idepth, r_var;
 	float r_lineLen;
@@ -147,6 +152,9 @@ int main(int argc, char **argv)
 				vec3 color = 255.f * hueToRgb(depth / 2.f);
 				showIm1.at<cv::Vec3b>(r, c) = cv::Vec3b(
 					uchar(color.z()), uchar(color.y()), uchar(color.x()));
+				varIm.at<cv::Vec3b>(r, c) = cv::Vec3b(
+					uchar(color.z()), uchar(color.y()), uchar(color.x()));
+				vars.at<float>(r, c) = r_var;
 
 				if (r_var < 0.001f) {
 					modelLoader.vertices().push_back(camModel->pixelToCam(vec2(c, r), depth));
@@ -175,6 +183,9 @@ int main(int argc, char **argv)
 	cv::Mat depthErrorIm = visualizeDepthError(estDepths, depth1, 2.f);
 	cv::imshow("Depth Error", depthErrorIm);
 	cv::moveWindow("Depth Error", 60 + fltIm1.rows, showIm1.cols);
+	cv::imshow("VAR", varIm);
+	cv::setMouseCallback("VAR", matchesDepthsMouseCallback);
+	cv::moveWindow("VAR", 60 + fltIm1.rows, showIm1.cols);
 
 
 	cv::Mat depthPlusMinus(depth1.size(), CV_8UC3);

@@ -590,7 +590,7 @@ float DepthMap::doLineStereo(
 		activeKeyFrame->gradients(),
 		referenceFrame->initialTrackedResidual,
 		stats,
-		cv::Mat());
+		emptyMat);
 }
 
 bool subpixelMatchProj(

@@ -218,8 +218,8 @@ bool UndistorterResize::isValid() const
 UndistorterPTAM::UndistorterPTAM(const std::array<float, 5> &config,
 		int in_width, int in_height,
 		int out_width, int out_height)
-		:in_width(in_width), in_height(in_height),
-		out_width(in_width), out_height(in_height)
+		:out_width(in_width), out_height(in_height),
+		in_width(in_width), in_height(in_height)
 {
 	memcpy(inputCalibration, config.data(), 5 * sizeof(float));
 	outputCalibration[0] = -1.f;

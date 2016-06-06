@@ -11,8 +11,9 @@ namespace lsd_slam
 const size_t NOTIFY_BUFFER_SIZE = 16;
 
 InputImageStream::InputImageStream()
-	:dropFrames(true), hasCalib_(false), running_(false),
-	undistortedImageViewer_(nullptr), rawImageViewer_(nullptr)
+	:dropFrames(true),
+	undistortedImageViewer_(nullptr), rawImageViewer_(nullptr),
+	hasCalib_(false), running_(false)
 {
 	imageBuffer.reset(new NotifyBuffer<TimestampedMat>(
 		NOTIFY_BUFFER_SIZE));
