@@ -34,12 +34,26 @@
 #include "CameraModel/ProjCameraModel.hpp"
 #include "CameraModel/OmniCameraModel.hpp"
 
+
 namespace lsd_slam
 {
 
+DepthMapDebugSettings::DepthMapDebugSettings()
+	:debugShowEstimatedDepths(false),
+	printPropagationStatistics(false),
+    printFillHolesStatistics(false),
+    printObserveStatistics(false),
+    printObservePurgeStatistics(false),
+    printRegularizeStatistics(false),
+    printLineStereoStatistics(false),
+    printLineStereoFails(false)
+{}
+
+DepthMapDebugSettings::~DepthMapDebugSettings() throw()
+{}
+
 DepthMap::DepthMap(const CameraModel &model)
-	:debugShowEstimatedDepths(false), printPropagationStatistics(false),
-	model(model.clone()), width(model.w), height(model.h)
+	:model(model.clone()), width(model.w), height(model.h)
 {
 	modelType = this->model->getType();
 	size_t width = model.w, height = model.h;
@@ -135,7 +149,7 @@ void DepthMap::observeDepth()
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, height-3, 10);
 
-	if(enablePrintDebugInfo && printObserveStatistics)
+	if(enablePrintDebugInfo && settings.printObserveStatistics)
 	{
 		printf("OBSERVE (%d): %d / %d created; %d / %d updated; %d skipped; %d init-blacklisted\n",
 				activeKeyFrame->id(),
@@ -149,7 +163,7 @@ void DepthMap::observeDepth()
 	}
 
 
-	if(enablePrintDebugInfo && printObservePurgeStatistics)
+	if(enablePrintDebugInfo && settings.printObservePurgeStatistics)
 	{
 		printf("OBS-PRG (%d): Good: %d; inconsistent: %d; notfound: %d; oob: %d; failed: %d; addSkip: %d;\n",
 				activeKeyFrame->id(),
@@ -162,7 +176,7 @@ void DepthMap::observeDepth()
 		);
 	}
 
-	if (debugShowEstimatedDepths) {
+	if (settings.debugShowEstimatedDepths) {
 		debugPlotDepthMap();
 		cv::imshow("DebugImageDepth", debugImageDepth);
 		cv::waitKey(1);
@@ -173,6 +187,7 @@ void DepthMap::observeDepth()
 
 bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats)
 {
+	std::cout << "observeDepthCreate" << std::endl;
 	DepthMapPixelHypothesis* target = currentDepthMap+idx;
 
 	Frame* refFrame = activeKeyFrameIsReactivated ? newest_referenceFrame : oldest_referenceFrame;
@@ -241,6 +256,7 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 
 bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats)
 {
+	std::cout << "observeDepthUpdate" << std::endl;
 	DepthMapPixelHypothesis* target = currentDepthMap+idx;
 	Frame* refFrame;
 
@@ -616,7 +632,7 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	std::swap(currentDepthMap, otherDepthMap);
 
 
-	if(enablePrintDebugInfo && printPropagationStatistics)
+	if(enablePrintDebugInfo && settings.printPropagationStatistics)
 	{
 		printf("PROPAGATE: %d: %d drop (%d oob, %d color); %d created; "
 			"%d merged; %d occluded. %d col-dec, %d grad-dec.\n",
@@ -695,7 +711,7 @@ void DepthMap::regularizeDepthMapFillHoles()
 	memcpy(otherDepthMap,currentDepthMap,width*height*sizeof(DepthMapPixelHypothesis));
 	threadReducer.reduce(boost::bind(&DepthMap::regularizeDepthMapFillHolesRow,
 		this, _1, _2, _3), 3, height-2, 10);
-	if(enablePrintDebugInfo && printFillHolesStatistics)
+	if(enablePrintDebugInfo && settings.printFillHolesStatistics)
 		printf("FillHoles (discreteDepth): %d created\n",
 				runningStats.num_reg_created);
 }
@@ -845,7 +861,8 @@ void DepthMap::regularizeDepthMap(bool removeOcclusions, int validityTH)
 		threadReducer.reduce(boost::bind(&DepthMap::regularizeDepthMapRow<false>, this, validityTH, _1, _2, _3), 2, height-2, 10);
 
 
-	if(enablePrintDebugInfo && printRegularizeStatistics)
+	if(enablePrintDebugInfo &&
+		settings.printRegularizeStatistics)
 		printf("REGULARIZE (%d): %d smeared; %d blacklisted /%d new); %d deleted; %d occluded; %d filled\n",
 				activeKeyFrame->id(),
 				runningStats.num_reg_smeared,
@@ -1157,7 +1174,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 
 
 
-	if(enablePrintDebugInfo && printLineStereoStatistics)
+	if(enablePrintDebugInfo && settings.printLineStereoStatistics)
 	{
 		printf("ST: calls %6d, comp %6d, int %7d; good %6d (%.0f%%), neg %6d (%.0f%%); interp %6d / %6d / %6d\n",
 				runningStats.num_stereo_calls,
@@ -1171,7 +1188,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 				runningStats.num_stereo_interpNone,
 				runningStats.num_stereo_interpPost);
 	}
-	if(enablePrintDebugInfo && printLineStereoFails)
+	if(enablePrintDebugInfo && settings.printLineStereoFails)
 	{
 		printf("ST-ERR: oob %d (scale %d, inf %d, near %d); err %d (%d uncl; %d end; zro: %d btw, %d no, %d two; %d big)\n",
 				runningStats.num_stereo_rescale_oob+

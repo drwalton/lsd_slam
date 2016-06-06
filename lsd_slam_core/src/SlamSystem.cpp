@@ -475,7 +475,7 @@ void SlamSystem::createNewCurrentKeyframe(std::shared_ptr<Frame> newKeyframeCand
 	// propagate & make new.
 	map->createKeyFrame(newKeyframeCandidate.get());
 
-	if(map->printPropagationStatistics)
+	if(map->settings.printPropagationStatistics)
 	{
 
 		Eigen::Matrix<float, 20, 1> data;
@@ -498,7 +498,7 @@ void SlamSystem::loadNewCurrentKeyframe(Frame* keyframeToLoad)
 
 	map->setFromExistingKF(keyframeToLoad);
 
-	if(enablePrintDebugInfo && printRegularizeStatistics)
+	if(enablePrintDebugInfo && map->settings.printRegularizeStatistics)
 		printf("re-activate frame %d!\n", keyframeToLoad->id());
 
 	currentKeyFrameMutex.lock();
@@ -583,7 +583,7 @@ bool SlamSystem::updateKeyframe()
 	}
 
 
-	if(enablePrintDebugInfo && printRegularizeStatistics)
+	if(enablePrintDebugInfo && map->settings.printRegularizeStatistics)
 	{
 		Eigen::Matrix<float, 20, 1> data;
 		data.setZero();

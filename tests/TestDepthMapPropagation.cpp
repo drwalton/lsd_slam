@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 	
 	newFrame->pose->trackingParent = keyframe.pose;
 	newFrame->pose->thisToParent_raw.translation() = t2.translation.cast<double>();
-	depthMap.printPropagationStatistics = true;
+	depthMap.settings.printPropagationStatistics = true;
 	depthMap.propagateDepth(newFrame.get());
 	
 	depthMap.debugPlotDepthMap();

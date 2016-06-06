@@ -48,12 +48,6 @@ bool dumpMap = false;
 bool doFullReConstraintTrack = false;
 
 // dyn config
-bool printFillHolesStatistics = false;
-bool printObserveStatistics = false;
-bool printObservePurgeStatistics = false;
-bool printRegularizeStatistics = false;
-bool printLineStereoStatistics = false;
-bool printLineStereoFails = false;
 
 bool printFrameBuildDebugInfo = false;
 bool printMemoryDebugInfo = false;

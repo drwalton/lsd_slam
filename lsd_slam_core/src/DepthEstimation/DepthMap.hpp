@@ -38,6 +38,19 @@ class DepthMapPixelHypothesis;
 class Frame;
 class KeyFrameGraph;
 
+struct DepthMapDebugSettings final {
+	explicit DepthMapDebugSettings();
+	~DepthMapDebugSettings() throw();
+	bool debugShowEstimatedDepths;
+	bool printPropagationStatistics;
+    bool printFillHolesStatistics;
+    bool printObserveStatistics;
+    bool printObservePurgeStatistics;
+    bool printRegularizeStatistics;
+    bool printLineStereoStatistics;
+    bool printLineStereoFails;
+};
+
 ///\brief Maintains a depth map (consisting of DepthMapPixelHypothesis), which
 ///       may be updated via stereo comparisons and regularisation.
 ///\note A SlamSystem object maintains one DepthMap, which it uses to hold the 
@@ -95,8 +108,8 @@ public:
 
 	// pointer to global keyframe graph
 	IndexThreadReduce threadReducer;
-	bool debugShowEstimatedDepths;
-	bool printPropagationStatistics;
+	
+	DepthMapDebugSettings settings;
 	
 	
 	void propagateDepth(Frame* new_keyframe);

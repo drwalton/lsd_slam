@@ -133,14 +133,6 @@ extern bool dumpMap;
 extern bool doFullReConstraintTrack;
 
 // dyn config
-extern bool printPropagationStatistics;
-extern bool printFillHolesStatistics;
-extern bool printObserveStatistics;
-extern bool printObservePurgeStatistics;
-extern bool printRegularizeStatistics;
-extern bool printLineStereoStatistics;
-extern bool printLineStereoFails;
-
 extern bool printThreadingInfo;
 
 extern bool printKeyframeSelectionInfo;

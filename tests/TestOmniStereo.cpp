@@ -11,7 +11,7 @@ cv::Mat showIm1, showIm2;
 RigidTransform keyframeToReference;
 OmniCameraModel *omCamModel;
 vec3 pointDir;
-bool addNoise = true;
+bool addNoise = false;
 int lastClickedX = -1, lastClickedY = -1;
 
 const float DEPTH_SEARCH_RANGE = 0.4f;
@@ -63,6 +63,8 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 			epDir, matchDir, 
 			r_gradAlongLine, r_lineLen,
 			showIm2, true);
+		
+		std::cout << "Grad Along Line: " << r_gradAlongLine << std::endl;
 
 		if(err < 0.f) {
 			std::cout << "Stereo match failed! Code: " << err << std::endl;

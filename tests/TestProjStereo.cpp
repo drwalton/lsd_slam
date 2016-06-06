@@ -23,8 +23,6 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		vec3 a;
 		//findValuesToSearchFor(keyframeToReference, *omCamModel, 
 		//	fltIm1.ptr<float>(0), x, y, fltIm1.cols, a, showIm1);
-		vec3 dir = pjCamModel->pixelToCam(vec2(x, y));
-
 		float depth = depth1.at<float>(y, x);
 
 		vec3 matchDir; vec2 epDir;
