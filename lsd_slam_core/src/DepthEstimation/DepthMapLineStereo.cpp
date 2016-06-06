@@ -180,7 +180,6 @@ float doLineStereo(
 	Eigen::Vector3f pReal = pInf / prior_idepth + K_otherToThis_t;
 
 	float rescaleFactor = pReal[2] * prior_idepth;
-	std::cout << "RFACTOR" << rescaleFactor << std::endl;
 
 	float firstX = u - 2 * epxn*rescaleFactor;
 	float firstY = v - 2 * epyn*rescaleFactor;

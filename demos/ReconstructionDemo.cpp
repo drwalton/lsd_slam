@@ -4,6 +4,8 @@
 #include "IOWrapper/OpenCVImageStream.hpp"
 #include "IOWrapper/ViewerOutput3DWrapper.hpp"
 #include "LiveSLAMWrapper.hpp"
+#include "SlamSystem.hpp"
+#include "DepthEstimation/DepthMap.hpp"
 #include <FL/Fl_Native_File_Chooser.H>
 #include "Win32Compatibility.hpp"
 #include "Util/settings.hpp"
@@ -80,11 +82,15 @@ int main(int argc, char **argv)
 	lsd_slam::LiveSLAMWrapper slamWrapper(stream.get(), &outWrapper);
 	lsd_slam::ImageViewer depthMapViewer("Est. Depth Map");
 	lsd_slam::ImageViewer inputImageViewer("Input (Undistorted)");
-	lsd_slam::ImageViewer rawInputImageViewer("Input (Raw)");
+	//lsd_slam::ImageViewer rawInputImageViewer("Input (Raw)");
 	slamWrapper.saveKeyframeCloudsToDisk(true);
 	slamWrapper.depthMapImageViewer(&depthMapViewer);
+	slamWrapper.getSlamSystem()->depthMapSettings().saveAllFramesAsPointClouds
+		= true;
+	slamWrapper.getSlamSystem()->depthMapSettings().printPropagationStatistics
+		= true;
 	stream->undistortedImageViewer(&inputImageViewer);
-	stream->rawImageViewer(&rawInputImageViewer);
+	//stream->rawImageViewer(&rawInputImageViewer);
 	
 
 	slamWrapper.start();

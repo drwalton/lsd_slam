@@ -25,6 +25,8 @@ add_library(lsd_slam_Util
 	ImgProc.hpp
 	VectorTypes.cpp
 	VectorTypes.hpp
+	KahanVal.cpp
+	KahanVal.hpp
 )
 
 target_link_libraries(lsd_slam_Util

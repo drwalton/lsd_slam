@@ -33,6 +33,8 @@
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
 #include "CameraModel/OmniCameraModel.hpp"
+#include "Util/ModelLoader.hpp"
+#include "Util/KahanVal.hpp"
 
 
 namespace lsd_slam
@@ -46,7 +48,8 @@ DepthMapDebugSettings::DepthMapDebugSettings()
     printObservePurgeStatistics(false),
     printRegularizeStatistics(false),
     printLineStereoStatistics(false),
-    printLineStereoFails(false)
+    printLineStereoFails(false),
+	saveAllFramesAsPointClouds(false)
 {}
 
 DepthMapDebugSettings::~DepthMapDebugSettings() throw()
@@ -187,7 +190,6 @@ void DepthMap::observeDepth()
 
 bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats)
 {
-	std::cout << "observeDepthCreate" << std::endl;
 	DepthMapPixelHypothesis* target = currentDepthMap+idx;
 
 	Frame* refFrame = activeKeyFrameIsReactivated ? newest_referenceFrame : oldest_referenceFrame;
@@ -256,7 +258,6 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 
 bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats)
 {
-	std::cout << "observeDepthUpdate" << std::endl;
 	DepthMapPixelHypothesis* target = currentDepthMap+idx;
 	Frame* refFrame;
 
@@ -1210,6 +1211,13 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 				runningStats.num_stereo_invalid_twoCrossing,
 				runningStats.num_stereo_invalid_bigErr);
 	}
+	
+	if(settings.saveAllFramesAsPointClouds) {
+		std::stringstream ss;
+		ss << resourcesDir() << "KFClouds/KF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".ply";
+		saveCurrMapAsPointCloud(ss.str());
+	}
 }
 
 void DepthMap::invalidate()
@@ -1395,6 +1403,40 @@ void DepthMap::finalizeKeyFrame()
 }
 
 
+void DepthMap::saveCurrMapAsPointCloud(const std::string &filename)
+{
+	ModelLoader modelLoader;
+	
+	KahanVal<float> meanVar = 0.f;
+	for(size_t i = 0; i < width*height; ++i) {
+		if(currentDepthMap[i].isValid) {
+			meanVar += currentDepthMap[i].idepth_var_smoothed;
+		}
+	}
+	float mVar = meanVar.get();
+	mVar /= float(width*height);
+	
+	for(size_t r = 0; r < height; ++r) {
+		for(size_t c = 0; c < width; ++c) {
+			if(currentDepthMap[r*width + c].isValid) {
+    			vec3 point = model->pixelToCam(
+    				vec2(c,r), 1.f / currentDepthMap[r*width + c].idepth_smoothed);
+    			if(std::isfinite(point[0]) &&
+    			   std::isfinite(point[1]) &&
+    			   std::isfinite(point[2])) {
+    				
+        			float r_var = currentDepthMap[r*width + c].idepth_var_smoothed;
+    				if(r_var < mVar*2.f) {
+            			modelLoader.vertices().push_back(point);
+            			modelLoader.vertColors().push_back(
+            						255.f*hueToRgb(0.8f*(r_var) / (mVar * 2.f)));
+    				}
+    			}
+			}
+		}
+	}
+	modelLoader.saveFile(filename);
+}
 
 
 int DepthMap::debugPlotDepthMap()

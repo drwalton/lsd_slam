@@ -48,6 +48,7 @@ class KeyFrameGraph;
 class SE3Tracker;
 class Sim3Tracker;
 class DepthMap;
+struct DepthMapDebugSettings;
 class Frame;
 class DataSet;
 class LiveSLAMWrapper;
@@ -123,6 +124,8 @@ public:
 	
 	void depthMapImageViewer(ImageViewer *v);
 	SE3 motionLastFrame();
+	
+	DepthMapDebugSettings &depthMapSettings();
 
 private:
 

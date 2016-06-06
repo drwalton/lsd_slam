@@ -74,6 +74,7 @@ SlamSystem::SlamSystem(const CameraModel &model, bool enableSLAM)
 
 	map =  new DepthMap(model);
 	
+	
 	newConstraintAdded = false;
 	haveUnmergedOptimizationOffset = false;
 
@@ -1706,6 +1707,11 @@ std::vector<FramePoseStruct*> SlamSystem::getAllPoses()
 void SlamSystem::depthMapImageViewer(lsd_slam::ImageViewer *v)
 {
 	depthMapImageViewer_ = v;
+}
+
+DepthMapDebugSettings &SlamSystem::depthMapSettings()
+{
+	return map->settings;
 }
 
 void SlamSystem::motionLastFrame(const SE3 &motion)

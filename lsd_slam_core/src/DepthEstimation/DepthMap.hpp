@@ -41,6 +41,7 @@ class KeyFrameGraph;
 struct DepthMapDebugSettings final {
 	explicit DepthMapDebugSettings();
 	~DepthMapDebugSettings() throw();
+	
 	bool debugShowEstimatedDepths;
 	bool printPropagationStatistics;
     bool printFillHolesStatistics;
@@ -49,6 +50,8 @@ struct DepthMapDebugSettings final {
     bool printRegularizeStatistics;
     bool printLineStereoStatistics;
     bool printLineStereoFails;
+	
+	bool saveAllFramesAsPointClouds;
 };
 
 ///\brief Maintains a depth map (consisting of DepthMapPixelHypothesis), which
@@ -114,6 +117,8 @@ public:
 	
 	void propagateDepth(Frame* new_keyframe);
 	Frame* activeKeyFrame;
+
+	void saveCurrMapAsPointCloud(const std::string &filename);
 
 private:
 	// camera matrix etc.
