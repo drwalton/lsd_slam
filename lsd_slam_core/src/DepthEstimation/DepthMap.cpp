@@ -512,9 +512,11 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 			if(enablePrintDebugInfo) runningStats.num_prop_attempts++;
 
-
-			Eigen::Vector3f pn = (trafoInv_R * 
-				model->pixelToCam(vec2(x, y), 1.f/source->idepth_smoothed)) + trafoInv_t;
+			Eigen::Vector3f pn = (trafoInv_R *
+				model->pixelToCam(vec2(x, y))) / source->idepth_smoothed + trafoInv_t;
+			//TODO: See if we need to use below formula for Omni mode.
+			//Eigen::Vector3f pn = (trafoInv_R * 
+			//	model->pixelToCam(vec2(x, y), 1.f/source->idepth_smoothed)) + trafoInv_t;
 
 			float new_idepth;
 			if(model->getType() == CameraModelType::PROJ) {
