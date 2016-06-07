@@ -36,12 +36,13 @@
 #include "Tracking/Relocalizer.hpp"
 #include <g2o/stuff/timeutil.h>
 #include <mutex>
+namespace lsd_slam
+{
+
 #ifdef _WIN32
 using g2o::timeval;
 #endif
 
-namespace lsd_slam
-{
 
 class TrackingReference;
 class KeyFrameGraph;

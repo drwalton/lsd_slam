@@ -27,12 +27,13 @@
 #include "Util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
 #include "CameraModel/CameraModel.hpp"
-#ifdef _WIN32
-using g2o::timeval;
-#endif
 
 namespace lsd_slam
 {
+
+#ifdef _WIN32
+using g2o::timeval;
+#endif
 
 class DepthMapPixelHypothesis;
 class Frame;
