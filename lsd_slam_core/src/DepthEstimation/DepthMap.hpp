@@ -121,7 +121,12 @@ public:
 
 	void saveCurrMapAsPointCloud(const std::string &filename);
 
+	cv::Mat debugVisualiseMatchesIm;
+
 private:
+	void debugUpdateVisualiseMatchIms(float *keyframe, float *referenceFrame);
+	void debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos);
+
 	// camera matrix etc.
 	std::unique_ptr<CameraModel> model;
 	CameraModelType modelType;

@@ -71,6 +71,8 @@ cv::Mat raycast(
 	return image;
 }
 
+const bool addTexture = false;
+
 cv::Vec3b shootRay(
 	const Ray &ray,
 	const std::vector<vec3> &vertices,
@@ -90,11 +92,16 @@ cv::Vec3b shootRay(
 			baryAB, baryAC)) {
 				if(dist < closestIntersectionDist) {
 					closestIntersectionDist = dist;
-					if ((int(baryAB*10.f) % 2) ^ (int(baryAC*10.f)%2)) {
-						color = colors.at(indices[i]);
+					if (addTexture) {
+						if ((int(baryAB*10.f) % 2) ^ (int(baryAC*10.f) % 2)) {
+							color = colors.at(indices[i]);
+						}
+						else {
+							color = cv::Vec3b(0, 0, 0);
+						}
 					}
 					else {
-						color = cv::Vec3b(0, 0, 0);
+						color = colors.at(indices[i]);
 					}
 				}
 		}

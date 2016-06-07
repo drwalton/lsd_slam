@@ -85,6 +85,7 @@ std::string resourcesDir();
 
 // defines how large the stereo-search region is. it is [mean] +/- [std.dev]*STEREO_EPL_VAR_FAC
 #define STEREO_EPL_VAR_FAC 2.0f
+#define STEREO_EPL_VAR_FAC_OMNI 4.0f
 
 // ============== Smoothing and regularization ======================
 // distance factor for regularization.

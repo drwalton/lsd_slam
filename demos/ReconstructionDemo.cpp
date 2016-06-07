@@ -83,10 +83,10 @@ int main(int argc, char **argv)
 	lsd_slam::ImageViewer depthMapViewer("Est. Depth Map");
 	lsd_slam::ImageViewer inputImageViewer("Input (Undistorted)");
 	//lsd_slam::ImageViewer rawInputImageViewer("Input (Raw)");
-	//slamWrapper.saveKeyframeCloudsToDisk(true);
+	slamWrapper.saveKeyframeCloudsToDisk(true);
 	slamWrapper.depthMapImageViewer(&depthMapViewer);
-	//slamWrapper.getSlamSystem()->depthMapSettings().saveAllFramesAsPointClouds
-	//	= true;
+	slamWrapper.getSlamSystem()->depthMapSettings().saveAllFramesAsPointClouds
+		= true;
 	slamWrapper.getSlamSystem()->depthMapSettings().printPropagationStatistics
 		= true;
 	stream->undistortedImageViewer(&inputImageViewer);

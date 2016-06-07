@@ -319,8 +319,8 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 		// which exact point to track, and where from.
 		float sv = sqrt(target->idepth_var_smoothed);
-		float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC;
-		float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC;
+		float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC_OMNI;
+		float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC_OMNI;
 		if (min_idepth < 0) min_idepth = 0;
 		if (max_idepth > 1 / MIN_DEPTH) max_idepth = 1 / MIN_DEPTH;
 
@@ -506,10 +506,6 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 			if(!source->isValid)
 				continue;
 			
-			if(! model->pixelLocValid(vec2(x, y))) {
-				continue;
-			}
-
 			if(enablePrintDebugInfo) runningStats.num_prop_attempts++;
 
 			Eigen::Vector3f pn = (trafoInv_R *
@@ -530,9 +526,11 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 			float v_new = uv[1];
 
 			// check if still within image, if not: DROP.
-			if((!model->pixelLocValid(uv)) ||
-			  !(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f))
-			{
+			if (model->getType() == CameraModelType::OMNI && (!model->pixelLocValid(uv))) {
+				if(enablePrintDebugInfo) runningStats.num_prop_removed_out_of_bounds++;
+				continue;
+			}
+			if(!(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f)) {
 				if(enablePrintDebugInfo) runningStats.num_prop_removed_out_of_bounds++;
 				continue;
 			}
@@ -891,7 +889,8 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 		{
 			if(maxGradients[x+y*width] > MIN_ABS_GRAD_CREATE)
 			{
-				float idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
+				//float idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
+				float idepth = 1.f + 2.f * ((rand() % 100001) / 100000.0f);
 				currentDepthMap[x+y*width] = DepthMapPixelHypothesis(
 						idepth,
 						idepth,
@@ -1472,6 +1471,39 @@ int DepthMap::debugPlotDepthMap()
 		}
 
 	return 1;
+}
+
+void DepthMap::debugUpdateVisualiseMatchIms(
+	float *keyframe, float *referenceFrame)
+{
+	cv::Mat &i = debugVisualiseMatchesIm;
+	if (i.cols != model->w * 2 || i.rows != model->h) {
+		i = cv::Mat(model->h, model->w * 2, CV_8UC3);
+	}
+	for (size_t r = 0; r < model->h; ++r) {
+		cv::Vec3b *rptr = i.ptr<cv::Vec3b>(r);
+		for (size_t c = 0; c < model->w; ++c) {
+			uchar kfVal = static_cast<uchar>(keyframe[r*model->w + c]);
+			uchar refVal = static_cast<uchar>(referenceFrame[r*model->w + c]);
+			rptr[c] = cv::Vec3b(kfVal, kfVal, kfVal);
+			rptr[c + model->w] = cv::Vec3b(refVal, refVal, refVal);
+		}
+	}
+}
+
+
+void DepthMap::debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos)
+{
+	const int matchDisplayInvChance = 10;
+	if (rand() % matchDisplayInvChance == 0) {
+		//Show match.
+		float hue = float(rand() % 256) / 256.f;
+		vec3 rgb = hueToRgb(hue);
+		cv::line(debugVisualiseMatchesIm,
+			cv::Point(int(keyframePos.x()), int(keyframePos.y())),
+			cv::Point(int(referenceFramePos.x()) + model->w, int(referenceFramePos.y())),
+			cv::Vec3b(uchar(rgb[0]), uchar(rgb[1]), uchar(rgb[2])));
+	}
 }
 
 }

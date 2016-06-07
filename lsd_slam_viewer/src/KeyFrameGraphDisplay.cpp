@@ -75,26 +75,33 @@ void KeyFrameGraphDisplay::draw()
 			}
 		}
 
-		std::ofstream f2(resourcesDir() + "/pc.ply", std::ios::binary);
-		f2 << std::string("ply\n");
-		f2 << std::string("format binary_little_endian 1.0\n");
-		f2 << std::string("element vertex ") << numpts << std::string("\n");
-		f2 << std::string("property float x\n");
-		f2 << std::string("property float y\n");
-		f2 << std::string("property float z\n");
-		f2 << std::string("property float intensity\n");
-		f2 << std::string("end_header\n");
+		if (numpts == 0) {
+			std::cout << "No points in cloud; not saving..." << std::endl;
+		}
+		else {
+			std::ofstream f2(resourcesDir() + "/pc.ply", std::ios::binary);
+			f2 << std::string("ply\n");
+			f2 << std::string("format binary_little_endian 1.0\n");
+			f2 << std::string("element vertex ") << numpts << std::string("\n");
+			f2 << std::string("property float x\n");
+			f2 << std::string("property float y\n");
+			f2 << std::string("property float z\n");
+			f2 << std::string("property float intensity\n");
+			f2 << std::string("end_header\n");
 
-		std::ifstream f3("./pc_tmp.ply", std::ios::binary);
-		while(!f3.eof()) f2.put(f3.get());
+			std::ifstream f3("./pc_tmp.ply", std::ios::binary);
+			if (!f3.is_open()) {
+				throw std::runtime_error("Unable to open pc_tmp.ply!");
+			}
+			while (!f3.eof()) f2.put(f3.get());
 
-		f2.close();
-		f3.close();
+			f2.close();
+			f3.close();
 
-		std::remove((resourcesDir() + "/pc_tmp.ply").c_str());
+			std::remove((resourcesDir() + "/pc_tmp.ply").c_str());
+			printf("Done Flushing Pointcloud with %d points!\n", numpts);
+		}
 		flushPointcloud = false;
-		printf("Done Flushing Pointcloud with %d points!\n", numpts);
-
 	}
 
 	if(printNumbers)
