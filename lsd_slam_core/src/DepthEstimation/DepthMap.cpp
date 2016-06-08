@@ -1235,7 +1235,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	if (settings.saveMatchesImages) {
 		std::stringstream ss;
 		ss << resourcesDir() << "MatchIms/MatchKF" << activeKeyFrame->id() <<
-			"_f" << referenceFrames[0]->id() << ".ply";
+			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugVisualiseMatchesIm);
 	}
 }
@@ -1567,7 +1567,7 @@ void DepthMap::debugUpdateVisualiseMatchIms(
 
 void DepthMap::debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos)
 {
-	const int matchDisplayInvChance = 10;
+	const int matchDisplayInvChance = 100;
 	if (rand() % matchDisplayInvChance == 0) {
 		//Show match.
 		float hue = float(rand() % 256) / 256.f;
@@ -1575,7 +1575,7 @@ void DepthMap::debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos)
 		cv::line(debugVisualiseMatchesIm,
 			cv::Point(int(keyframePos.x()), int(keyframePos.y())),
 			cv::Point(int(referenceFramePos.x()) + model->w, int(referenceFramePos.y())),
-			cv::Vec3b(uchar(rgb[0]), uchar(rgb[1]), uchar(rgb[2])));
+			cv::Vec3b(uchar(255.f*rgb[0]), uchar(255.f*rgb[1]), uchar(255.f*rgb[2])));
 	}
 }
 
