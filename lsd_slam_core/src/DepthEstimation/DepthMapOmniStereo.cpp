@@ -600,7 +600,10 @@ float DepthMap::doOmniStereo(
 	float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var, 
 		gradAlongLine, bestEpDir, referenceFrame, activeKeyFrame, 
 		GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
-	if (r != 0.f) {
+	if (r > 0.f) {
+		if (settings.saveMatchesImages) {
+			debugVisualiseMatch(vec2(u, v), model->camToPixel(bestMatchPos));
+		}
 		return r;
 	}
 

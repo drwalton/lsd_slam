@@ -15,6 +15,7 @@ target_link_libraries(ReconstructionDemo
 	${Boost_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 	${libtiff_LIBRARY}
+	${Assimp_LIBRARY}
 )
 if(WIN32)
 	target_link_libraries(ReconstructionDemo

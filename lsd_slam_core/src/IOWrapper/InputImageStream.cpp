@@ -70,10 +70,12 @@ std::unique_ptr<InputImageStream> InputImageStream::openImageStream(
 {
 	boost::filesystem::path path(pathname);
 	if (boost::filesystem::is_directory(path)) {
+		std::cout << "Opening directory: \"" << pathname << "\"." << std::endl;
 		DirectoryImageStream *stream = new DirectoryImageStream();
 		stream->openDirectory(pathname);
 		return std::unique_ptr<InputImageStream>(stream);
 	} else if (boost::filesystem::is_regular_file(path)) {
+		std::cout << "Opening file: \"" << pathname << "\"." << std::endl;
 		OpenCVImageStream *stream = new OpenCVImageStream();
 		stream->capture().open(pathname);
 		if(!stream->capture().isOpened()) {

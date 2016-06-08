@@ -15,6 +15,13 @@ void saveCloudToPlyFile(const std::string &filename,
 	const std::vector<vec3> &normals,
 	const std::vector<float> &radii,
 	bool binary);
+void saveMeshToPlyFile(const std::string &filename,
+	const std::vector<vec3> &positions,
+	const std::vector<vec3> &colors,
+	const std::vector<vec3> &normals,
+	const std::vector<float> &radii,
+	const std::vector<GLuint> &indices,
+	bool binary);
 
 
 struct ModelLoader::Impl
@@ -130,63 +137,80 @@ void ModelLoader::Impl::loadFileAssimp(const std::string &filename)
 void ModelLoader::Impl::saveFileAssimp(const std::string &filename)
 {
 	std::vector<float> radii;
-	saveCloudToPlyFile(filename, verts, vertColors, normals, radii, false);
-	/*
-	Assimp::Exporter exporter;
+	if (indices.size() == 0) {
+		saveCloudToPlyFile(filename, verts, vertColors, normals, radii, false);
+	} else {
+		saveMeshToPlyFile(filename, verts, vertColors, normals, radii, indices, false);
+	//	Assimp::Exporter exporter;
 
-	aiScene scene;
+	//	aiScene scene;
+	//	scene.mRootNode = new aiNode; 
+	//	aiMesh *p;
+	//	unsigned int mMeshes[] = { 0 };
+	//	scene.mRootNode->mMeshes = mMeshes;
+	//	scene.mRootNode->mName = "";
+	//	scene.mRootNode->mNumChildren = 0;
+	//	scene.mRootNode->mNumMeshes = 1;
+	//	scene.mRootNode->mParent = nullptr;
+	//	aiMatrix4x4 transformation = {
+	//		1.f, 0.f, 0.f, 0.f,
+	//		0.f, 1.f, 0.f, 0.f,
+	//		0.f, 0.f, 1.f, 0.f,
+	//		0.f, 0.f, 0.f, 1.f
+	//	};
+	//	scene.mRootNode->mTransformation = transformation;
 
-	scene.mMeshes[0] = new aiMesh;
-	scene.mNumMeshes = 1;
-	aiMesh *mesh = scene.mMeshes[0];
+	//	scene.mMeshes = &p;
+	//	scene.mMeshes[0] = new aiMesh;
+	//	scene.mNumMeshes = 1;
+	//	aiMesh *mesh = scene.mMeshes[0];
+	//	mesh->mVertices = reinterpret_cast<aiVector3D*>(verts.data());
+	//	mesh->mNumVertices = verts.size();
 
-	mesh->mVertices = reinterpret_cast<aiVector3D*>(verts.data());
-	mesh->mNumVertices = verts.size();
+	//	if (indices.size() > 0)
+	//	{
+	//		mesh->mNumFaces = (indices.size() / 3);
+	//		mesh->mFaces = new aiFace[indices.size() / 3];
+	//		for (size_t f = 0; f < mesh->mNumFaces; ++f)
+	//		{
+	//			aiFace &face = mesh->mFaces[f];
+	//			face.mNumIndices = 3;
+	//			face.mIndices = new unsigned int[3];
+	//			for (size_t i = 1; i < 3; ++i)
+	//			{
+	//				face.mIndices[i] = indices[3 * f + i];
+	//			}
+	//		}
+	//	}
 
-	if (indices.size() > 0)
-	{
-		mesh->mNumFaces = (indices.size() / 3);
-		mesh->mFaces = new aiFace[indices.size() / 3];
-		for (size_t f = 0; f < mesh->mNumFaces; ++f)
-		{
-			aiFace &face = mesh->mFaces[f];
-			face.mNumIndices = 3;
-			face.mIndices = new unsigned int[3];
-			for (size_t i = 1; i < 3; ++i)
-			{
-				face.mIndices[i] = indices[3 * f + i];
-			}
-		}
+	//	if (normals.size() == verts.size())
+	//	{
+	//		mesh->mNormals = reinterpret_cast<aiVector3D*>(verts.data());
+	//	}
+
+	//	if (vertColors.size() == verts.size())
+	//	{
+	//		//TODO implement vertex colors
+	//		std::cout << "Warning: not saving vertex colors!" << std::endl;
+	//	}
+
+	//	if (texCoords.size() == verts.size())
+	//	{
+	//		mesh->mNumUVComponents[0] = 2;
+	//		mesh->mTextureCoords[0] = new aiVector3D[verts.size()];
+
+	//		for (size_t i = 0; i < verts.size(); ++i)
+	//		{
+	//			aiVector3D &t = mesh->mTextureCoords[0][i];
+	//			t.x = texCoords[i](0);
+	//			t.y = texCoords[i](1);
+	//			t.z = 0.0f;
+	//		}
+	//	}
+
+	//	exporter.Export(&scene,
+	//		filename.substr(filename.find_last_of(".") + 1), filename);
 	}
-
-	if (normals.size() == verts.size())
-	{
-		mesh->mNormals = reinterpret_cast<aiVector3D*>(verts.data());
-	}
-
-	if (vertColors.size() == verts.size())
-	{
-		//TODO implement vertex colors
-		std::cout << "Warning: not saving vertex colors!" << std::endl;
-	}
-
-	if (texCoords.size() == verts.size())
-	{
-		mesh->mNumUVComponents[0] = 2;
-		mesh->mTextureCoords[0] = new aiVector3D[verts.size()];
-
-		for (size_t i = 0; i < verts.size(); ++i)
-		{
-			aiVector3D &t = mesh->mTextureCoords[0][i];
-			t.x = texCoords[i](0);
-			t.y = texCoords[i](1);
-			t.z = 0.0f;
-		}
-	}
-
-	exporter.Export(&scene,
-		filename.substr(filename.find_last_of(".") + 1), filename);
-		*/
 }
 
 ModelLoader::ModelLoader()
@@ -454,6 +478,124 @@ void saveCloudToPlyFile(const std::string &filename,
 			} 
 			file << "\n";
 
+		}
+
+		file << "\n";
+	}
+}
+
+void saveMeshToPlyFile(const std::string &filename,
+	const std::vector<vec3> &positions,
+	const std::vector<vec3> &colors,
+	const std::vector<vec3> &normals,
+	const std::vector<float> &radii,
+	const std::vector<GLuint> &indices,
+	bool binary)
+{
+
+	std::ios::openmode flags = std::ios::trunc;
+	if (binary) flags = std::ios::binary | std::ios::trunc;
+	std::ofstream file(filename, flags);
+	if (file.fail()) throw std::runtime_error("Could not open file \"" +
+		filename + "\" to write PLY file.");
+
+	//Write header.
+	file << "ply\n";
+	if (binary) {
+		file << "format binary_little_endian 1.0\n";
+	}
+	else {
+		file << "format ascii 1.0\n";
+	}
+	file
+		<< "comment author: David R. Walton\n"
+		<< "comment object: Saved Reconstruction\n"
+		<< "element vertex " << positions.size() << "\n"
+		<< "property float x\n"
+		<< "property float y\n"
+		<< "property float z\n";
+
+	if (colors.size() == positions.size()) {
+		file
+			<< "property uchar red\n"
+			<< "property uchar green\n"
+			<< "property uchar blue\n";
+	}
+	if (normals.size() == positions.size()) {
+		file
+			<< "property float nx\n"
+			<< "property float ny\n"
+			<< "property float nz\n";
+	}
+	if (radii.size() == positions.size()) {
+		file
+			<< "property float radius\n";
+	}
+	file << "element face " << indices.size() / 3;
+	file << "\nproperty list uchar uint vertex_indices\n";
+	file << "end_header\n";
+
+	if (binary) {
+		//Write content.
+		for (size_t i = 0; i < positions.size(); ++i) {
+			file.write((const char*)(&(positions[i].x())), sizeof(float))
+				.write((const char*)(&(positions[i].y())), sizeof(float))
+				.write((const char*)(&(positions[i].z())), sizeof(float));
+			if (colors.size() == positions.size()) {
+				cv::Vec3b c(colors[i].x(), colors[i].y(), colors[i].z());
+				file.write((const char*)(&(colors[i][0])), sizeof(char))
+					.write((const char*)(&(colors[i][1])), sizeof(char))
+					.write((const char*)(&(colors[i][2])), sizeof(char));
+			}
+			if (normals.size() == positions.size()) {
+				file.write((const char*)(&(normals[i].x())), sizeof(float))
+					.write((const char*)(&(normals[i].y())), sizeof(float))
+					.write((const char*)(&(normals[i].z())), sizeof(float));
+			}
+			if (radii.size() == positions.size()) {
+				file.write((const char*)(&(radii[i])), sizeof(float));
+			}
+		}
+		for (size_t i = 0; i < indices.size(); i++) {
+			static const uchar three = 3;
+			file.write((const char*)(&(three)), sizeof(uchar));
+			file.write((const char*)(&(indices[i])), sizeof(GLuint));
+		}
+	}
+	else {
+		file << std::fixed;
+
+		//Write content.
+		for (size_t i = 0; i < positions.size(); ++i) {
+			file
+				<< positions[i].x() << " "
+				<< positions[i].y() << " "
+				<< positions[i].z() << " ";
+			if (colors.size() == positions.size()) {
+				file
+					<< (unsigned int)(colors[i][0]) << " "
+					<< (unsigned int)(colors[i][1]) << " "
+					<< (unsigned int)(colors[i][2]) << " ";
+			}
+			if (normals.size() == positions.size()) {
+				file
+					<< normals[i].x() << " "
+					<< normals[i].y() << " "
+					<< normals[i].z() << " ";
+			}
+			if (radii.size() == positions.size()) {
+				file
+					<< radii[i];
+			} 
+			file << "\n";
+
+		}
+
+		for (size_t i = 0; i < indices.size(); i += 3) {
+			file <<  "3 " 
+				<< indices[i    ] << " " 
+				<< indices[i + 1] << " "
+				<< indices[i + 2] << "\n";
 		}
 
 		file << "\n";

@@ -27,12 +27,13 @@
 #include "Util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
 #include "CameraModel/CameraModel.hpp"
-#ifdef _WIN32
-using g2o::timeval;
-#endif
 
 namespace lsd_slam
 {
+
+#ifdef _WIN32
+using g2o::timeval;
+#endif
 
 class DepthMapPixelHypothesis;
 class Frame;
@@ -52,6 +53,8 @@ struct DepthMapDebugSettings final {
     bool printLineStereoFails;
 	
 	bool saveAllFramesAsPointClouds;
+	bool saveAllFramesAsVectorClouds;
+	bool saveMatchesImages;
 };
 
 ///\brief Maintains a depth map (consisting of DepthMapPixelHypothesis), which
@@ -119,8 +122,14 @@ public:
 	Frame* activeKeyFrame;
 
 	void saveCurrMapAsPointCloud(const std::string &filename);
+	void saveCurrMapAsVectorCloud(const std::string &filename);
+	cv::Mat debugVisualiseMatchesIm;
 
 private:
+	void debugUpdateVisualiseMatchIms(
+		const float *keyframe, const float *referenceFrame);
+	void debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos);
+
 	// camera matrix etc.
 	std::unique_ptr<CameraModel> model;
 	CameraModelType modelType;

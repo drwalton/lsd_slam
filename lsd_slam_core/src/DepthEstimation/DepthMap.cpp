@@ -50,7 +50,9 @@ DepthMapDebugSettings::DepthMapDebugSettings()
     printRegularizeStatistics(false),
     printLineStereoStatistics(false),
     printLineStereoFails(false),
-	saveAllFramesAsPointClouds(false)
+	saveAllFramesAsPointClouds(false),
+	saveAllFramesAsVectorClouds(false),
+	saveMatchesImages(false)
 {}
 
 DepthMapDebugSettings::~DepthMapDebugSettings() throw()
@@ -150,6 +152,11 @@ void DepthMap::observeDepthRow(size_t yMin, size_t yMax, RunningStats* stats)
 }
 void DepthMap::observeDepth()
 {
+	if (settings.saveMatchesImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ? 
+			newest_referenceFrame : oldest_referenceFrame;
+		debugUpdateVisualiseMatchIms(activeKeyFrameImageData, refFrame->image());
+	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, height-3, 10);
 
@@ -214,7 +221,7 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		float epx, epy;
 		bool isGood = makeAndCheckEPL(x, y, refFrame, &epx, &epy, stats);
 		if(!isGood) return false;
-		error = doLineStereo(
+		error = DepthMap::doLineStereo(
 			new_u, new_v, epx, epy,
 			0.0f, 1.0f, 1.0f / MIN_DEPTH,
 			refFrame, refFrame->image(0),
@@ -320,8 +327,8 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 		// which exact point to track, and where from.
 		float sv = sqrt(target->idepth_var_smoothed);
-		float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC;
-		float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC;
+		float min_idepth = target->idepth_smoothed - sv*STEREO_EPL_VAR_FAC_OMNI;
+		float max_idepth = target->idepth_smoothed + sv*STEREO_EPL_VAR_FAC_OMNI;
 		if (min_idepth < 0) min_idepth = 0;
 		if (max_idepth > 1 / MIN_DEPTH) max_idepth = 1 / MIN_DEPTH;
 
@@ -507,15 +514,13 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 			if(!source->isValid)
 				continue;
 			
-			if(! model->pixelLocValid(vec2(x, y))) {
-				continue;
-			}
-
 			if(enablePrintDebugInfo) runningStats.num_prop_attempts++;
 
-
-			Eigen::Vector3f pn = (trafoInv_R * 
-				model->pixelToCam(vec2(x, y), 1.f/source->idepth_smoothed)) + trafoInv_t;
+			Eigen::Vector3f pn = (trafoInv_R *
+				model->pixelToCam(vec2(x, y))) / source->idepth_smoothed + trafoInv_t;
+			//TODO: See if we need to use below formula for Omni mode.
+			//Eigen::Vector3f pn = (trafoInv_R * 
+			//	model->pixelToCam(vec2(x, y), 1.f/source->idepth_smoothed)) + trafoInv_t;
 
 			float new_idepth;
 			if(model->getType() == CameraModelType::PROJ) {
@@ -529,9 +534,11 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 			float v_new = uv[1];
 
 			// check if still within image, if not: DROP.
-			if((!model->pixelLocValid(uv)) ||
-			  !(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f))
-			{
+			if (model->getType() == CameraModelType::OMNI && (!model->pixelLocValid(uv))) {
+				if(enablePrintDebugInfo) runningStats.num_prop_removed_out_of_bounds++;
+				continue;
+			}
+			if(!(u_new > 2.1f && v_new > 2.1f && u_new < width-3.1f && v_new < height-3.1f)) {
 				if(enablePrintDebugInfo) runningStats.num_prop_removed_out_of_bounds++;
 				continue;
 			}
@@ -890,7 +897,8 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 		{
 			if(maxGradients[x+y*width] > MIN_ABS_GRAD_CREATE)
 			{
-				float idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
+				//float idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
+				float idepth = 1.f + 2.f * ((rand() % 100001) / 100000.0f);
 				currentDepthMap[x+y*width] = DepthMapPixelHypothesis(
 						idepth,
 						idepth,
@@ -1219,6 +1227,18 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 			"_f" << referenceFrames[0]->id() << ".ply";
 		saveCurrMapAsPointCloud(ss.str());
 	}
+	if(settings.saveAllFramesAsVectorClouds) {
+		std::stringstream ss;
+		ss << resourcesDir() << "KFClouds/VKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".ply";
+		saveCurrMapAsVectorCloud(ss.str());
+	}
+	if (settings.saveMatchesImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "MatchIms/MatchKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugVisualiseMatchesIm);
+	}
 }
 
 void DepthMap::invalidate()
@@ -1439,6 +1459,60 @@ void DepthMap::saveCurrMapAsPointCloud(const std::string &filename)
 	modelLoader.saveFile(filename);
 }
 
+void DepthMap::saveCurrMapAsVectorCloud(const std::string &filename)
+{
+	const std::array<GLuint, 36> CUBOID_INDICES = {
+		3,1,0, 3,2,1,
+		0,5,4, 0,1,5,
+		1,6,5, 1,2,6,
+		3,4,7, 3,0,4,
+		2,7,6, 2,3,7,
+		4,6,7, 4,5,6
+	};
+	const float cuboidWidth = 0.01f;
+
+	ModelLoader modelLoader;
+	
+	for(size_t r = 0; r < height; r += 3) {
+		for(size_t c = 0; c < width; c += 3) {
+			if(currentDepthMap[r*width + c].isValid) {
+       			float var = currentDepthMap[r*width + c].idepth_var_smoothed;
+				float depth = 1.f / currentDepthMap[r*width + c].idepth_smoothed;
+				vec3 startPt =  model->pixelToCam(vec2(c,r), fmaxf(
+					0.001f, depth - 2.f*var));
+				vec3 endPt =  model->pixelToCam(vec2(c,r), depth + 2.f*var);
+    			if(std::isfinite(startPt[0]) &&
+    			   std::isfinite(startPt[1]) &&
+    			   std::isfinite(startPt[2]) &&
+   					std::isfinite(endPt[0]) &&
+    			   std::isfinite(endPt[1]) &&
+    			   std::isfinite(endPt[2]) ) {
+					vec3 perp1 = (endPt-startPt).cross(vec3(0.f, 0.f, 1.f)).normalized();
+					vec3 perp2 = (endPt-startPt).cross(perp1).normalized();
+					perp1 *= cuboidWidth*0.5f;
+					perp2 *= cuboidWidth*0.5f;
+
+					GLuint startIdx = modelLoader.vertices().size();
+
+           			modelLoader.vertices().push_back((startPt - perp1) - perp2);
+           			modelLoader.vertices().push_back((startPt + perp1) - perp2);
+           			modelLoader.vertices().push_back((startPt + perp1) + perp2);
+           			modelLoader.vertices().push_back((startPt - perp1) + perp2);
+
+           			modelLoader.vertices().push_back((endPt - perp1) - perp2);
+           			modelLoader.vertices().push_back((endPt + perp1) - perp2);
+           			modelLoader.vertices().push_back((endPt + perp1) + perp2);
+           			modelLoader.vertices().push_back((endPt - perp1) + perp2);
+
+					for (size_t i = 0; i < CUBOID_INDICES.size(); ++i) {
+						modelLoader.indices().push_back(CUBOID_INDICES[i] + startIdx);
+					}
+    			}
+			}
+		}
+	}
+	modelLoader.saveFile(filename);
+}
 
 int DepthMap::debugPlotDepthMap()
 {
@@ -1471,6 +1545,39 @@ int DepthMap::debugPlotDepthMap()
 		}
 
 	return 1;
+}
+
+void DepthMap::debugUpdateVisualiseMatchIms(
+	const float *keyframe, const float *referenceFrame)
+{
+	cv::Mat &i = debugVisualiseMatchesIm;
+	if (i.cols != model->w * 2 || i.rows != model->h) {
+		i = cv::Mat(model->h, model->w * 2, CV_8UC3);
+	}
+	for (size_t r = 0; r < model->h; ++r) {
+		cv::Vec3b *rptr = i.ptr<cv::Vec3b>(r);
+		for (size_t c = 0; c < model->w; ++c) {
+			uchar kfVal = static_cast<uchar>(keyframe[r*model->w + c]);
+			uchar refVal = static_cast<uchar>(referenceFrame[r*model->w + c]);
+			rptr[c] = cv::Vec3b(kfVal, kfVal, kfVal);
+			rptr[c + model->w] = cv::Vec3b(refVal, refVal, refVal);
+		}
+	}
+}
+
+
+void DepthMap::debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos)
+{
+	const int matchDisplayInvChance = 100;
+	if (rand() % matchDisplayInvChance == 0) {
+		//Show match.
+		float hue = float(rand() % 256) / 256.f;
+		vec3 rgb = hueToRgb(hue);
+		cv::line(debugVisualiseMatchesIm,
+			cv::Point(int(keyframePos.x()), int(keyframePos.y())),
+			cv::Point(int(referenceFramePos.x()) + model->w, int(referenceFramePos.y())),
+			cv::Vec3b(uchar(255.f*rgb[0]), uchar(255.f*rgb[1]), uchar(255.f*rgb[2])));
+	}
 }
 
 }
