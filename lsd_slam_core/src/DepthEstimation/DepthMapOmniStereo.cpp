@@ -602,6 +602,9 @@ float DepthMap::doOmniStereo(
 		gradAlongLine, bestEpDir, referenceFrame, activeKeyFrame, 
 		GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
 	if (r != 0.f) {
+		if (settings.saveMatchesImages) {
+			debugVisualiseMatch(vec2(u, v), model->camToPixel(bestMatchPos));
+		}
 		return r;
 	}
 

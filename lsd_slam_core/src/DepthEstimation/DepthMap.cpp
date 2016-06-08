@@ -49,7 +49,9 @@ DepthMapDebugSettings::DepthMapDebugSettings()
     printRegularizeStatistics(false),
     printLineStereoStatistics(false),
     printLineStereoFails(false),
-	saveAllFramesAsPointClouds(false)
+	saveAllFramesAsPointClouds(false),
+	saveAllFramesAsVectorClouds(false),
+	saveMatchesImages(false)
 {}
 
 DepthMapDebugSettings::~DepthMapDebugSettings() throw()
@@ -149,6 +151,11 @@ void DepthMap::observeDepthRow(size_t yMin, size_t yMax, RunningStats* stats)
 }
 void DepthMap::observeDepth()
 {
+	if (settings.saveMatchesImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ? 
+			newest_referenceFrame : oldest_referenceFrame;
+		debugUpdateVisualiseMatchIms(activeKeyFrameImageData, refFrame->image());
+	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, height-3, 10);
 
@@ -1219,6 +1226,18 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 			"_f" << referenceFrames[0]->id() << ".ply";
 		saveCurrMapAsPointCloud(ss.str());
 	}
+	if(settings.saveAllFramesAsVectorClouds) {
+		std::stringstream ss;
+		ss << resourcesDir() << "KFClouds/VKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".ply";
+		saveCurrMapAsVectorCloud(ss.str());
+	}
+	if (settings.saveMatchesImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "MatchIms/MatchKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".ply";
+		cv::imwrite(ss.str(), debugVisualiseMatchesIm);
+	}
 }
 
 void DepthMap::invalidate()
@@ -1439,6 +1458,60 @@ void DepthMap::saveCurrMapAsPointCloud(const std::string &filename)
 	modelLoader.saveFile(filename);
 }
 
+void DepthMap::saveCurrMapAsVectorCloud(const std::string &filename)
+{
+	const std::array<GLuint, 36> CUBOID_INDICES = {
+		3,1,0, 3,2,1,
+		0,5,4, 0,1,5,
+		1,6,5, 1,2,6,
+		3,4,7, 3,0,4,
+		2,7,6, 2,3,7,
+		4,6,7, 4,5,6
+	};
+	const float cuboidWidth = 0.01f;
+
+	ModelLoader modelLoader;
+	
+	for(size_t r = 0; r < height; r += 3) {
+		for(size_t c = 0; c < width; c += 3) {
+			if(currentDepthMap[r*width + c].isValid) {
+       			float var = currentDepthMap[r*width + c].idepth_var_smoothed;
+				float depth = 1.f / currentDepthMap[r*width + c].idepth_smoothed;
+				vec3 startPt =  model->pixelToCam(vec2(c,r), fmaxf(
+					0.001f, depth - 2.f*var));
+				vec3 endPt =  model->pixelToCam(vec2(c,r), depth + 2.f*var);
+    			if(std::isfinite(startPt[0]) &&
+    			   std::isfinite(startPt[1]) &&
+    			   std::isfinite(startPt[2]) &&
+   					std::isfinite(endPt[0]) &&
+    			   std::isfinite(endPt[1]) &&
+    			   std::isfinite(endPt[2]) ) {
+					vec3 perp1 = (endPt-startPt).cross(vec3(0.f, 0.f, 1.f)).normalized();
+					vec3 perp2 = (endPt-startPt).cross(perp1).normalized();
+					perp1 *= cuboidWidth*0.5f;
+					perp2 *= cuboidWidth*0.5f;
+
+					GLuint startIdx = modelLoader.vertices().size();
+
+           			modelLoader.vertices().push_back((startPt - perp1) - perp2);
+           			modelLoader.vertices().push_back((startPt + perp1) - perp2);
+           			modelLoader.vertices().push_back((startPt + perp1) + perp2);
+           			modelLoader.vertices().push_back((startPt - perp1) + perp2);
+
+           			modelLoader.vertices().push_back((endPt - perp1) - perp2);
+           			modelLoader.vertices().push_back((endPt + perp1) - perp2);
+           			modelLoader.vertices().push_back((endPt + perp1) + perp2);
+           			modelLoader.vertices().push_back((endPt - perp1) + perp2);
+
+					for (size_t i = 0; i < CUBOID_INDICES.size(); ++i) {
+						modelLoader.indices().push_back(CUBOID_INDICES[i] + startIdx);
+					}
+    			}
+			}
+		}
+	}
+	modelLoader.saveFile(filename);
+}
 
 int DepthMap::debugPlotDepthMap()
 {
@@ -1474,7 +1547,7 @@ int DepthMap::debugPlotDepthMap()
 }
 
 void DepthMap::debugUpdateVisualiseMatchIms(
-	float *keyframe, float *referenceFrame)
+	const float *keyframe, const float *referenceFrame)
 {
 	cv::Mat &i = debugVisualiseMatchesIm;
 	if (i.cols != model->w * 2 || i.rows != model->h) {

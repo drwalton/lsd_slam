@@ -3,12 +3,20 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 	find_library(Assimp_LIBRARY
 		NAMES
 			assimp
+			assimp-vc120-mt
 		PATHS
-			"C:/local/Assimp/assimp-3.0.0/lib/assimp_release-dll_win32"
-			"C:/local/Assimp/assimp-3.1.1/lib32"
-			"C:/Program Files/Assimp/lib/x86"
+			"C:/local/Assimp/assimp-3.2/lib32/Release/"
 			"/opt/local/lib"
 			"/usr/local/lib")
+	find_library(Assimp_LIBRARY_DEBUG
+		NAMES
+			assimp
+			assimp-vc120-mtd
+		PATHS
+			"C:/local/Assimp/assimp-3.2/lib32/Debug/"
+			"/opt/local/lib"
+			"/usr/local/lib")
+	set(Assimp_LIBRARY_RELEASE ${Assimp_LIBRARY})
 elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 #64-bit, assume x86_64
 	find_library(Assimp_LIBRARY
