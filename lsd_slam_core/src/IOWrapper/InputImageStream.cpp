@@ -76,6 +76,10 @@ std::unique_ptr<InputImageStream> InputImageStream::openImageStream(
 	} else if (boost::filesystem::is_regular_file(path)) {
 		OpenCVImageStream *stream = new OpenCVImageStream();
 		stream->capture().open(pathname);
+		if(!stream->capture().isOpened()) {
+			throw std::runtime_error(("Unable to load input video from file "
+				"\"" + pathname + "\"").c_str());
+		}
 		return std::unique_ptr<InputImageStream>(stream);
 	} else {
 		throw std::runtime_error("Supplied path is neither a directory"

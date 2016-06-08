@@ -1,6 +1,7 @@
 add_library(lsd_slam_DepthEstimation
 	DepthMap.cpp
 	DepthMap.hpp
+	DepthMapInitSettings.hpp
 	DepthMapLineStereo.cpp
 	DepthMapLineStereo.hpp
 	DepthMapOmniStereo.hpp

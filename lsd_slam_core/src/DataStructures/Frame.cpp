@@ -21,6 +21,7 @@
 #include "DataStructures/Frame.hpp"
 #include "DataStructures/FrameMemory.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
+#include "DepthEstimation/DepthMapInitSettings.hpp"
 #include "Tracking/TrackingReference.hpp"
 #include "util/ImgProc.hpp"
 

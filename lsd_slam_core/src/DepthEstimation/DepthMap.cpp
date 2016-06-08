@@ -27,6 +27,7 @@
 
 #include "Util/settings.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
+#include "DepthEstimation/DepthMapInitSettings.hpp"
 #include "DataStructures/Frame.hpp"
 #include "Util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"

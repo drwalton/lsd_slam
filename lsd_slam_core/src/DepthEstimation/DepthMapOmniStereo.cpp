@@ -8,7 +8,6 @@
 ///This file contains the depth estimation functions specific to Omnidirectional
 /// camera models.
 
-#define SHOW_DEBUG_IMAGES 0
 #define EPIPOLE_MAX_CLOSENESS (0.95f) //Max dot product with epipole in stereo.
 
 namespace lsd_slam {

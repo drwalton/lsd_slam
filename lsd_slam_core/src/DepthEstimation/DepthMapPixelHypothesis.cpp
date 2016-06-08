@@ -25,7 +25,6 @@
 namespace lsd_slam
 {
 
-
 cv::Vec3b DepthMapPixelHypothesis::getVisualizationColor(int lastFrameID) const
 {
 	if(debugDisplay == 0 || debugDisplay == 1)
