@@ -220,7 +220,7 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		float epx, epy;
 		bool isGood = makeAndCheckEPL(x, y, refFrame, &epx, &epy, stats);
 		if(!isGood) return false;
-		error = doLineStereo(
+		error = DepthMap::doLineStereo(
 			new_u, new_v, epx, epy,
 			0.0f, 1.0f, 1.0f / MIN_DEPTH,
 			refFrame, refFrame->image(0),

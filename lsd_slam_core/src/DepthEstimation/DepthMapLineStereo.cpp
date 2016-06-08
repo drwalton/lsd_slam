@@ -168,7 +168,8 @@ float doLineStereo(
 	const Eigen::Vector4f *keyframeGradients,
 	float initialTrackedResidual,
 	RunningStats* const stats,
-	cv::Mat &drawIm)
+	cv::Mat &drawIm,
+	int *matchX, int* matchY)
 {
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 	vec3 K_otherToThis_t = model.K * keyframeToReference.translation;
@@ -560,6 +561,12 @@ float doLineStereo(
 	}
 
 	result_eplLength = eplLength;
+	if (matchX != nullptr) {
+		*matchX = best_match_x;
+	}
+	if (matchY != nullptr) {
+		*matchY = best_match_y;
+	}
 	return best_match_err;
 }
 // find pixel in image (do stereo along epipolar line).
@@ -581,7 +588,8 @@ float DepthMap::doLineStereo(
 	RigidTransform keyframeToReference;
 	keyframeToReference.rotation = referenceFrame->otherToThis_R;
 	keyframeToReference.translation = referenceFrame->otherToThis_t;
-	return lsd_slam::doLineStereo(
+	int matchx, matchy;
+	float r =  lsd_slam::doLineStereo(
 		u, v, epxn, epyn,
 		min_idepth, prior_idepth, max_idepth,
 		activeKeyFrameImageData, referenceFrameImage,
@@ -590,7 +598,11 @@ float DepthMap::doLineStereo(
 		activeKeyFrame->gradients(),
 		referenceFrame->initialTrackedResidual,
 		stats,
-		emptyMat);
+		emptyMat, &matchx, &matchy);
+	if (settings.saveMatchesImages) {
+		debugVisualiseMatch(vec2(u, v), vec2(matchx, matchy));
+	}
+	return r;
 }
 
 bool subpixelMatchProj(

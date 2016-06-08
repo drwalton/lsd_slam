@@ -24,7 +24,8 @@ float doLineStereo(
 	const Eigen::Vector4f *keyframeGradients,
 	float initialTrackedResidual,
 	RunningStats* const stats,
-	cv::Mat &drawIm = emptyMat);
+	cv::Mat &drawIm = emptyMat,
+	int *matchX = nullptr, int *matchY = nullptr);
 
 float findDepthAndVarProj(
 	float *result_idepth, float *result_var,
