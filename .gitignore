@@ -32,6 +32,7 @@ cmake_install.cmake
 *.tmp
 *.swp
 build/
+build2015/
 xcode/
 resources/*
 docs/

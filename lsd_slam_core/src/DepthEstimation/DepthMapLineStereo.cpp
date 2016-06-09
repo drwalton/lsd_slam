@@ -562,10 +562,10 @@ float doLineStereo(
 
 	result_eplLength = eplLength;
 	if (matchX != nullptr) {
-		*matchX = best_match_x;
+		*matchX = int(best_match_x);
 	}
 	if (matchY != nullptr) {
-		*matchY = best_match_y;
+		*matchY = int(best_match_y);
 	}
 	return best_match_err;
 }
