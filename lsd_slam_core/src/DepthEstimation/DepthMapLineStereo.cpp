@@ -599,7 +599,7 @@ float DepthMap::doLineStereo(
 		referenceFrame->initialTrackedResidual,
 		stats,
 		emptyMat, &matchx, &matchy);
-	if (settings.saveMatchesImages) {
+	if (settings.saveMatchesImages && r > 0.f) {
 		debugVisualiseMatch(vec2(u, v), vec2(matchx, matchy));
 	}
 	return r;

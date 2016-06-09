@@ -55,6 +55,7 @@ struct DepthMapDebugSettings final {
 	bool saveAllFramesAsPointClouds;
 	bool saveAllFramesAsVectorClouds;
 	bool saveMatchesImages;
+	bool saveSearchRangesImages;
 };
 
 ///\brief Maintains a depth map (consisting of DepthMapPixelHypothesis), which
@@ -124,11 +125,14 @@ public:
 	void saveCurrMapAsPointCloud(const std::string &filename);
 	void saveCurrMapAsVectorCloud(const std::string &filename);
 	cv::Mat debugVisualiseMatchesIm;
+	cv::Mat debugVisualiseSearchRangesIm;
 
 private:
 	void debugUpdateVisualiseMatchIms(
 		const float *keyframe, const float *referenceFrame);
 	void debugVisualiseMatch(vec2 keyframePos, vec2 referenceFramePos);
+	void debugUpdateVisualiseSearchRangesIms(
+		const float *keyframe, const float *referenceFrame);
 
 	// camera matrix etc.
 	std::unique_ptr<CameraModel> model;
