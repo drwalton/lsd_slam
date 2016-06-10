@@ -333,8 +333,10 @@ float doOmniStereo(
 //		+ referenceFrame->otherToThis_t;
 	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / max_idepth);
 	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / min_idepth);
-	float lineAngle = (lineStartPos.dot(lineEndPos) / fabsf(lineStartPos.norm() * lineEndPos.norm()));
-	if (lineAngle < MIN_TRACED_DOT_PROD) {
+	lineStartPos.normalize();
+	lineEndPos.normalize();
+	float lineDotProd = lineStartPos.dot(lineEndPos);
+	if (lineDotProd < MIN_TRACED_DOT_PROD) {
 		//Line is too long.
 		return -1;
 	}
@@ -369,7 +371,7 @@ float doOmniStereo(
 	vec2 lineStartPix = oModel.camToPixel(padLineStartPos);
 	vec2 lineEndPix   = oModel.camToPixel(padLineEndPos  );
 	padEpipolarLineOmni(&padLineStartPos, &padLineEndPos, &lineStartPix, &lineEndPix,
-		MIN_EPL_LENGTH_CROP, oModel);
+		2.f*MIN_EPL_LENGTH_CROP, oModel);
 	//if (drawThisMatch){
 	//	cv::circle(drawMatch, vec2Point(lineStartPix), 3, cv::Scalar(255, 0, 0));
 	//	cv::circle(drawMatch, vec2Point(lineEndPix), 3, cv::Scalar(255, 0, 0));
@@ -440,8 +442,8 @@ float doOmniStereo(
 	size_t loopC = 0;
 	float errLast = -1.f;
 	while (centerA <= 1.f) {
-		if (loopC > 20) {
-			//std::cout << "LONG LINE" << std::endl;
+		if (loopC > 100) {
+			std::cout << "LONG LINE" << std::endl;
 		}
 		centerA = a;
 		//Find fifth entry
@@ -713,13 +715,21 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 		float requiredStep = 0.5f*(minLength - eplLength);
 		float a = 1.f;
 		a += oModel.getEpipolarParamIncrement(a, *lineEnd, *lineStart, requiredStep);
-		*lineEnd = a*(*lineEnd) + (1.f - a)*(*lineStart);
+		vec3 padLineEnd = a*(*lineEnd) + (1.f - a)*(*lineStart);
 		a = 1.f;
 		a += oModel.getEpipolarParamIncrement(a, *lineStart, *lineEnd, requiredStep);
-		*lineStart = a*(*lineStart) + (1.f - a)*(*lineEnd);
+		vec3 padLineStart = a*(*lineStart) + (1.f - a)*(*lineEnd);
 
+		*lineStart = padLineStart;
+		*lineEnd = padLineEnd;
 		*lineStartPix = oModel.camToPixel(*lineStart);
 		*lineEndPix = oModel.camToPixel(*lineEnd);
+
+
+	eplLength = (*lineEndPix - *lineStartPix).norm(); 
+	if (eplLength > 100.f) {
+		std::cout << "LONG LINE" << std::endl;
+	}
 #ifdef DEBUG_PRINT_LINE_PADDING_STUFF
 		std::cout << "After padding, line runs from " << *lineStartPix 
 			<< " to " << *lineEndPix << " and has length of "

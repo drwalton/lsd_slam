@@ -20,6 +20,7 @@ find_package(libtiff REQUIRED)
 
 if(WIN32)
 	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-12.0")
+	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-14.0")
 endif(WIN32)
 
 if(NOT WIN32)

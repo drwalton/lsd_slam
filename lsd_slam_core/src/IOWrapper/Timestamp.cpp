@@ -25,9 +25,17 @@
 
 namespace lsd_slam
 {
+#if defined(_MSC_VER)
+	#if (_MSC_VER >= 1900)
+	typedef std::chrono::steady_clock clock;
+	#else
+	typedef std::chrono::monotonic_clock clock;
+	#endif
+#else
+typedef std::chrono::steady_clock clock;
+#endif
 
-
-const std::chrono::monotonic_clock::time_point Timestamp::startupTimePoint = std::chrono::monotonic_clock::now();
+const clock::time_point Timestamp::startupTimePoint = clock::now();
 boost::mutex Timestamp::localtimeMutex;
 
 Timestamp::Timestamp()
@@ -75,7 +83,7 @@ double Timestamp::secondsUntil(const Timestamp& other) const
 Timestamp Timestamp::now()
 {
 	Timestamp result;
-	result.timePoint = std::chrono::monotonic_clock::now();
+	result.timePoint = clock::now();
 	result.systemTimePoint = std::chrono::system_clock::now();
 	return result;
 }
