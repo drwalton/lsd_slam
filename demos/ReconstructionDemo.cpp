@@ -87,10 +87,10 @@ int main(int argc, char **argv)
 	slamWrapper.depthMapImageViewer(&depthMapViewer);
 	//slamWrapper.getSlamSystem()->depthMapSettings().saveAllFramesAsPointClouds
 	//	= true;
-	slamWrapper.getSlamSystem()->depthMapSettings().saveAllFramesAsVectorClouds
-		= true;
-	//slamWrapper.getSlamSystem()->depthMapSettings().saveMatchesImages
+	//slamWrapper.getSlamSystem()->depthMapSettings().saveAllFramesAsVectorClouds
 	//	= true;
+	slamWrapper.getSlamSystem()->depthMapSettings().saveMatchesImages
+		= true;
 	slamWrapper.getSlamSystem()->depthMapSettings().saveSearchRangesImages
 		= true;
 	slamWrapper.getSlamSystem()->depthMapSettings().printPropagationStatistics

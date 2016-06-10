@@ -162,6 +162,16 @@ void DepthMap::observeDepth()
 		Frame* refFrame = activeKeyFrameIsReactivated ? 
 			newest_referenceFrame : oldest_referenceFrame;
 		debugUpdateVisualiseSearchRangesIms(activeKeyFrameImageData, refFrame->image());
+		vec2 epipole = model->camToPixel(-refFrame->thisToOther_t);
+		vec2 epipole2 = model->camToPixel(refFrame->thisToOther_t);
+		if (model->pixelLocValid(epipole)) {
+			cv::circle(debugVisualiseSearchRangesIm, 
+				cv::Point(epipole.x() + model->w, epipole.y()), 5, CV_RGB(0, 255, 0), 2);
+		}
+		if (model->pixelLocValid(epipole2)) {
+			cv::circle(debugVisualiseSearchRangesIm, 
+				cv::Point(epipole2.x() + model->w, epipole2.y()), 5, CV_RGB(0, 255, 0), 2);
+		}
 	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, height-3, 10);
