@@ -23,6 +23,7 @@
 
 #include "DepthEstimation/DepthMap.hpp"
 #include "DepthEstimation/DepthMapLineStereo.hpp"
+#include "DepthEstimation/DepthMapInitSettings.hpp"
 
 #include <stdio.h>
 #include <fstream>

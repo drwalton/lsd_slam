@@ -35,6 +35,7 @@ namespace lsd_slam
 using g2o::timeval;
 #endif
 
+
 class DepthMapPixelHypothesis;
 class Frame;
 class KeyFrameGraph;
@@ -56,6 +57,8 @@ struct DepthMapDebugSettings final {
 	bool saveAllFramesAsVectorClouds;
 	bool saveMatchesImages;
 	bool saveSearchRangesImages;
+
+	int drawMatchInvChance;
 };
 
 ///\brief Maintains a depth map (consisting of DepthMapPixelHypothesis), which

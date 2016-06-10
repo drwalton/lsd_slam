@@ -79,7 +79,7 @@ float depthSmoothingFactor = 1;
 
 bool allowNegativeIdepths = true;
 bool useMotionModel = false;
-bool useSubpixelStereo = true;
+bool useSubpixelStereo = false;
 bool multiThreading = true;
 bool useAffineLightningEstimation = true;
 

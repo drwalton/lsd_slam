@@ -1,5 +1,6 @@
 #include "DepthEstimation/DepthMapOmniStereo.hpp"
 #include "DepthEstimation/DepthMap.hpp"
+#include "DepthEstimation/DepthMapInitSettings.hpp"
 #include "Util/globalFuncs.hpp"
 #include "DataStructures/Frame.hpp"
 
@@ -293,7 +294,7 @@ float doOmniStereo(
 	const RigidTransform &keyframeToReference,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	vec2 &bestEpImDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
-	cv::Mat &drawMatch, bool plotSearch)
+	cv::Mat &drawMatch, bool plotSearch, int drawMatchInvChance)
 {
 	if (!(max_idepth > min_idepth)) {
 		std::cout << "wrong inv depths in doOmniStereo" << std::endl;
@@ -304,11 +305,7 @@ float doOmniStereo(
 		throw std::runtime_error("negative inv depth in doOmniStereo");
 	}
 
-	const int drawMatchInvChance = 100;
 	bool drawThisMatch = (!drawMatch.empty()) && ((rand() % drawMatchInvChance) == 0);
-	if (drawThisMatch) {
-		cv::circle(drawMatch, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
-	}
 
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 
@@ -331,8 +328,8 @@ float doOmniStereo(
 //	vec3 expectedMatchPos = referenceFrame->otherToThis_R
 //		* (keyframePointDir / prior_idepth) 
 //		+ referenceFrame->otherToThis_t;
-	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / max_idepth);
-	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / min_idepth);
+	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / min_idepth);
+	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / max_idepth);
 	lineStartPos.normalize();
 	lineEndPos.normalize();
 	float lineDotProd = lineStartPos.dot(lineEndPos);
@@ -437,6 +434,11 @@ float doOmniStereo(
 		}
 	}
 
+	if (drawThisMatch && drawMatch.cols == width * 2) {
+		cv::circle(drawMatch, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
+	}
+
+
 	tracedLineLen = 0.f;
 	//Advance along line.
 	size_t loopC = 0;
@@ -478,8 +480,13 @@ float doOmniStereo(
 			vec3 rgb = 255.f * hueToRgb(0.8f * err / 325125.f);
 			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
 			ssdColors.push_back(rgbB);
-			drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x() + width)) =
-				rgbB;
+			if (drawMatch.cols == width * 2) {
+				drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x() + width)) =
+					rgbB;
+			} else {
+				drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x())) =
+					rgbB;
+			}
 		}
 
 		if (err < bestMatchErr) {
@@ -542,6 +549,16 @@ float doOmniStereo(
 		tracedLineLen += (linePix[2] - linePix[1]).norm();
 		++loopC;
 		errLast = err;
+	}
+
+	if (drawThisMatch) {
+		vec3 rgb(0, 255.f, 255.f);
+		cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+		//ssdColors.push_back(rgbB);
+		if (drawMatch.cols == width * 2) {
+			drawMatch.at<cv::Vec3b>(int(bestMatchPix.y()), int(bestMatchPix.x() + width)) =
+				rgbB;
+		}	
 	}
 	
 	if(plotSearch) {
@@ -658,7 +675,8 @@ float DepthMap::doOmniStereo(
 	if (settings.saveSearchRangesImages) {
 		bestMatchErr = lsd_slam::doOmniStereo(u, v, epDir, min_idepth, prior_idepth, max_idepth,
 			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-			stats, oModel, referenceFrame->width(), bestEpImDir, bestMatchPos, gradAlongLine, tracedLineLen, debugVisualiseSearchRangesIm);
+			stats, oModel, referenceFrame->width(), bestEpImDir, bestMatchPos, gradAlongLine, 
+			tracedLineLen, debugVisualiseSearchRangesIm, false, settings.drawMatchInvChance);
 	}
 	else {
 
@@ -668,18 +686,25 @@ float DepthMap::doOmniStereo(
 	}
 
 	if (bestMatchErr > 0.f) {
-		float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var,
-			gradAlongLine, bestEpImDir, referenceFrame, activeKeyFrame,
-			GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
-		if (r >= 0.f) {
-			if (result_idepth != result_idepth) {
-				throw std::runtime_error("idepth is nan");
-			}
+		float depth = (keyframeToReference * bestMatchPos).norm();
+		float idepth = 1.f / depth;
+		result_idepth = idepth;
+		float var = findVarOmni(u, v, bestMatchPos.normalized(), gradAlongLine,
+				bestEpImDir, activeKeyFrame->gradients(0), referenceFrame->initialTrackedResidual,
+				GRADIENT_SAMPLE_DIST, false, &oModel, stats, 1.f / idepth);
+		result_var = var;
+		//float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var,
+		//	gradAlongLine, bestEpImDir, referenceFrame, activeKeyFrame,
+		//	GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
+		//if (r >= 0.f) {
+		//	if (result_idepth != result_idepth) {
+		//		throw std::runtime_error("idepth is nan");
+		//	}
 			if (settings.saveMatchesImages) {
 				debugVisualiseMatch(vec2(u, v), model->camToPixel(bestMatchPos));
 			}
-			return r;
-		}
+		//	return r;
+		//}
 	}
 
 	result_eplLength = tracedLineLen;
