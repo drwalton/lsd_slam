@@ -12,7 +12,7 @@
 
 namespace lsd_slam {
 
-const float EPIPOLE_MAX_CLOSENESS = 0.95f; //Max dot product with epipole in stereo.
+const float EPIPOLE_MAX_CLOSENESS = 0.9f; //Max dot product with epipole in stereo.
 const float MAX_TRACED_ANGLE = float(M_PI / 8.);
 const float MIN_TRACED_DOT_PROD = cos(MAX_TRACED_ANGLE);
 
@@ -330,8 +330,6 @@ float doOmniStereo(
 //		+ referenceFrame->otherToThis_t;
 	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / min_idepth);
 	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / max_idepth);
-	lineStartPos.normalize();
-	lineEndPos.normalize();
 	float lineDotProd = lineStartPos.dot(lineEndPos);
 	if (lineDotProd < MIN_TRACED_DOT_PROD) {
 		//Line is too long.
@@ -737,24 +735,34 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 			<< *lineEndPix << " as length of " << eplLength << " is less"
 			" than required length " << minLength << std::endl;
 #endif
+		vec3 lineEndN = lineEnd->normalized();
+		vec3 lineStartN = lineStart->normalized();
 		float requiredStep = 0.5f*(minLength - eplLength);
-		float a = 1.f;
-		a += oModel.getEpipolarParamIncrement(a, *lineEnd, *lineStart, requiredStep);
-		vec3 padLineEnd = a*(*lineEnd) + (1.f - a)*(*lineStart);
-		a = 1.f;
-		a += oModel.getEpipolarParamIncrement(a, *lineStart, *lineEnd, requiredStep);
-		vec3 padLineStart = a*(*lineStart) + (1.f - a)*(*lineEnd);
+		int step = int(ceilf(requiredStep));
+		float aFwd = 1.f;
+		
+		for (int i = 0; i < step; ++i) {
+			aFwd += oModel.getEpipolarParamIncrement(aFwd, lineEndN, lineStartN, 1);
+		}
+		vec3 padLineEnd = aFwd*(*lineEnd) + (1.f - aFwd)*(*lineStart);
+		vec2 padLineEndPix = oModel.camToPixel(padLineEnd);
 
+		float aBwd = 1.f;
+		for (int i = 0; i < step; ++i) {
+			aBwd += oModel.getEpipolarParamIncrement(aBwd, lineStartN, lineEndN, 1);
+		}
+		vec3 padLineStart = aBwd*(*lineStart) + (1.f - aBwd)*(*lineEnd);
+		vec2 padLineStartPix = oModel.camToPixel(padLineStart);
+
+		eplLength = (padLineEnd - padLineStart).norm(); 
+		if (eplLength > 100.f) {
+			std::cout << "LONG LINE" << std::endl;
+		}
 		*lineStart = padLineStart;
 		*lineEnd = padLineEnd;
-		*lineStartPix = oModel.camToPixel(*lineStart);
-		*lineEndPix = oModel.camToPixel(*lineEnd);
+		*lineStartPix = padLineStartPix;
+		*lineEndPix = padLineEndPix;
 
-
-	eplLength = (*lineEndPix - *lineStartPix).norm(); 
-	if (eplLength > 100.f) {
-		std::cout << "LONG LINE" << std::endl;
-	}
 #ifdef DEBUG_PRINT_LINE_PADDING_STUFF
 		std::cout << "After padding, line runs from " << *lineStartPix 
 			<< " to " << *lineEndPix << " and has length of "
@@ -894,7 +902,70 @@ std::array<float, 5> findValuesToSearchFor(
 	return vals;
 }
 
+bool makePaddedEpipolarLineOmni(float u, float v,
+	float meanIDepth, float minIDepth, float maxIDepth,
+	float requiredLineLen,
+	const OmniCameraModel &model,
+	const RigidTransform &keyframeToReference,
+	LineSeg3d *keyframeLine,
+	LineSeg3d *refframeLine)
+{
+	//Create initial lines.
+	vec2 p(u, v);
+	vec3 projPtKeyframe = model.pixelToCam(p);
 
+	keyframeLine->start = projPtKeyframe / maxIDepth;
+	keyframeLine->end = projPtKeyframe / minIDepth;
+	refframeLine->start = keyframeToReference * keyframeLine->start;
+	refframeLine->end = keyframeToReference * keyframeLine->end;
+	vec3 epDirRefFrame = (keyframeToReference * vec3(0.f, 0.f, 0.f)).normalized();
+	if (fabsf(epDirRefFrame.dot(
+		(refframeLine->end - refframeLine->start).normalized())) 
+		> EPIPOLE_MAX_CLOSENESS) {
+		std::cout << "Fail: Too close to epipole!";
+		return false;
+	}
+
+	vec2 refStartPixel = model.camToPixel(refframeLine->start);
+	vec2 refEndPixel = model.camToPixel(refframeLine->end);
+
+	float initLength = (refEndPixel - refStartPixel).norm();
+
+	if(initLength < requiredLineLen) { 
+		//Line needs padding - length insufficient.
+
+		float padAmt = (requiredLineLen - initLength) / 2.f;
+		float lineEndA = 1.f, lineStartA = 0.f;
+		lineEndA += model.getEpipolarParamIncrement(
+			lineEndA, refframeLine->end, refframeLine->start, padAmt);
+		lineStartA += model.getEpipolarParamIncrement(
+			lineStartA, refframeLine->end, refframeLine->start, -padAmt);
+
+		LineSeg3d padRefframeLine;
+		LineSeg3d padKeyframeLine;
+
+		padRefframeLine.start = lineStartA*refframeLine->end + 
+			(1.f - lineStartA)*refframeLine->start;
+		padRefframeLine.end = lineEndA*refframeLine->end + 
+			(1.f - lineEndA)*refframeLine->start;
+
+		vec2 padRefFrameStartPix = model.camToPixel(padRefframeLine.start);
+		vec2 padRefFrameEndPix = model.camToPixel(padRefframeLine.end);
+		float newLen = (padRefFrameEndPix - padRefFrameStartPix).norm();
+		if (!(newLen < (1.1f * requiredLineLen))) {
+			std::cout << "Fail: Too long!";
+			return false;
+		}
+
+		*refframeLine = padRefframeLine;
+		keyframeLine->start = lineStartA*keyframeLine->end + 
+			(1.f - lineStartA)*keyframeLine->start;
+		keyframeLine->end = lineEndA*keyframeLine->end + 
+			(1.f - lineEndA)*keyframeLine->start;
+	}
+	
+	return true;
+}
 
 }
 

@@ -70,9 +70,11 @@ std::vector<std::unique_ptr<CameraModel> >
 	return models;
 }
 
-float OmniCameraModel::getEpipolarParamIncrement(float a, vec3 p0, vec3 p1,
+float OmniCameraModel::getEpipolarParamIncrement(float a, vec3 p0p, vec3 p1p,
 	float stepSize) const
 {
+	vec3 p0 = p0p;// .normalized();
+	vec3 p1 = p1p;// .normalized();
 	float na = (a*p0 + (1.f-a)*p1).norm();
 	float npa = (a*(p0.dot(p0)-p0.dot(p1)) + (1-a)*(p1.dot(p0)-p1.dot(p1)))/na;
 	
