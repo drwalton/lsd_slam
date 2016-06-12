@@ -52,7 +52,9 @@ DepthMapDebugSettings::DepthMapDebugSettings()
     printLineStereoFails(false),
 	saveAllFramesAsPointClouds(false),
 	saveAllFramesAsVectorClouds(false),
-	saveMatchesImages(false)
+	saveMatchesImages(false),
+	saveSearchRangesImages(false),
+	drawMatchInvChance(1)
 {}
 
 DepthMapDebugSettings::~DepthMapDebugSettings() throw()
@@ -156,6 +158,23 @@ void DepthMap::observeDepth()
 		Frame* refFrame = activeKeyFrameIsReactivated ? 
 			newest_referenceFrame : oldest_referenceFrame;
 		debugUpdateVisualiseMatchIms(activeKeyFrameImageData, refFrame->image());
+	}
+	if (settings.saveSearchRangesImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ? 
+			newest_referenceFrame : oldest_referenceFrame;
+		debugUpdateVisualiseSearchRangesIms(activeKeyFrameImageData, refFrame->image());
+		vec2 epipole = model->camToPixel(-refFrame->thisToOther_t);
+		vec2 epipole2 = model->camToPixel(refFrame->thisToOther_t);
+		if (model->pixelLocValid(epipole)) {
+			cv::circle(debugVisualiseSearchRangesIm, 
+				cv::Point(int(epipole.x() + model->w), int(epipole.y())), 
+				5, CV_RGB(0, 255, 0), 2);
+		}
+		if (model->pixelLocValid(epipole2)) {
+			cv::circle(debugVisualiseSearchRangesIm, 
+				cv::Point(int(epipole2.x() + model->w), int(epipole2.y())),
+				5, CV_RGB(0, 255, 0), 2);
+		}
 	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, height-3, 10);
@@ -426,6 +445,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		// update var with observation
 		float w = result_var / (result_var + id_var);
 		float new_idepth = (1-w)*result_idepth + w*target->idepth;
+		assert(new_idepth == new_idepth);
 		target->idepth = static_cast<float>(UNZERO(new_idepth));
 
 		// variance can only decrease from observation; never increase.
@@ -1239,6 +1259,12 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugVisualiseMatchesIm);
 	}
+	if (settings.saveSearchRangesImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "RangeIms/RangeKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugVisualiseSearchRangesIm);
+	}
 }
 
 void DepthMap::invalidate()
@@ -1551,6 +1577,24 @@ void DepthMap::debugUpdateVisualiseMatchIms(
 	const float *keyframe, const float *referenceFrame)
 {
 	cv::Mat &i = debugVisualiseMatchesIm;
+	if (i.cols != model->w * 2 || i.rows != model->h) {
+		i = cv::Mat(model->h, model->w * 2, CV_8UC3);
+	}
+	for (size_t r = 0; r < model->h; ++r) {
+		cv::Vec3b *rptr = i.ptr<cv::Vec3b>(r);
+		for (size_t c = 0; c < model->w; ++c) {
+			uchar kfVal = static_cast<uchar>(keyframe[r*model->w + c]);
+			uchar refVal = static_cast<uchar>(referenceFrame[r*model->w + c]);
+			rptr[c] = cv::Vec3b(kfVal, kfVal, kfVal);
+			rptr[c + model->w] = cv::Vec3b(refVal, refVal, refVal);
+		}
+	}
+}
+
+void DepthMap::debugUpdateVisualiseSearchRangesIms(
+	const float *keyframe, const float *referenceFrame)
+{
+	cv::Mat &i = debugVisualiseSearchRangesIm;
 	if (i.cols != model->w * 2 || i.rows != model->h) {
 		i = cv::Mat(model->h, model->w * 2, CV_8UC3);
 	}

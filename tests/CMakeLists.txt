@@ -36,6 +36,7 @@ target_link_libraries(TestOmniStereoWholeIm
 	${OPENGL_gl_LIBRARY}
 )
 link_libs_exec_debug(TestOmniStereoWholeIm FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
+link_libs_exec_debug(TestOmniStereoWholeIm G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
 add_executable(TestProjStereoWholeIm
 	TestProjStereoWholeIm.cpp
@@ -50,6 +51,7 @@ target_link_libraries(TestProjStereoWholeIm
 	${OPENGL_gl_LIBRARY}
 )
 link_libs_exec_debug(TestProjStereoWholeIm FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
+link_libs_exec_debug(TestProjStereoWholeIm G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
 add_executable(TestOmniStereo
 	TestOmniStereo.cpp
@@ -63,6 +65,7 @@ target_link_libraries(TestOmniStereo
 	${libtiff_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 )
+link_libs_exec_debug(TestOmniStereo G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
 add_executable(TestProjStereo
 	TestProjStereo.cpp
@@ -76,6 +79,7 @@ target_link_libraries(TestProjStereo
 	${libtiff_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 )
+link_libs_exec_debug(TestProjStereo G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
 add_executable(TestRayIntersection
 	TestRayIntersection.cpp
@@ -89,6 +93,7 @@ target_link_libraries(TestRayIntersection
 	${libtiff_LIBRARIES}
 	${OPENGL_gl_LIBRARY}
 )
+link_libs_exec_debug(TestRayIntersection G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 
 add_executable(TestDepthMapGeneration
 	TestDepthMapGeneration.cpp
@@ -180,4 +185,34 @@ target_link_libraries(TestDepthMapPropagation
 link_libs_exec_debug(TestDepthMapPropagation FLTK_LIB_RELEASE FLTK_LIB_DEBUG)
 link_libs_exec_debug(TestDepthMapPropagation G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 link_libs_exec_debug(TestDepthMapPropagation QT_LIBRARIES_RELEASE QT_LIBRARIES_DEBUG)
+
+add_executable(TestTraceEpipolarLine
+	TestTraceEpipolarLine.cpp
+)
+
+target_link_libraries(TestTraceEpipolarLine
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
+link_libs_exec_debug(TestTraceEpipolarLine G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
+
+add_executable(TestMakePaddedEpipolarLineOmni
+	TestMakePaddedEpipolarLineOmni.cpp
+)
+
+target_link_libraries(TestMakePaddedEpipolarLineOmni
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+	${Assimp_LIBRARY}
+	${Boost_LIBRARIES}
+	${libtiff_LIBRARIES}
+	${OPENGL_gl_LIBRARY}
+)
+link_libs_exec_debug(TestMakePaddedEpipolarLineOmni G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
+
+
 

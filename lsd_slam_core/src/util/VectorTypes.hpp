@@ -39,4 +39,9 @@ typedef RigidTransform WorldToCamTransform;
 cv::Point vec2Point(const vec2 &v);
 cv::Vec3b vec3ToColor(const vec3 &v);
 
+struct LineSeg3d {
+	vec3 start;
+	vec3 end;
+};
+
 }

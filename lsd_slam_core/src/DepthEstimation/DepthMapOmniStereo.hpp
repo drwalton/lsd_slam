@@ -66,7 +66,8 @@ float doOmniStereo(
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
 	cv::Mat &drawMat = emptyMat,
-	bool showMatch = false);
+	bool showMatch = false,
+	int drawMatchInvChance = 1);
 
 float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
 	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats);
@@ -134,6 +135,29 @@ struct RayIntersectionResult {
 std::ostream &operator <<(std::ostream &s, const RayIntersectionResult &r);
 
 RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2);
+
+///\brief Generate a padded epipolar line, of a specified minimum length.
+///       Return the line in the keyframe and reference frames' FoRs.
+///\return True if the line could be created, false otherwise.
+///\param u Pixel location in the keyframe.
+///\param v Pixel location in the keyframe.
+///\param meanIDepth Expected inverse depth
+///\param minIDepth Min inverse depth (i.e. max depth). Defines endpoint of line.
+///\param maxIDepth Max inverse depth (i.e. min depth). Defines endpoint of line.
+///\param requiredLineLen Required length of the line in the reference frame image,
+///       where length is given in pixels.
+///\param model Camera model
+///\param keyframeToReference Transform from the keyframes FoR to that of the reference.
+///\param[out] keyframeLine The line in the FoR of the keyframe.
+///\param[out] refframeLine The line in the FoR of the reference frame.
+///\note Can fail if chosen pixel location is too close to one of the epipoles.
+bool makePaddedEpipolarLineOmni(float u, float v,
+	float meanIDepth, float minIDepth, float maxIDepth,
+	float requiredLineLen,
+	const OmniCameraModel &model,
+	const RigidTransform &keyframeToReference,
+	LineSeg3d *keyframeLine,
+	LineSeg3d *refframeLine);
 
 }
 #endif

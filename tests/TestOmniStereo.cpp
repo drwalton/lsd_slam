@@ -54,15 +54,15 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 
 		float err = doOmniStereo(
 			float(x), float(y), -keyframeToReference.translation,
-			1.f / (depth * DEPTH_SEARCH_RANGE), 
+			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)), 
 			1.f / (depth),
-			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)),
+			1.f / (depth * DEPTH_SEARCH_RANGE),
 			fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
 			keyframeToReference,
 			&s, *omCamModel, fltIm1.cols,
 			epDir, matchDir, 
 			r_gradAlongLine, r_lineLen,
-			showIm2, true);
+			showIm2, true, 1);
 		
 		std::cout << "Grad Along Line: " << r_gradAlongLine << std::endl;
 
@@ -142,7 +142,9 @@ int main(int argc, char **argv)
 	WorldToCamTransform t1;
 	WorldToCamTransform t2;
 	t2.translation = vec3(-0.15f, 0.f, 0.f);
+	t2.rotation = Eigen::AngleAxisf(0.1f, vec3(1.f, 1.f, 0.f)).toRotationMatrix();
 	transform.translation() = t2.translation.cast<double>();
+	transform.setRotationMatrix(t2.rotation.cast<double>());
 	std::vector<cv::Vec3b> colors;
 	for (auto & color : m.vertColors()) {
 		colors.push_back(cv::Vec3b(

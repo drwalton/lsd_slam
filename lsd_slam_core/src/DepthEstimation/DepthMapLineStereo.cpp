@@ -23,6 +23,7 @@
 
 #include "DepthEstimation/DepthMap.hpp"
 #include "DepthEstimation/DepthMapLineStereo.hpp"
+#include "DepthEstimation/DepthMapInitSettings.hpp"
 
 #include <stdio.h>
 #include <fstream>
@@ -562,10 +563,10 @@ float doLineStereo(
 
 	result_eplLength = eplLength;
 	if (matchX != nullptr) {
-		*matchX = best_match_x;
+		*matchX = int(best_match_x);
 	}
 	if (matchY != nullptr) {
-		*matchY = best_match_y;
+		*matchY = int(best_match_y);
 	}
 	return best_match_err;
 }
@@ -599,7 +600,7 @@ float DepthMap::doLineStereo(
 		referenceFrame->initialTrackedResidual,
 		stats,
 		emptyMat, &matchx, &matchy);
-	if (settings.saveMatchesImages) {
+	if (settings.saveMatchesImages && r > 0.f) {
 		debugVisualiseMatch(vec2(u, v), vec2(matchx, matchy));
 	}
 	return r;

@@ -1,16 +1,20 @@
 #include "DepthEstimation/DepthMapOmniStereo.hpp"
 #include "DepthEstimation/DepthMap.hpp"
+#include "DepthEstimation/DepthMapInitSettings.hpp"
 #include "Util/globalFuncs.hpp"
 #include "DataStructures/Frame.hpp"
 
 #include <opencv2/opencv.hpp>
+#include <cmath>
 
 ///This file contains the depth estimation functions specific to Omnidirectional
 /// camera models.
 
-#define EPIPOLE_MAX_CLOSENESS (0.95f) //Max dot product with epipole in stereo.
-
 namespace lsd_slam {
+
+const float EPIPOLE_MAX_CLOSENESS = 0.9f; //Max dot product with epipole in stereo.
+const float MAX_TRACED_ANGLE = float(M_PI / 8.);
+const float MIN_TRACED_DOT_PROD = cos(MAX_TRACED_ANGLE);
 
 ///\brief Check if an epipolar line lies within an omnidirectional image.
 ///\note For now, just checks if the endpoints lie in the image.
@@ -205,6 +209,9 @@ float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
 	}
 	alpha = r.position.norm();
 	idepth = 1.f / alpha;
+	if (idepth != idepth) {
+		return -2;
+	}
 	return idepth;
 }
 
@@ -225,16 +232,34 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 
 	// calculate error from geometric noise (wrong camera pose / calibration)
 	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrameGradients, u, v, model->w);
-	float geoDispError = (gradsInterp[0] * bestEpDir[0] + 
+	float geoDispErrorDen = (gradsInterp[0] * bestEpDir[0] + 
 		gradsInterp[1] * bestEpDir[1]) + DIVISION_EPS;
-	geoDispError = trackingErrorFac*trackingErrorFac*
+	if (fabsf(geoDispErrorDen) < DIVISION_EPS) {
+		std::cout << "geoDispErrDenTooSmall" << std::endl;
+		throw std::runtime_error("geoDispErrTooSmall");
+	}
+	if (geoDispErrorDen != geoDispErrorDen) {
+		std::cout << "geoDispErrDen NAN" << std::endl;
+		throw std::runtime_error("geoDispErrDen NAN");
+	}
+	float geoDispError = trackingErrorFac*trackingErrorFac*
 		(gradsInterp[0] * gradsInterp[0] + gradsInterp[1] * gradsInterp[1]) / 
-		(geoDispError*geoDispError);
+		(geoDispErrorDen*geoDispErrorDen);
+	if (geoDispError != geoDispError) {
+		std::cout << "geoDispErr NAN" << std::endl;
+		throw std::runtime_error("geoDispErr NAN");
+	}
 
 	// final error consists of a small constant part (discretization error),
 	// geometric and photometric error.
-	return depth*depth*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist
+	float var = depth*depth*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist
 		+ geoDispError + photoDispError);	// square to make variance
+
+	if (var != var) {
+		std::cout << "Var != Var" << std::endl;
+		throw std::runtime_error("Var != Var!");
+	}
+	return var;
 }
 
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
@@ -268,9 +293,20 @@ float doOmniStereo(
 	const float* const keyframe, const float* referenceFrameImage,
 	const RigidTransform &keyframeToReference,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
-	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
-	cv::Mat &drawMatch, bool plotSearch)
+	vec2 &bestEpImDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
+	cv::Mat &drawMatch, bool plotSearch, int drawMatchInvChance)
 {
+	if (!(max_idepth > min_idepth)) {
+		std::cout << "wrong inv depths in doOmniStereo" << std::endl;
+		throw std::runtime_error("wrong inv depths in doOmniStereo");
+	}
+	if (!(min_idepth >= 0.f)) {
+		std::cout << "negative depth" << std::endl;
+		throw std::runtime_error("negative inv depth in doOmniStereo");
+	}
+
+	bool drawThisMatch = (!drawMatch.empty()) && ((rand() % drawMatchInvChance) == 0);
+
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 
 	//Find line containing possible positions for the match, in the frame of 
@@ -292,8 +328,13 @@ float doOmniStereo(
 //	vec3 expectedMatchPos = referenceFrame->otherToThis_R
 //		* (keyframePointDir / prior_idepth) 
 //		+ referenceFrame->otherToThis_t;
-	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / max_idepth);
-	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / min_idepth);
+	vec3 lineStartPos = keyframeToReference * vec3(keyframePointDir / min_idepth);
+	vec3 lineEndPos   = keyframeToReference * vec3(keyframePointDir / max_idepth);
+	float lineDotProd = lineStartPos.dot(lineEndPos);
+	if (lineDotProd < MIN_TRACED_DOT_PROD) {
+		//Line is too long.
+		return -1;
+	}
 
 	if (!epipolarLineInImageOmni(lineStartPos, lineEndPos, oModel))	{
 		if (enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
@@ -320,20 +361,22 @@ float doOmniStereo(
 		cv::imshow("TO FIND", showMat);
 	}
 
-	vec2 lineStartPix = oModel.camToPixel(lineStartPos);
-	vec2 lineEndPix   = oModel.camToPixel(lineEndPos  );
-	padEpipolarLineOmni(&lineStartPos, &lineEndPos, &lineStartPix, &lineEndPix,
-		MIN_EPL_LENGTH_CROP, oModel);
-	if (!drawMatch.empty()){
-		cv::circle(drawMatch, vec2Point(lineStartPix), 3, cv::Scalar(255, 0, 0));
-		cv::circle(drawMatch, vec2Point(lineEndPix), 3, cv::Scalar(255, 0, 0));
-		vec3 lineMidPos   = keyframeToReference * vec3(keyframePointDir / prior_idepth);
-		vec2 lineMidPix = oModel.camToPixel(lineMidPos);
-		cv::circle(drawMatch, vec2Point(lineMidPix), 3, cv::Scalar(0, 0, 255));
-	}
+	vec3 padLineStartPos = lineStartPos;
+	vec3 padLineEndPos = lineEndPos;
+	vec2 lineStartPix = oModel.camToPixel(padLineStartPos);
+	vec2 lineEndPix   = oModel.camToPixel(padLineEndPos  );
+	padEpipolarLineOmni(&padLineStartPos, &padLineEndPos, &lineStartPix, &lineEndPix,
+		2.f*MIN_EPL_LENGTH_CROP, oModel);
+	//if (drawThisMatch){
+	//	cv::circle(drawMatch, vec2Point(lineStartPix), 3, cv::Scalar(255, 0, 0));
+	//	cv::circle(drawMatch, vec2Point(lineEndPix), 3, cv::Scalar(255, 0, 0));
+	//	vec3 lineMidPos   = keyframeToReference * vec3(keyframePointDir / prior_idepth);
+	//	vec2 lineMidPix = oModel.camToPixel(lineMidPos);
+	//	cv::circle(drawMatch, vec2Point(lineMidPix), 3, cv::Scalar(0, 0, 255));
+	//}
 
 	//Check padded line still in image.
-	if (!epipolarLineInImageOmni(lineStartPos, lineEndPos, oModel))	{
+	if (!epipolarLineInImageOmni(padLineStartPos, padLineEndPos, oModel))	{
 		if (enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
 		return -1;
 	}
@@ -356,27 +399,27 @@ float doOmniStereo(
 	std::vector<cv::Vec3b> ssdColors;
 
 	//Find first 4 values along line.
-	lineDir[2] = lineStartPos;
+	lineDir[2] = padLineStartPos;
 	linePix[2] = lineStartPix;
 	lineValue[2] = getInterpolatedElement(referenceFrameImage, lineStartPix, width);
 	float a = 1.f; vec3 dir;
-	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos, GRADIENT_SAMPLE_DIST);
-	lineDir[1] = a*lineStartPos + (1.f - a)*lineEndPos;
+	a += oModel.getEpipolarParamIncrement(a, padLineStartPos, padLineEndPos, GRADIENT_SAMPLE_DIST);
+	lineDir[1] = a*padLineStartPos + (1.f - a)*padLineEndPos;
 	linePix[1] = oModel.camToPixel(lineDir[1]);
 	if (!oModel.pixelLocValid(linePix[1])) {
 		return -1;
 	}
 	lineValue[1] = getInterpolatedElement(referenceFrameImage, linePix[1], width);
-	a += oModel.getEpipolarParamIncrement(a, lineStartPos, lineEndPos, GRADIENT_SAMPLE_DIST);
-	lineDir[0] = a*lineStartPos + (1.f - a)*lineEndPos;
+	a += oModel.getEpipolarParamIncrement(a, padLineStartPos, padLineEndPos, GRADIENT_SAMPLE_DIST);
+	lineDir[0] = a*padLineStartPos + (1.f - a)*padLineEndPos;
 	linePix[0] = oModel.camToPixel(lineDir[0]);
 	if (!oModel.pixelLocValid(linePix[0])) {
 		return -1;
 	}
 	lineValue[0] = getInterpolatedElement(referenceFrameImage, linePix[0], width);
 	a = 0.f;
-	a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos, GRADIENT_SAMPLE_DIST);
-	lineDir[3] = a*lineEndPos + (1.f - a)*lineStartPos;
+	a += oModel.getEpipolarParamIncrement(a, padLineEndPos, padLineStartPos, GRADIENT_SAMPLE_DIST);
+	lineDir[3] = a*lineEndPos + (1.f - a)*padLineStartPos;
 	linePix[3] = oModel.camToPixel(lineDir[3]);
 	if (!oModel.pixelLocValid(linePix[3])) {
 		return -1;
@@ -389,15 +432,23 @@ float doOmniStereo(
 		}
 	}
 
+	if (drawThisMatch && drawMatch.cols == width * 2) {
+		cv::circle(drawMatch, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
+	}
+
+
 	tracedLineLen = 0.f;
 	//Advance along line.
 	size_t loopC = 0;
 	float errLast = -1.f;
 	while (centerA <= 1.f) {
+		if (loopC > 100) {
+			std::cout << "LONG LINE" << std::endl;
+		}
 		centerA = a;
 		//Find fifth entry
-		a += oModel.getEpipolarParamIncrement(a, lineEndPos, lineStartPos, GRADIENT_SAMPLE_DIST);
-		lineDir[4] = a*lineEndPos + (1.f - a)*lineStartPos;
+		a += oModel.getEpipolarParamIncrement(a, padLineEndPos, padLineStartPos, GRADIENT_SAMPLE_DIST);
+		lineDir[4] = a*padLineEndPos + (1.f - a)*padLineStartPos;
 		linePix[4] = oModel.camToPixel(lineDir[4]);
 		if (!oModel.pixelLocValid(linePix[4])) {
 			//Epipolar curve has left image - terminate here.
@@ -423,12 +474,17 @@ float doOmniStereo(
 			}
 		}
 
-		if (!drawMatch.empty()) {
+		if (drawThisMatch) {
 			vec3 rgb = 255.f * hueToRgb(0.8f * err / 325125.f);
 			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
 			ssdColors.push_back(rgbB);
-			drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x())) =
-				rgbB;
+			if (drawMatch.cols == width * 2) {
+				drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x() + width)) =
+					rgbB;
+			} else {
+				drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x())) =
+					rgbB;
+			}
 		}
 
 		if (err < bestMatchErr) {
@@ -454,7 +510,13 @@ float doOmniStereo(
 			bestMatchPre = linePix[1];
 			bestMatchPost = linePix[3];
 			loopCBest = loopC;
-			bestEpDir = linePix[3] - linePix[2];
+			bestEpImDir = linePix[3] - linePix[2];
+			if (bestEpImDir == vec2::Zero()) {
+				bestEpImDir = linePix[2] - linePix[1];
+				if (bestEpImDir == vec2::Zero()) {
+					return -4;
+				}
+			}
 		} else {
 			if (bestWasLastLoop) {
 				bestMatchErrPost = err;
@@ -485,6 +547,16 @@ float doOmniStereo(
 		tracedLineLen += (linePix[2] - linePix[1]).norm();
 		++loopC;
 		errLast = err;
+	}
+
+	if (drawThisMatch) {
+		vec3 rgb(0, 255.f, 255.f);
+		cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+		//ssdColors.push_back(rgbB);
+		if (drawMatch.cols == width * 2) {
+			drawMatch.at<cv::Vec3b>(int(bestMatchPix.y()), int(bestMatchPix.x() + width)) =
+				rgbB;
+		}	
 	}
 	
 	if(plotSearch) {
@@ -572,7 +644,12 @@ float doOmniStereo(
 		return -3;
 	}
 
-	bestEpDir.normalize();
+
+	bestEpImDir.normalize();
+	if (bestEpImDir != bestEpImDir) {
+		std::cout << "bestEpImDir != bestEpImDir" << std::endl;
+		throw std::runtime_error("bestEpImDir != bestEpImDir");
+	}
 	
 	return bestMatchErr;
 }
@@ -586,25 +663,46 @@ float DepthMap::doOmniStereo(
 {
 	OmniCameraModel &oModel = static_cast<OmniCameraModel&>(*model);
 	
-	vec2 bestEpDir;
+	vec2 bestEpImDir;
 	vec3 bestMatchPos;
 	RigidTransform keyframeToReference;
 	keyframeToReference.translation = referenceFrame->otherToThis_t;
 	keyframeToReference.rotation = referenceFrame->otherToThis_R;
 	float gradAlongLine, tracedLineLen;
-	float bestMatchErr = lsd_slam::doOmniStereo(u, v, epDir, min_idepth, prior_idepth, max_idepth,
-		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-		stats, oModel, referenceFrame->width(), bestEpDir, bestMatchPos, gradAlongLine, tracedLineLen);
+	float bestMatchErr;
+	if (settings.saveSearchRangesImages) {
+		bestMatchErr = lsd_slam::doOmniStereo(u, v, epDir, min_idepth, prior_idepth, max_idepth,
+			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+			stats, oModel, referenceFrame->width(), bestEpImDir, bestMatchPos, gradAlongLine, 
+			tracedLineLen, debugVisualiseSearchRangesIm, false, settings.drawMatchInvChance);
+	}
+	else {
 
-	bestEpDir.normalize();
-	float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var, 
-		gradAlongLine, bestEpDir, referenceFrame, activeKeyFrame, 
-		GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
-	if (r > 0.f) {
-		if (settings.saveMatchesImages) {
-			debugVisualiseMatch(vec2(u, v), model->camToPixel(bestMatchPos));
-		}
-		return r;
+		bestMatchErr = lsd_slam::doOmniStereo(u, v, epDir, min_idepth, prior_idepth, max_idepth,
+			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+			stats, oModel, referenceFrame->width(), bestEpImDir, bestMatchPos, gradAlongLine, tracedLineLen);
+	}
+
+	if (bestMatchErr > 0.f) {
+		float depth = (keyframeToReference * bestMatchPos).norm();
+		float idepth = 1.f / depth;
+		result_idepth = idepth;
+		float var = findVarOmni(u, v, bestMatchPos.normalized(), gradAlongLine,
+				bestEpImDir, activeKeyFrame->gradients(0), referenceFrame->initialTrackedResidual,
+				GRADIENT_SAMPLE_DIST, false, &oModel, stats, 1.f / idepth);
+		result_var = var;
+		//float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var,
+		//	gradAlongLine, bestEpImDir, referenceFrame, activeKeyFrame,
+		//	GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
+		//if (r >= 0.f) {
+		//	if (result_idepth != result_idepth) {
+		//		throw std::runtime_error("idepth is nan");
+		//	}
+			if (settings.saveMatchesImages) {
+				debugVisualiseMatch(vec2(u, v), model->camToPixel(bestMatchPos));
+			}
+		//	return r;
+		//}
 	}
 
 	result_eplLength = tracedLineLen;
@@ -637,16 +735,34 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 			<< *lineEndPix << " as length of " << eplLength << " is less"
 			" than required length " << minLength << std::endl;
 #endif
+		vec3 lineEndN = lineEnd->normalized();
+		vec3 lineStartN = lineStart->normalized();
 		float requiredStep = 0.5f*(minLength - eplLength);
-		float a = 1.f;
-		a += oModel.getEpipolarParamIncrement(a, *lineEnd, *lineStart, requiredStep);
-		*lineEnd = a*(*lineEnd) + (1.f - a)*(*lineStart);
-		a = 1.f;
-		a += oModel.getEpipolarParamIncrement(a, *lineStart, *lineEnd, requiredStep);
-		*lineStart = a*(*lineStart) + (1.f - a)*(*lineEnd);
+		int step = int(ceilf(requiredStep));
+		float aFwd = 1.f;
+		
+		for (int i = 0; i < step; ++i) {
+			aFwd += oModel.getEpipolarParamIncrement(aFwd, lineEndN, lineStartN, 1);
+		}
+		vec3 padLineEnd = aFwd*(*lineEnd) + (1.f - aFwd)*(*lineStart);
+		vec2 padLineEndPix = oModel.camToPixel(padLineEnd);
 
-		*lineStartPix = oModel.camToPixel(*lineStart);
-		*lineEndPix = oModel.camToPixel(*lineEnd);
+		float aBwd = 1.f;
+		for (int i = 0; i < step; ++i) {
+			aBwd += oModel.getEpipolarParamIncrement(aBwd, lineStartN, lineEndN, 1);
+		}
+		vec3 padLineStart = aBwd*(*lineStart) + (1.f - aBwd)*(*lineEnd);
+		vec2 padLineStartPix = oModel.camToPixel(padLineStart);
+
+		eplLength = (padLineEnd - padLineStart).norm(); 
+		if (eplLength > 100.f) {
+			std::cout << "LONG LINE" << std::endl;
+		}
+		*lineStart = padLineStart;
+		*lineEnd = padLineEnd;
+		*lineStartPix = padLineStartPix;
+		*lineEndPix = padLineEndPix;
+
 #ifdef DEBUG_PRINT_LINE_PADDING_STUFF
 		std::cout << "After padding, line runs from " << *lineStartPix 
 			<< " to " << *lineEndPix << " and has length of "
@@ -786,7 +902,70 @@ std::array<float, 5> findValuesToSearchFor(
 	return vals;
 }
 
+bool makePaddedEpipolarLineOmni(float u, float v,
+	float meanIDepth, float minIDepth, float maxIDepth,
+	float requiredLineLen,
+	const OmniCameraModel &model,
+	const RigidTransform &keyframeToReference,
+	LineSeg3d *keyframeLine,
+	LineSeg3d *refframeLine)
+{
+	//Create initial lines.
+	vec2 p(u, v);
+	vec3 projPtKeyframe = model.pixelToCam(p);
 
+	keyframeLine->start = projPtKeyframe / maxIDepth;
+	keyframeLine->end = projPtKeyframe / minIDepth;
+	refframeLine->start = keyframeToReference * keyframeLine->start;
+	refframeLine->end = keyframeToReference * keyframeLine->end;
+	vec3 epDirRefFrame = (keyframeToReference * vec3(0.f, 0.f, 0.f)).normalized();
+	if (fabsf(epDirRefFrame.dot(
+		(refframeLine->end - refframeLine->start).normalized())) 
+		> EPIPOLE_MAX_CLOSENESS) {
+		std::cout << "Fail: Too close to epipole!";
+		return false;
+	}
+
+	vec2 refStartPixel = model.camToPixel(refframeLine->start);
+	vec2 refEndPixel = model.camToPixel(refframeLine->end);
+
+	float initLength = (refEndPixel - refStartPixel).norm();
+
+	if(initLength < requiredLineLen) { 
+		//Line needs padding - length insufficient.
+
+		float padAmt = (requiredLineLen - initLength) / 2.f;
+		float lineEndA = 1.f, lineStartA = 0.f;
+		lineEndA += model.getEpipolarParamIncrement(
+			lineEndA, refframeLine->end, refframeLine->start, padAmt);
+		lineStartA += model.getEpipolarParamIncrement(
+			lineStartA, refframeLine->end, refframeLine->start, -padAmt);
+
+		LineSeg3d padRefframeLine;
+		LineSeg3d padKeyframeLine;
+
+		padRefframeLine.start = lineStartA*refframeLine->end + 
+			(1.f - lineStartA)*refframeLine->start;
+		padRefframeLine.end = lineEndA*refframeLine->end + 
+			(1.f - lineEndA)*refframeLine->start;
+
+		vec2 padRefFrameStartPix = model.camToPixel(padRefframeLine.start);
+		vec2 padRefFrameEndPix = model.camToPixel(padRefframeLine.end);
+		float newLen = (padRefFrameEndPix - padRefFrameStartPix).norm();
+		if (!(newLen < (1.1f * requiredLineLen))) {
+			std::cout << "Fail: Too long!";
+			return false;
+		}
+
+		*refframeLine = padRefframeLine;
+		keyframeLine->start = lineStartA*keyframeLine->end + 
+			(1.f - lineStartA)*keyframeLine->start;
+		keyframeLine->end = lineEndA*keyframeLine->end + 
+			(1.f - lineEndA)*keyframeLine->start;
+	}
+	
+	return true;
+}
 
 }
 
