@@ -1487,14 +1487,14 @@ void DepthMap::saveCurrMapAsPointCloud(const std::string &filename)
 
 void DepthMap::saveCurrMapAsVectorCloud(const std::string &filename)
 {
-	const std::array<GLuint, 36> CUBOID_INDICES = {
+	const std::array<GLuint, 36> CUBOID_INDICES = {{
 		3,1,0, 3,2,1,
 		0,5,4, 0,1,5,
 		1,6,5, 1,2,6,
 		3,4,7, 3,0,4,
 		2,7,6, 2,3,7,
 		4,6,7, 4,5,6
-	};
+	}};
 	const float cuboidWidth = 0.01f;
 
 	ModelLoader modelLoader;

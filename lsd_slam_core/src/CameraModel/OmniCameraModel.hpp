@@ -67,7 +67,7 @@ public:
 	///\param p The point to attempt to project into image space.
 	///\param[out] pixelLoc The projected pixel location (optional).
 	///\return true if the location is valid, false otherwise.
-	bool pointInImage(const vec3 &p, vec2 *pixelLoc = nullptr) const;
+	bool pointInImage(const vec3 &p) const;
 
 	///\brief Checks if a pixel location is valid (i.e. lies within the circle
 	///       defined by the parameters c, r.
@@ -77,7 +77,11 @@ public:
 
 	virtual std::unique_ptr<CameraModel> clone() const;
 
+	const vec2 fovAngles;
+	
 	virtual vec2 getFovAngles() const;
+private:
+	const float minDotProduct;
 };
 
 }

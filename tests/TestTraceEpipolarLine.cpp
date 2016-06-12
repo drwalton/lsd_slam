@@ -66,6 +66,17 @@ int main(int argc, char **argv)
 	projMidPt = omCamModel->camToPixel(midPt);
 
 	std::cout << "Moving " << increment << " pixels along the line from\n"
+		<< pixelLoc2 << "\nto\n" << pixelLoc1 << "\ngives pixel location\n"
+		<< projMidPt << "\n" << std::endl;
+
+
+	projPt1 = 1000.f * projPt1;
+	a = 0.f;
+	a += omCamModel->getEpipolarParamIncrement(a, projPt1, projPt2, increment);
+	midPt = a*(projPt1)+(1.f - a)*(projPt2);
+	projMidPt = omCamModel->camToPixel(midPt);
+
+	std::cout << "Moving " << increment << " pixels along the line from\n"
 		<< pixelLoc1 << "\nto\n" << pixelLoc2 << "\ngives pixel location\n"
 		<< projMidPt << "\n" << std::endl;
 

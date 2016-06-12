@@ -8,6 +8,26 @@ using namespace lsd_slam;
 
 OmniCameraModel *omCamModel;
 
+void showResult(MakePaddedLineErrorCode code,
+	const LineSeg3d &refframeLine, const LineSeg3d &keyframeLine)
+{
+	if(code == MakePaddedLineErrorCode::SUCCESS) {
+		std::cout << "Successfully padded line!\nIn ref frame:\n"
+			<< refframeLine.start << "\n->\n" << refframeLine.end <<
+			"\nIn keyframe:\n" << keyframeLine.start << "\n->\n" <<
+			keyframeLine.end << std::endl;
+	}
+	else if(code == MakePaddedLineErrorCode::FAIL_NEAR_EPIPOLE) {
+		std::cout << "Failed to pad line: too near epipole!" << std::endl;
+	}
+	else if(code == MakePaddedLineErrorCode::FAIL_TOO_LONG) {
+		std::cout << "Failed to pad line: line too long!" << std::endl;
+	}
+	else if(code == MakePaddedLineErrorCode::FAIL_OUT_OF_IMAGE) {
+		std::cout << "Failed to pad line: line out of image!" << std::endl;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	if(argc < 2 || argv[1] == std::string("-h")) {
@@ -28,42 +48,31 @@ int main(int argc, char **argv)
 	float maxIDepth = 0.98f;
 	float minIDepth = 0.92f;
 	LineSeg3d keyframeLine, refframeLine;
+	vec3 keyframeDir;
+	OmniEpLine2d refframeLinePix;
 
 	std::cout << "*** Trying line 1: Straight forwards ***" << std::endl;
-	if (makePaddedEpipolarLineOmni(200, 200, eIDepth, minIDepth, maxIDepth, 5.f,
-		*omCamModel, keyframeToReference, &keyframeLine, &refframeLine)) {
-		std::cout << "Successfully padded line!\nIn ref frame:\n"
-			<< refframeLine.start << "\n->\n" << refframeLine.end <<
-			"\nIn keyframe:\n" << keyframeLine.start << "\n->\n" <<
-			keyframeLine.end << std::endl;
-	}
-	else {
-		std::cout << "Failed to pad line!" << std::endl;
-	}
+	MakePaddedLineErrorCode code = makePaddedEpipolarLineOmni(200, 200, eIDepth,
+		minIDepth, maxIDepth, 5.f,
+		*omCamModel, keyframeToReference, &keyframeDir,
+		&keyframeLine, &refframeLine,
+		&refframeLinePix);
+	showResult(code, refframeLine, keyframeLine);
 
 	std::cout << "*** Trying line 2: Straight down ***" << std::endl;
-	if (makePaddedEpipolarLineOmni(200, 400, eIDepth, minIDepth, maxIDepth, 5.f,
-		*omCamModel, keyframeToReference, &keyframeLine, &refframeLine)) {
-		std::cout << "Successfully padded line!\nIn ref frame:\n"
-			<< refframeLine.start << "\n->\n" << refframeLine.end <<
-			"\nIn keyframe:\n" << keyframeLine.start << "\n->\n" <<
-			keyframeLine.end << std::endl;
-	}
-	else {
-		std::cout << "Failed to pad line!" << std::endl;
-	}
+	code = makePaddedEpipolarLineOmni(200, 400, eIDepth,
+		minIDepth, maxIDepth, 5.f,
+		*omCamModel, keyframeToReference, &keyframeDir,
+		&keyframeLine, &refframeLine,
+		&refframeLinePix);
+	showResult(code, refframeLine, keyframeLine);
 
 	std::cout << "*** Trying line 3: Nearly straight down ***" << std::endl;
-	if (makePaddedEpipolarLineOmni(200, 324, eIDepth, minIDepth, maxIDepth, 5.f,
-		*omCamModel, keyframeToReference, &keyframeLine, &refframeLine)) {
-		std::cout << "Successfully padded line!\nIn ref frame:\n"
-			<< refframeLine.start << "\n->\n" << refframeLine.end <<
-			"\nIn keyframe:\n" << keyframeLine.start << "\n->\n" <<
-			keyframeLine.end << std::endl;
-	}
-	else {
-		std::cout << "Failed to pad line!" << std::endl;
-	}
-
+	code = makePaddedEpipolarLineOmni(200, 324, eIDepth,
+		minIDepth, maxIDepth, 5.f,
+		*omCamModel, keyframeToReference, &keyframeDir,
+		&keyframeLine, &refframeLine,
+		&refframeLinePix);
+	showResult(code, refframeLine, keyframeLine);
 	return 0;
 }

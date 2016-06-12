@@ -41,14 +41,14 @@ cv::Mat raycast(
 			for(size_t c = 0; c < size_t(image.cols); ++c) {
     			Ray ray;
     			ray.origin = origin;
-    			ray.dir = /*invRot * */model.pixelToCam(vec2(c,r));
+    			ray.dir = invRot * model.pixelToCam(vec2(c,r));
 				float depth;
 				cv::Vec3b col1 = shootRay(ray, vertices, indices, colors, depth);
-				ray.dir = model.pixelToCam(vec2(c+0.5f, r));
+				ray.dir = invRot * model.pixelToCam(vec2(c+0.5f, r));
 				cv::Vec3b col2 = shootRay(ray, vertices, indices, colors, depth);
-				ray.dir = model.pixelToCam(vec2(c+0.5f, r+0.5f));
+				ray.dir = invRot * model.pixelToCam(vec2(c+0.5f, r+0.5f));
 				cv::Vec3b col3 = shootRay(ray, vertices, indices, colors, depth);
-				ray.dir = model.pixelToCam(vec2(c, r+0.5f));
+				ray.dir = invRot * model.pixelToCam(vec2(c, r+0.5f));
 				cv::Vec3b col4 = shootRay(ray, vertices, indices, colors, depth);
 				cv::Vec3i colI = col1;
 				colI += col2;

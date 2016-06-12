@@ -8,7 +8,9 @@ namespace lsd_slam {
 OmniCameraModel::OmniCameraModel(
 	float fx, float fy, float cx, float cy, size_t w, size_t h, float e,
 	vec2 c, float r)
-	:CameraModel(fx, fy, cx, cy, w, h), e(e), c(c), r(r)
+	:CameraModel(fx, fy, cx, cy, w, h), e(e), c(c), r(r),
+	fovAngles(getFovAngles()),
+	minDotProduct(cosf(fminf(fovAngles.x(), fovAngles.y())))
 {}
 
 OmniCameraModel::~OmniCameraModel()
@@ -73,8 +75,8 @@ std::vector<std::unique_ptr<CameraModel> >
 float OmniCameraModel::getEpipolarParamIncrement(float a, vec3 p0p, vec3 p1p,
 	float stepSize) const
 {
-	vec3 p0 = p0p;// .normalized();
-	vec3 p1 = p1p;// .normalized();
+	vec3 p0 = p0p;//.normalized();
+	vec3 p1 = p1p;//.normalized();
 	float na = (a*p0 + (1.f-a)*p1).norm();
 	float npa = (a*(p0.dot(p0)-p0.dot(p1)) + (1-a)*(p1.dot(p0)-p1.dot(p1)))/na;
 	
@@ -132,13 +134,11 @@ bool OmniCameraModel::pixelLocValid(const vec2 &p) const
 	return d.norm() < r;
 }
 
-bool OmniCameraModel::pointInImage(const vec3 &p, vec2 *pixelLoc) const
+bool OmniCameraModel::pointInImage(const vec3 &p) const
 {
-	vec2 pix = camToPixel(p);
-	if (pixelLoc) {
-		*pixelLoc = pix;
-	}
-	return pixelLocValid(pix);
+	vec3 pn = p.normalized();
+	float dotProd = pn.dot(vec3(0.f, 0.f, 1.f));
+	return dotProd > minDotProduct;
 }
 
 }

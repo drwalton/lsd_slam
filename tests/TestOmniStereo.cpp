@@ -52,6 +52,7 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 			<< ", " << depth << ", " << depth * (2.f - DEPTH_SEARCH_RANGE)
 			<< std::endl;
 
+		vec3 keyframeMatchPt;
 		float err = doOmniStereo(
 			float(x), float(y), -keyframeToReference.translation,
 			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)), 
@@ -61,10 +62,11 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 			keyframeToReference,
 			&s, *omCamModel, fltIm1.cols,
 			epDir, matchDir, 
-			r_gradAlongLine, r_lineLen,
+			r_gradAlongLine, r_lineLen, keyframeMatchPt,
 			showIm2, true, 1);
 		
 		std::cout << "Grad Along Line: " << r_gradAlongLine << std::endl;
+		
 
 		if(err < 0.f) {
 			std::cout << "Stereo match failed! Code: " << err << std::endl;
@@ -80,8 +82,9 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 					break;
 			}
 		} else {
-			r_idepth = findInvDepthOmni(float(x), float(y), matchDir, omCamModel, keyframeToReference.inverse(),
-				&s);
+//			r_idepth = findInvDepthOmni(float(x), float(y), matchDir, omCamModel, keyframeToReference.inverse(),
+//				&s);
+			r_idepth = 1.f / keyframeMatchPt.norm();
 			vec2 matchPixel = omCamModel->camToPixel(matchDir);
 			std::cout << "Match found: " << matchPixel << std::endl;
 			cv::circle(showIm2, vec2Point(matchPixel), 3, cv::Scalar(0,255,0));

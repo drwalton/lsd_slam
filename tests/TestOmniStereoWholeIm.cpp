@@ -132,18 +132,18 @@ int main(int argc, char **argv)
 
 			float depth = depth1.at<float>(r, c);
 
-			vec3 matchDir; vec2 epDir;
+			vec3 matchDir; vec2 epDir; vec3 bestMatchKeyframe;
 
 			float err = doOmniStereo(
 				float(c), float(r), (-keyframeToReference.translation).normalized(),
-				1.f / (depth * DEPTH_SEARCH_RANGE),
-				1.f / (depth),
 				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
+				1.f / (depth),
+				1.f / (depth * DEPTH_SEARCH_RANGE),
 				fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
 				keyframeToReference,
 				&stats, *omCamModel, fltIm1.cols,
 				epDir, matchDir,
-				r_gradAlongLine, r_lineLen);
+				r_gradAlongLine, r_lineLen, bestMatchKeyframe);
 			if (err > 0) {
 				float idepth =
 					findInvDepthOmni(float(c), float(r), matchDir, omCamModel, 
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 				float var = findVarOmni(float(c), float(r), matchDir, 
 					r_gradAlongLine, epDir, keyframeGradients.data(),
 					initialTrackedResidual,
-					GRADIENT_SAMPLE_DIST, false, omCamModel, &stats, depth);
+					1.f, false, omCamModel, &stats, depth);
 				color = 255.f * hueToRgb(var / 10.f);
 				varIm.at<cv::Vec3b>(r, c) = cv::Vec3b(
 					uchar(color.z()), uchar(color.y()), uchar(color.x()));

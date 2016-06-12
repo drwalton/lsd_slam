@@ -44,4 +44,11 @@ struct LineSeg3d {
 	vec3 end;
 };
 
+struct LineSeg2d {
+	vec2 start;
+	vec2 end;
+};
+
+typedef LineSeg2d OmniEpLine2d;
+
 }
