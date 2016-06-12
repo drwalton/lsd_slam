@@ -169,7 +169,7 @@ float doLineStereo(
 	float initialTrackedResidual,
 	RunningStats* const stats,
 	cv::Mat &drawIm,
-	int *matchX, int* matchY)
+	float *matchX, float* matchY)
 {
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 	vec3 K_otherToThis_t = model.K * keyframeToReference.translation;
@@ -588,7 +588,7 @@ float DepthMap::doLineStereo(
 	RigidTransform keyframeToReference;
 	keyframeToReference.rotation = referenceFrame->otherToThis_R;
 	keyframeToReference.translation = referenceFrame->otherToThis_t;
-	int matchx, matchy;
+	float matchx, matchy;
 	float r =  lsd_slam::doLineStereo(
 		u, v, epxn, epyn,
 		min_idepth, prior_idepth, max_idepth,
