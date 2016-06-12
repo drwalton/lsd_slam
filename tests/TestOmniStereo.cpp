@@ -55,9 +55,9 @@ void im1MouseCallback(int event, int x, int y, int flags, void *userData) {
 		vec3 keyframeMatchPt;
 		float err = doOmniStereo(
 			float(x), float(y), -keyframeToReference.translation,
-			1.f / (depth * (2.f-DEPTH_SEARCH_RANGE)), 
-			1.f / (depth),
-			1.f / (depth * DEPTH_SEARCH_RANGE),
+			.4f / depth,
+			1.f / depth,
+			1.4f / depth,
 			fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
 			keyframeToReference,
 			&s, *omCamModel, fltIm1.cols,

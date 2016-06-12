@@ -769,14 +769,14 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*otherDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 
 	a = 0.f;
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
@@ -784,14 +784,14 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	return true;
 }

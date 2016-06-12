@@ -136,9 +136,9 @@ int main(int argc, char **argv)
 
 			float err = doOmniStereo(
 				float(c), float(r), (-keyframeToReference.translation).normalized(),
-				1.f / (depth * (2.f - DEPTH_SEARCH_RANGE)),
-				1.f / (depth),
-				1.f / (depth * DEPTH_SEARCH_RANGE),
+				.4f / depth,
+				1.f / depth,
+				1.4f / depth,
 				fltIm1.ptr<float>(0), fltIm2.ptr<float>(0),
 				keyframeToReference,
 				&stats, *omCamModel, fltIm1.cols,

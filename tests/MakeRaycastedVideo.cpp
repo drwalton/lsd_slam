@@ -51,7 +51,8 @@ int main(int argc, char **argv) {
 
 	std::cout << "Vertices: \n" << m.vertices();
 
-	mat4 worldToCam = loadCamTransform(lsd_slam::resourcesDir() + argv[3]);
+	//mat4 worldToCam = loadCamTransform(lsd_slam::resourcesDir() + argv[3]);
+	mat4 worldToCam = mat4::Identity();
 	std::unique_ptr<CameraMotion> camMotion;
 
 
