@@ -37,6 +37,11 @@
 namespace lsd_slam
 {
 
+DepthMapDebugSettings::DepthMapDebugSettings()
+	:saveMatchImages(false),
+	saveSearchRangeImages(false),
+	drawMatchInvChance(1)
+{}
 
 
 DepthMap::DepthMap(const CameraModel &model)

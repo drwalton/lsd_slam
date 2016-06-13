@@ -21,11 +21,11 @@
 #pragma once
 #include <memory>
 #include "util/EigenCoreInclude.hpp"
-#include "opencv2/core/core.hpp"
 #include "util/settings.hpp"
 #include "util/IndexThreadReduce.hpp"
 #include "util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
+#include "DepthMapDebugImages.hpp"
 #ifdef _WIN32
 using g2o::timeval;
 #endif
@@ -38,6 +38,13 @@ class Frame;
 class KeyFrameGraph;
 class CameraModel;
 
+struct DepthMapDebugSettings
+{
+	explicit DepthMapDebugSettings();
+	bool saveMatchImages;
+	bool saveSearchRangeImages;
+	int drawMatchInvChance;
+};
 
 /**
  * Keeps a detailed depth map (consisting of DepthMapPixelHypothesis) and does
@@ -101,6 +108,9 @@ public:
 	// pointer to global keyframe graph
 	IndexThreadReduce threadReducer;
 
+	DepthMapDebugSettings settings;
+	DepthMapDebugImages debugImages;
+
 private:
 	std::unique_ptr<CameraModel> camModel_;
 
@@ -135,6 +145,13 @@ private:
 			float &result_idepth, float &result_var, float &result_eplLength,
 			RunningStats* const stats);
 
+	float DepthMap::doStereoOmni(
+		const float u, const float v, const vec3 &epDir,
+		const float min_idepth, const float prior_idepth, float max_idepth,
+		const Frame* const referenceFrame, const float* referenceFrameImage,
+		float &result_idepth, float &result_var, float &result_eplLength,
+		RunningStats* stats);
+
 
 	void propagateDepth(Frame* new_keyframe);
 	
@@ -144,6 +161,8 @@ private:
 	bool observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats);
 	bool observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats);
 	bool makeAndCheckEPLProj(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
+	bool makeAndCheckEPLOmni(const int x, const int y, const Frame* const ref,
+		vec3 *epDir, RunningStats* const stats);
 
 
 	void regularizeDepthMap(bool removeOcclusion, int validityTH);
