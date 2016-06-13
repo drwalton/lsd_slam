@@ -102,14 +102,7 @@ public:
 	IndexThreadReduce threadReducer;
 
 private:
-
 	std::unique_ptr<CameraModel> camModel_;
-	// camera matrix etc.
-	Eigen::Matrix3f K, KInv;
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
-	int width, height;
-
 
 	// ============= parameter copies for convenience ===========================
 	// these are just copies of the pointers given to this function, for convenience.
@@ -135,7 +128,7 @@ private:
 	// ============ internal functions ==================================================
 	// does the line-stereo seeking.
 	// takes a lot of parameters, because they all have been pre-computed before.
-	inline float doLineStereo(
+	inline float doStereoProj(
 			const float u, const float v, const float epxn, const float epyn,
 			const float min_idepth, const float prior_idepth, float max_idepth,
 			const Frame* const referenceFrame, const float* referenceFrameImage,
@@ -150,7 +143,7 @@ private:
 	void observeDepthRow(int yMin, int yMax, RunningStats* stats);
 	bool observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats);
 	bool observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats);
-	bool makeAndCheckEPL(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
+	bool makeAndCheckEPLProj(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
 
 
 	void regularizeDepthMap(bool removeOcclusion, int validityTH);
