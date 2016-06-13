@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Win32Compatibility.hpp"
+#include "System/Win32Compatibility.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "DataStructures/Frame.hpp"
 
@@ -52,7 +52,7 @@
 #include <fstream>
 
 #include "util/globalFuncs.hpp"
-#include "Win32Compatibility.hpp"
+#include "System/Win32Compatibility.hpp"
  
 
 namespace lsd_slam

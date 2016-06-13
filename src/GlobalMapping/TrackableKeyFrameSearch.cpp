@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Win32Compatibility.hpp"
+#include "System/Win32Compatibility.hpp"
 #include "GlobalMapping/TrackableKeyFrameSearch.hpp"
 
 #include "GlobalMapping/KeyFrameGraph.hpp"

@@ -31,7 +31,7 @@
 #include "keyframeGraphMsg.hpp"
 
 #include "QGLViewer/keyFrameInterpolator.h"
-#include "Win32Compatibility.hpp"
+#include "System/Win32Compatibility.hpp"
 
 class QApplication;
 

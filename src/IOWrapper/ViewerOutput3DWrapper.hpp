@@ -19,11 +19,11 @@
 */
 
 #pragma once
-#include "Win32Compatibility.hpp"
+#include "System/Win32Compatibility.hpp"
 #include "Output3DWrapper.hpp"
 #include <thread>
 #include <memory>
-#include "PointCloudViewer.hpp"
+#include "Viewer/PointCloudViewer.hpp"
 
 namespace lsd_slam {
 

@@ -3,8 +3,8 @@
 #include <iostream>
 #include "IOWrapper/OpenCVImageStream.hpp"
 #include "IOWrapper/ViewerOutput3DWrapper.hpp"
-#include "LiveSLAMWrapper.hpp"
-#include "Win32Compatibility.hpp"
+#include "System/LiveSLAMWrapper.hpp"
+#include "System/Win32Compatibility.hpp"
 
 int main(int argc, char **argv)
 {

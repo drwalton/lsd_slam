@@ -46,8 +46,8 @@ include_directories(
 	${G2O_INCLUDE_DIR}
 )
 
-add_subdirectory(lsd_slam_core)
-add_subdirectory(lsd_slam_viewer)
+include_directories(src)
+add_subdirectory(src)
 
 set(LSD_SLAM_LIBS
 	lsd_slam_System
@@ -56,8 +56,8 @@ set(LSD_SLAM_LIBS
 	lsd_slam_GlobalMapping
 	lsd_slam_IOWrapper
 	lsd_slam_Tracking
-	lsd_slam_util
-	lsd_slam_viewer
+	lsd_slam_Util
+	lsd_slam_Viewer
 )
 
 function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)

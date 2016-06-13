@@ -1,9 +1,9 @@
 #include "ViewerOutput3DWrapper.hpp"
-#include "PointCloudViewer.hpp"
+#include "Viewer/PointCloudViewer.hpp"
 #include "DataStructures/Frame.hpp"
-#include "KeyFrameDisplay.hpp"
+#include "Viewer/KeyFrameDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
-#include "KeyFrameGraphDisplay.hpp"
+#include "Viewer/KeyFrameGraphDisplay.hpp"
 #include <qapplication.h>
 
 struct Position {

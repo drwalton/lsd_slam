@@ -1,0 +1,9 @@
+add_subdirectory(DataStructures)
+add_subdirectory(DepthEstimation)
+add_subdirectory(GlobalMapping)
+add_subdirectory(IOWrapper)
+add_subdirectory(System)
+add_subdirectory(Tracking)
+add_subdirectory(Util)
+add_subdirectory(Viewer)
+

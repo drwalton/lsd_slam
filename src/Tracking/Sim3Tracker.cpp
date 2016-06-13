@@ -22,10 +22,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "DataStructures/Frame.hpp"
 #include "Tracking/TrackingReference.hpp"
-#include "util/globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.hpp"
-#include "Win32Compatibility.hpp"
+#include "System/Win32Compatibility.hpp"
 
 namespace lsd_slam
 {
