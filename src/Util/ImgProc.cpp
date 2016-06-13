@@ -20,14 +20,18 @@ namespace lsd_slam
 {
 
 void downscaleImageHalf(const float *in, float *out, size_t w, size_t h) {
-	for (size_t r = 0; r < h; r+=2) {
-		for (size_t c = 0; c < w; c+=2) {
-			*out = 0.25f *
-				in[r*w + c] +
-				in[(r + 1)*w + c] +
-				in[r*w + c + 1] +
-				in[(r + 1)*w + c + 1];
-			++out;
+	int wh = w*h;
+	const float* s;
+	for (int y = 0; y<wh; y += w * 2)
+	{
+		for (int x = 0; x<w; x += 2)
+		{
+			s = in + x + y;
+			*out = (s[0] +
+				s[1] +
+				s[w] +
+				s[1 + w]) * 0.25f;
+			out++;
 		}
 	}
 }
