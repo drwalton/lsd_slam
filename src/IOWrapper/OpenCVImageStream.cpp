@@ -4,8 +4,6 @@
 #include "CameraModel/ProjCameraModel.hpp"
 #include <iostream>
 #include "IOWrapper/ImageDisplay.hpp"
-#include "Viewer/ImageViewer.hpp"
-
 
 namespace lsd_slam {
 

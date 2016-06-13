@@ -102,6 +102,8 @@ public:
 	IndexThreadReduce threadReducer;
 
 private:
+
+	std::unique_ptr<CameraModel> camModel_;
 	// camera matrix etc.
 	Eigen::Matrix3f K, KInv;
 	float fx,fy,cx,cy;

@@ -40,6 +40,7 @@ namespace lsd_slam
 
 
 DepthMap::DepthMap(const CameraModel &model)
+	:camModel_(model.clone())
 {
 	//TODO FIX FOR OMNI
 	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&model);
@@ -1105,7 +1106,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 		else
 			refToKf = activeKeyFrame->getScaledCamToWorld().inverse() *  frame->getScaledCamToWorld();
 
-		frame->prepareForStereoWith(activeKeyFrame, refToKf, K, 0);
+		frame->prepareForStereoWith(activeKeyFrame, refToKf, *camModel_, 0);
 
 		while((int)referenceFrameByID.size() + referenceFrameByID_offset <= frame->id())
 			referenceFrameByID.push_back(frame.get());
@@ -1456,9 +1457,12 @@ inline float DepthMap::doLineStereo(
 	if(enablePrintDebugInfo) stats->num_stereo_calls++;
 
 	// calculate epipolar line start and end point in old image
+	const ProjCameraModel *pm = static_cast<const ProjCameraModel*>(&(referenceFrame->model()));
 	Eigen::Vector3f KinvP = Eigen::Vector3f(fxi*u+cxi,fyi*v+cyi,1.0f);
-	Eigen::Vector3f pInf = referenceFrame->K_otherToThis_R * KinvP;
-	Eigen::Vector3f pReal = pInf / prior_idepth + referenceFrame->K_otherToThis_t;
+	mat3 K_otherToThis_R = pm->K * referenceFrame->otherToThis_R;
+	vec3 K_otherToThis_t = pm->K * referenceFrame->otherToThis_t;
+	Eigen::Vector3f pInf = K_otherToThis_R * KinvP;
+	Eigen::Vector3f pReal = pInf / prior_idepth + K_otherToThis_t;
 
 	float rescaleFactor = pReal[2] * prior_idepth;
 
@@ -1492,17 +1496,17 @@ inline float DepthMap::doLineStereo(
 //	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
 
 
-	Eigen::Vector3f pClose = pInf + referenceFrame->K_otherToThis_t*max_idepth;
+	Eigen::Vector3f pClose = pInf + K_otherToThis_t*max_idepth;
 	// if the assumed close-point lies behind the
 	// image, have to change that.
 	if(pClose[2] < 0.001f)
 	{
-		max_idepth = (0.001f-pInf[2]) / referenceFrame->K_otherToThis_t[2];
-		pClose = pInf + referenceFrame->K_otherToThis_t*max_idepth;
+		max_idepth = (0.001f-pInf[2]) / K_otherToThis_t[2];
+		pClose = pInf + K_otherToThis_t*max_idepth;
 	}
 	pClose = pClose / pClose[2]; // pos in new image of point (xy), assuming max_idepth
 
-	Eigen::Vector3f pFar = pInf + referenceFrame->K_otherToThis_t*min_idepth;
+	Eigen::Vector3f pFar = pInf + K_otherToThis_t*min_idepth;
 	// if the assumed far-point lies behind the image or closter than the near-point,
 	// we moved past the Point it and should stop.
 	if(pFar[2] < 0.001f || max_idepth < min_idepth)

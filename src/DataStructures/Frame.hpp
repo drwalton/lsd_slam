@@ -19,24 +19,26 @@
 */
 
 #pragma once
-#include "util/SophusUtil.hpp"
-#include "util/settings.hpp"
+#include "Util/SophusUtil.hpp"
+#include "Util/settings.hpp"
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include "DataStructures/FramePoseStruct.hpp"
 #include "DataStructures/FrameMemory.hpp"
 #include <unordered_set>
-#include "util/settings.hpp"
-
+#include "Util/settings.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 namespace lsd_slam
 {
-
 
 class DepthMapPixelHypothesis;
 class TrackingReference;
 /**
  */
+
+void calculateImageGradients(const float *image, Eigen::Vector4f *gradients,
+	size_t width, size_t height);
 
 class Frame
 {
@@ -44,13 +46,11 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	friend class FrameMemory;
 
+	Frame(int id, const CameraModel &model, double timestamp, const unsigned char* image);
 
-	Frame(int id, int width, int height, const Eigen::Matrix3f& K, double timestamp, const unsigned char* image);
-
-	Frame(int id, int width, int height, const Eigen::Matrix3f& K, double timestamp, const float* image);
+	Frame(int id, const CameraModel &model, double timestamp, const float* image);
 
 	~Frame();
-	
 	
 	/** Sets or updates idepth and idepthVar on level zero. Invalidates higher levels. */
 	void setDepth(const DepthMapPixelHypothesis* newDepth);
@@ -62,9 +62,7 @@ public:
 	void setDepthFromGroundTruth(const float* depth, float cov_scale = 1.0f);
 	
 	/** Prepares this frame for stereo comparisons with the other frame (computes some intermediate values that will be needed) */
-	void prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const Eigen::Matrix3f& K, const int level);
-
-	
+	void prepareForStereoWith(Frame* other, const Sim3 &thisToOther, const CameraModel &m, const int level);
 
 	// Accessors
 	/** Returns the unique frame id. */
@@ -76,25 +74,7 @@ public:
 	inline int height(int level = 0) const;
 	
 	/** Returns the frame's intrinsics matrix. */
-	inline const Eigen::Matrix3f& K(int level = 0) const;
-	/** Returns the frame's inverse intrinsics matrix. */
-	inline const Eigen::Matrix3f& KInv(int level = 0) const;
-	/** Returns K(0, 0). */
-	inline float fx(int level = 0) const;
-	/** Returns K(1, 1). */
-	inline float fy(int level = 0) const;
-	/** Returns K(0, 2). */
-	inline float cx(int level = 0) const;
-	/** Returns K(1, 2). */
-	inline float cy(int level = 0) const;
-	/** Returns KInv(0, 0). */
-	inline float fxInv(int level = 0) const;
-	/** Returns KInv(1, 1). */
-	inline float fyInv(int level = 0) const;
-	/** Returns KInv(0, 2). */
-	inline float cxInv(int level = 0) const;
-	/** Returns KInv(1, 2). */
-	inline float cyInv(int level = 0) const;
+	inline const CameraModel& model(int level = 0) const;
 	
 	/** Returns the frame's recording timestamp. */
 	inline double timestamp() const;
@@ -133,13 +113,12 @@ public:
 
 
 	// shared_lock this as long as any minimizable arrays are being used.
-	// the minimizer will only minimize frames after getting
+	// the minimizer will only minimize frames after )etting
 	// an exclusive lock on this.
 	inline boost::shared_lock<boost::shared_mutex> getActiveLock()
 	{
 		return FrameMemory::getInstance().activateFrame(this);
 	}
-
 
 	/*
 	 * ==================================================================================
@@ -181,10 +160,8 @@ public:
 	int referenceID;
 	int referenceLevel;
 	float distSquared;
-	Eigen::Matrix3f K_otherToThis_R;
-	Eigen::Vector3f K_otherToThis_t;
+	Eigen::Matrix3f otherToThis_R;
 	Eigen::Vector3f otherToThis_t;
-	Eigen::Vector3f K_thisToOther_t;
 	Eigen::Matrix3f thisToOther_R;
 	Eigen::Vector3f otherToThis_R_row0;
 	Eigen::Vector3f otherToThis_R_row1;
@@ -210,7 +187,7 @@ private:
 	void require(int dataFlags, int level = 0);
 	void release(int dataFlags, bool pyramidsOnly, bool invalidateOnly);
 
-	void initialize(int id, int width, int height, const Eigen::Matrix3f& K, double timestamp);
+	void initialize(int id, const CameraModel &model, double timestamp);
 	void setDepth_Allocate();
 	
 	void buildImage(int level);
@@ -232,11 +209,7 @@ private:
 	{
 		int id;
 		
-		int width[PYRAMID_LEVELS], height[PYRAMID_LEVELS];
-
-		Eigen::Matrix3f K[PYRAMID_LEVELS], KInv[PYRAMID_LEVELS];
-		float fx[PYRAMID_LEVELS], fy[PYRAMID_LEVELS], cx[PYRAMID_LEVELS], cy[PYRAMID_LEVELS];
-		float fxInv[PYRAMID_LEVELS], fyInv[PYRAMID_LEVELS], cxInv[PYRAMID_LEVELS], cyInv[PYRAMID_LEVELS];
+		std::vector<std::unique_ptr<CameraModel> > models;
 		
 		double timestamp;
 
@@ -299,53 +272,17 @@ inline int Frame::id() const
 
 inline int Frame::width(int level) const
 {
-	return data.width[level];
+	return data.models[level]->w;
 }
 
 inline int Frame::height(int level) const
 {
-	return data.height[level];
+	return data.models[level]->h;
 }
 
-inline const Eigen::Matrix3f& Frame::K(int level) const
+inline const CameraModel &Frame::model(int level) const
 {
-	return data.K[level];
-}
-inline const Eigen::Matrix3f& Frame::KInv(int level) const
-{
-	return data.KInv[level];
-}
-inline float Frame::fx(int level) const
-{
-	return data.fx[level];
-}
-inline float Frame::fy(int level) const
-{
-	return data.fy[level];
-}
-inline float Frame::cx(int level) const
-{
-	return data.cx[level];
-}
-inline float Frame::cy(int level) const
-{
-	return data.cy[level];
-}
-inline float Frame::fxInv(int level) const
-{
-	return data.fxInv[level];
-}
-inline float Frame::fyInv(int level) const
-{
-	return data.fyInv[level];
-}
-inline float Frame::cxInv(int level) const
-{
-	return data.cxInv[level];
-}
-inline float Frame::cyInv(int level) const
-{
-	return data.cyInv[level];
+	return *(data.models[level].get());
 }
 
 inline double Frame::timestamp() const
@@ -383,8 +320,9 @@ inline const float* Frame::idepth(int level)
 		printfAssert("Frame::idepth(): idepth has not been set yet!");
 		return nullptr;
 	}
-	if (! data.idepthValid[level])
+	if (!data.idepthValid[level]) {
 		require(IDEPTH, level);
+	}
 	return data.idepth[level];
 }
 inline const unsigned char* Frame::validity_reAct()
@@ -426,8 +364,8 @@ inline bool* Frame::refPixelWasGood()
 
 		if(data.refPixelWasGood == 0)
 		{
-			int width = data.width[SE3TRACKING_MIN_LEVEL];
-			int height = data.height[SE3TRACKING_MIN_LEVEL];
+			int width = data.models[SE3TRACKING_MIN_LEVEL]->w;
+			int height = data.models[SE3TRACKING_MIN_LEVEL]->h;
 			data.refPixelWasGood = (bool*)FrameMemory::getInstance().getBuffer(sizeof(bool) * width * height);
 
 			memset(data.refPixelWasGood, 0xFFFFFFFF, sizeof(bool) * (width * height));

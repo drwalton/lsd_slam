@@ -443,11 +443,10 @@ void Sim3Tracker::calcSim3Buffers(
 	// get static values
 	int w = frame->width(level);
 	int h = frame->height(level);
-	Eigen::Matrix3f KLvl = frame->K(level);
-	float fx_l = KLvl(0,0);
-	float fy_l = KLvl(1,1);
-	float cx_l = KLvl(0,2);
-	float cy_l = KLvl(1,2);
+	float fx_l = frame->model(level).fx;
+	float fy_l = frame->model(level).fy;
+	float cx_l = frame->model(level).cx;
+	float cy_l = frame->model(level).cy;
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rxso3().matrix().cast<float>();
 	Eigen::Matrix3f rotMatUnscaled = referenceToFrame.rotationMatrix().cast<float>();
@@ -551,7 +550,9 @@ void Sim3Tracker::calcSim3Buffers(
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			Eigen::Vector3f point = KLvl * (*refPoint);
+			//TODO PROJ SPECIFIC BIT
+			const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&(frame->model(level)));
+			Eigen::Vector3f point = pm->K * (*refPoint);
 			int x = static_cast<int>(point[0] / point[2] + 0.5f);
 			int y = static_cast<int>(point[1] / point[2] + 0.5f);
 

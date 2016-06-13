@@ -24,6 +24,7 @@
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 namespace lsd_slam
 {
@@ -104,10 +105,13 @@ void TrackingReference::makePointCloud(int level)
 	int w = keyframe->width(level);
 	int h = keyframe->height(level);
 
-	float fxInvLevel = keyframe->fxInv(level);
-	float fyInvLevel = keyframe->fyInv(level);
-	float cxInvLevel = keyframe->cxInv(level);
-	float cyInvLevel = keyframe->cyInv(level);
+	//TODO PROJ SPECIFIC BIT
+	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&(keyframe->model(level)));
+
+	float fxInvLevel = pm->fxi();
+	float fyInvLevel = pm->fyi();
+	float cxInvLevel = pm->cxi();
+	float cyInvLevel = pm->cyi();
 
 	const float* pyrIdepthSource = keyframe->idepth(level);
 	const float* pyrIdepthVarSource = keyframe->idepthVar(level);

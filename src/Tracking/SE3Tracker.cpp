@@ -135,11 +135,10 @@ float SE3Tracker::checkPermaRefOverlap(
 
 	int w2 = reference->width(QUICK_KF_CHECK_LVL)-1;
 	int h2 = reference->height(QUICK_KF_CHECK_LVL)-1;
-	Eigen::Matrix3f KLvl = reference->K(QUICK_KF_CHECK_LVL);
-	float fx_l = KLvl(0,0);
-	float fy_l = KLvl(1,1);
-	float cx_l = KLvl(0,2);
-	float cy_l = KLvl(1,2);
+	float fx_l = reference->model(QUICK_KF_CHECK_LVL).fx;
+	float fy_l = reference->model(QUICK_KF_CHECK_LVL).fy;
+	float cx_l = reference->model(QUICK_KF_CHECK_LVL).cx;
+	float cy_l = reference->model(QUICK_KF_CHECK_LVL).cy;
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
 	Eigen::Vector3f transVec = referenceToFrame.translation();
@@ -908,11 +907,10 @@ float SE3Tracker::calcResidualAndBuffers(
 
 	int w = frame->width(level);
 	int h = frame->height(level);
-	Eigen::Matrix3f KLvl = frame->K(level);
-	float fx_l = KLvl(0,0);
-	float fy_l = KLvl(1,1);
-	float cx_l = KLvl(0,2);
-	float cy_l = KLvl(1,2);
+	float fx_l = frame->model(level).fx;
+	float fy_l = frame->model(level).fy;
+	float cx_l = frame->model(level).cx;
+	float cy_l = frame->model(level).cy;
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
 	Eigen::Vector3f transVec = referenceToFrame.translation();
@@ -1004,7 +1002,9 @@ float SE3Tracker::calcResidualAndBuffers(
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			Eigen::Vector3f point = KLvl * (*refPoint);
+			//TODO PROJ SPECIFIC BIT
+			const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&(frame->model(level)));
+			Eigen::Vector3f point = pm->K * (*refPoint);
 			int x = static_cast<int>(point[0] / point[2] + 0.5f);
 			int y = static_cast<int>(point[1] / point[2] + 0.5f);
 
