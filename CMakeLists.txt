@@ -14,10 +14,9 @@ find_package(G2O REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Boost COMPONENTS System Thread REQUIRED)
-find_package(FLTK REQUIRED)
 
 if(WIN32)
-	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-12.0")
+	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-14.0")
 endif(WIN32)
 
 if(NOT WIN32)
@@ -45,7 +44,6 @@ include_directories(
 	${Boost_INCLUDE_DIR}
 	${QGLVIEWER_INCLUDE_DIR}
 	${G2O_INCLUDE_DIR}
-	${FLTK_INCLUDE_DIRS}
 )
 
 add_subdirectory(lsd_slam_core)
