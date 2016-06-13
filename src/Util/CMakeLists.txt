@@ -9,5 +9,7 @@ add_library(lsd_slam_Util
 	SophusUtil.hpp
 	Undistorter.cpp
 	Undistorter.hpp
+	VectorTypes.cpp
+	VectorTypes.hpp
 )
 

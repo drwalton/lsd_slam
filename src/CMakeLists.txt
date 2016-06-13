@@ -1,3 +1,4 @@
+add_subdirectory(CameraModel)
 add_subdirectory(DataStructures)
 add_subdirectory(DepthEstimation)
 add_subdirectory(GlobalMapping)
