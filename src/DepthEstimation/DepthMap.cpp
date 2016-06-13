@@ -241,13 +241,12 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 	}
 
 	float epx, epy;
-	//TODO Proj specific bit
+	vec3 epDir;
 	bool isGood;
 	if (camModel_->getType() == CameraModelType::PROJ) {
 		isGood = makeAndCheckEPLProj(x, y, refFrame, &epx, &epy, stats);
-	}
-	else {
-		throw std::runtime_error("Not implemented for omni");
+	} else /* OMNI */ {
+		isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
 	}
 	if(!isGood) return false;
 
@@ -263,8 +262,11 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 			0.0f, 1.0f, 1.0f / MIN_DEPTH,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
-	} else {
-		throw std::runtime_error("NOT IMPLEMENTED");
+	} else /* OMNI */ {
+		error = doStereoOmni(new_u, new_v, epDir,
+			0.0f, 1.0f, 1.0f / MIN_DEPTH,
+			refFrame, refFrame->image(0),
+			result_idepth, result_var, result_eplLength, stats);
 	}
 
 	if(error == -3 || error == -2)
@@ -330,12 +332,12 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 	}
 
 	float epx, epy;
+	vec3 epDir;
 	bool isGood;
 	if (camModel_->getType() == CameraModelType::PROJ) {
 		isGood = makeAndCheckEPLProj(x, y, refFrame, &epx, &epy, stats);
-	}
-	else {
-		throw std::runtime_error("Not implemented for omni");
+	} else /* OMNI */ {
+		isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
 	}
 	if(!isGood) return false;
 
@@ -357,8 +359,12 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 			min_idepth, target->idepth_smoothed ,max_idepth,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
-	} else {
-		throw std::runtime_error("NOT IMPLEMENTED");
+	} else /* OMNI */ {
+		error = doStereoOmni(
+			float(x), float(y), epDir,
+			min_idepth, target->idepth_smoothed ,max_idepth,
+			refFrame, refFrame->image(0),
+			result_idepth, result_var, result_eplLength, stats);
 	}
 
 	float diff = result_idepth - target->idepth_smoothed;
@@ -682,7 +688,7 @@ void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* 
 
 	for(int y=yMin; y<yMax; y++)
 	{
-		for(int x=3;x<camModel_->w-2;x++)
+		for(size_t x=3;x<camModel_->w-2;x++)
 		{
 			int idx = x+y*camModel_->w;
 			DepthMapPixelHypothesis* dest = otherDepthMap + idx;
@@ -750,7 +756,7 @@ void DepthMap::buildRegIntegralBufferRow1(int yMin, int yMax, RunningStats* stat
 	{
 		int validityIntegralBufferSUM = 0;
 
-		for(int x=0;x<camModel_->w;x++)
+		for(size_t x=0;x<camModel_->w;x++)
 		{
 			if(ptSrc->isValid)
 				validityIntegralBufferSUM += ptSrc->validity_counter;
