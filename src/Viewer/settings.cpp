@@ -21,6 +21,7 @@
 #include "settings.hpp"
 
 
+namespace lsd_slam {
 
 // new:
 float pointTesselation = 1;
@@ -45,3 +46,4 @@ int numRefreshedAlready = 0;
 
 // cut-off after this
 double lastFrameTime = 1e15;
+}

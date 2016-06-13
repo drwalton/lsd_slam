@@ -37,6 +37,7 @@ namespace lsd_slam
 {
 
 
+class CameraModel;
 class KeyFrameGraph;
 class SE3Tracker;
 class Frame;
@@ -61,7 +62,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	/** Constructor. */
-	TrackableKeyFrameSearch(KeyFrameGraph* graph, int w, int h, Eigen::Matrix3f K);
+	TrackableKeyFrameSearch(KeyFrameGraph* graph, const CameraModel &model);
 	~TrackableKeyFrameSearch();
 	
 	/**

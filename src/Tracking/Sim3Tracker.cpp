@@ -26,6 +26,7 @@
 #include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.hpp"
 #include "System/Win32Compatibility.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 namespace lsd_slam
 {
@@ -43,12 +44,15 @@ namespace lsd_slam
 
 
 
-Sim3Tracker::Sim3Tracker(int w, int h, Eigen::Matrix3f K)
+Sim3Tracker::Sim3Tracker(const CameraModel &model)
 {
-	width = w;
-	height = h;
+	//TODO FIX FOR OMNI
+	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&model);
+	int w = pm->w; int h = pm->h;
+	width = pm->w;
+	height = pm->h;
 
-	this->K = K;
+	this->K = pm->K;
 	fx = K(0,0);
 	fy = K(1,1);
 	cx = K(0,2);

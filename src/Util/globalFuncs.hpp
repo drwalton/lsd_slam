@@ -22,9 +22,9 @@
 #include <opencv2/core/core.hpp>
 #include "util/settings.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
-#include "util/SophusUtil.hpp"
-
-
+#include "Util/SophusUtil.hpp"
+#include "VectorTypes.hpp"
+#include <array>
 
 namespace lsd_slam
 {
@@ -58,6 +58,37 @@ inline float getInterpolatedElement(const float* const mat, const float x, const
 				+ (1-dx-dy+dxdy) * bp[0];
 
 	return res;
+}
+
+inline float getInterpolatedElement(const float *const mat, const vec2 &p, const int width) {
+	return getInterpolatedElement(mat, p.x(), p.y(), width);
+}
+
+inline vec3 hueToRgb(float H)
+{
+	H *= 6.f;
+	float s = 1.f;
+	float v = 1.f;
+	int i = int(floor(H));
+	float f = H - i;
+	float p = v * (1 - s);
+	float q = v * (1 - s * f);
+	float t = v * (1 - s * (1 - f));
+
+	switch (i) {
+		case 0:
+			return vec3(v, t, p);
+		case 1:
+			return vec3(q, v, p);
+		case 2:
+			return vec3(p, v, t);
+		case 3:
+			return vec3(p, q, v);
+		case 4:
+			return vec3(t, p, v);
+		default:		// case 5:
+			return vec3(v, p, q);
+	}
 }
 
 inline Eigen::Vector3f getInterpolatedElement43(const Eigen::Vector4f* const mat, const float x, const float y, const int width)
@@ -130,4 +161,33 @@ inline cv::Vec3b getGrayCvPixel(float val)
 cv::Mat getDepthRainbowPlot(Frame* kf, int lvl=0);
 cv::Mat getDepthRainbowPlot(const float* idepth, const float* idepthVar, const float* gray, int width, int height);
 cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width, int height);
+
+template<typename T>
+std::ostream &operator << (std::ostream &s, std::vector<T> &t) {
+	
+	s << t[0];
+	for (size_t i = 1; i < t.size(); ++i) {
+		s << ", " << t[i];
+	}
+	return s;
+}
+
+template<typename T, size_t N>
+std::ostream &operator << (std::ostream &s, std::array<T, N> &t) {
+	
+	s << t[0];
+	for (size_t i = 1; i < N; ++i) {
+		s << ", " << t[i];
+	}
+	return s;
+}
+
+void processImageWithProgressBar(cv::Size size, std::function<void(int, int)> procPixel);
+
+///\brief Ensure that an empty directory of the given name exists.
+///\note If the directory exists, its contents will be deleted.
+///\note Fails if the path contains more than one directory which does
+///      not yet exist.
+void makeEmptyDirectory(const std::string &dirPath);
+
 }

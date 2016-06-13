@@ -28,6 +28,8 @@
 #include "keyframeMsg.hpp"
 #include "boost/thread.hpp"
 
+namespace lsd_slam 
+{
 class KeyFrameDisplay;
 
 
@@ -75,5 +77,6 @@ private:
 	boost::mutex dataMutex;
 
 };
+}
 
 #endif /* KEYFRAMEGRAPHDISPLAY_H_ */

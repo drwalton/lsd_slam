@@ -14,19 +14,37 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	std::cout << "Opening stream: \"" << argv[2] << "\"..."; std::cout.flush();
 	lsd_slam::OpenCVImageStream stream;
 	stream.capture().open(argv[2]);
+	std::cout << "Done!" << std::endl;
 
+	std::cout << "Opening calibration file: \"" << argv[1] << "\"..."; std::cout.flush();
 	stream.setCalibration(argv[1]);
-	stream.run();
+	std::cout << "Done!" << std::endl;
 
+	std::cout << "Running stream..."; std::cout.flush();
+	stream.run();
+	std::cout << "Done!" << std::endl;
+
+	//QApplication qapp(argc, argv);
+
+	std::cout << "Creating output wrapper..."; std::cout.flush();
 	std::unique_ptr<lsd_slam::ViewerOutput3DWrapper> outWrapper(
 		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480));
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());
+	std::cout << "Done!" << std::endl;
 
+	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
+	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());
+	std::cout << "Done!" << std::endl;
+
+	std::cout << "Starting SLAM wrapper..." << std::endl;
 	slamWrapper.Loop();
 	
+	std::cout << "Stopping stream..."; std::cout.flush();
 	stream.stop();
+	std::cout << "Done!" << std::endl;
 	
+	std::cout << "Exiting program..." << std::endl;
 	return 0;
 }

@@ -19,8 +19,8 @@
 */
 
 #pragma once
-#include "util/settings.hpp"
-#include "util/EigenCoreInclude.hpp"
+#include "Util/settings.hpp"
+#include "Util/EigenCoreInclude.hpp"
 #include "boost/thread/mutex.hpp"
 #include <boost/thread/shared_mutex.hpp>
 
@@ -32,19 +32,17 @@ class Frame;
 class DepthMapPixelHypothesis;
 class KeyFrameGraph;
 
-/**
- * Point cloud used to track frame poses.
- * 
- * Basically this stores a point cloud generated from known frames. It is used to
- * track a new frame by finding a projection of the point cloud which makes it
- * look as much like the new frame as possible.
- * 
- * It is intended to use more than one old frame as source for the point cloud.
- * Also other data like Kinect depth data could be imported.
- * 
- * ATTENTION: as the level zero point cloud is not used for tracking, it is not
- * fully calculated. Only the weights are valid on this level!
- */
+///\brief Point cloud used to track frame poses.
+///
+/// Basically this stores a point cloud generated from known frames. It is used to
+/// track a new frame by finding a projection of the point cloud which makes it
+/// look as much like the new frame as possible.
+///
+/// It is intended to use more than one old frame as source for the point cloud.
+/// Also other data like Kinect depth data could be imported.
+///
+/// \note As the level zero point cloud is not used for tracking, it is not
+///       fully calculated. Only the weights are valid on this level!
 class TrackingReference
 {
 public:

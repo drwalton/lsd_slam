@@ -34,7 +34,8 @@
 #include <fstream>
 #include "keyframeMsg.hpp"
 
-
+namespace lsd_slam
+{
 
 struct MyVertex
 {
@@ -105,5 +106,5 @@ private:
 
 };
 
-
+}
 

@@ -28,6 +28,7 @@
 namespace lsd_slam
 {
 
+std::string resourcesDir();
 
 #define ALIGN __attribute__((__aligned__(16)))
 #define SSEE(val,idx) (*(((float*)&val)+idx))

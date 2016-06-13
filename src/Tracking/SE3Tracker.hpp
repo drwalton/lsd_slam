@@ -31,7 +31,7 @@ namespace lsd_slam
 
 class TrackingReference;
 class Frame;
-
+class CameraModel;
 
 class SE3Tracker
 {
@@ -56,7 +56,7 @@ public:
 	cv::Mat debugImageOldImageWarped;
 
 
-	SE3Tracker(int w, int h, Eigen::Matrix3f K);
+	SE3Tracker(const CameraModel &model);
 	SE3Tracker(const SE3Tracker&) = delete;
 	SE3Tracker& operator=(const SE3Tracker&) = delete;
 	~SE3Tracker();

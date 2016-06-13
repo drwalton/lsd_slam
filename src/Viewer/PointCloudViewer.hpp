@@ -32,14 +32,15 @@
 
 #include "QGLViewer/keyFrameInterpolator.h"
 #include "System/Win32Compatibility.hpp"
+#include "settings.hpp"
 
 class QApplication;
 
+namespace lsd_slam {
 class KeyFrameGraphDisplay;
 class CameraDisplay;
 class KeyFrameDisplay;
 
-#include "settings.hpp"
 
 class AnimationObject
 {
@@ -96,13 +97,13 @@ public:
 		qglviewer::Quaternion orient;
 
 
-		float x,y,z;
+		float x, y, z;
 
-		if(17 != sscanf(s.c_str(),"Animation: %d at %lf (dur %lf) S: %f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d\n",
-				&isSettings_i, &time, &duration,
-				&scaledTH, &absTH, &showLoopClosures_i, &showKeyframes_i, &showCurrentCam_i, &sparsity, &neighb,
-				&(orient[0]),&(orient[1]),&(orient[2]),&(orient[3]),
-				&x, &y, &z, &isFix_i))
+		if (17 != sscanf(s.c_str(), "Animation: %d at %lf (dur %lf) S: %f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d\n",
+			&isSettings_i, &time, &duration,
+			&scaledTH, &absTH, &showLoopClosures_i, &showKeyframes_i, &showCurrentCam_i, &sparsity, &neighb,
+			&(orient[0]), &(orient[1]), &(orient[2]), &(orient[3]),
+			&x, &y, &z, &isFix_i))
 			printf("error parsing: %s\n", s.c_str());
 
 		isSettings = isSettings_i;
@@ -112,20 +113,20 @@ public:
 		isFix = isFix_i;
 
 
-		frame = qglviewer::Frame(qglviewer::Vec(0,0,0),orient);
-		frame.setPosition(x,y,z);
+		frame = qglviewer::Frame(qglviewer::Vec(0, 0, 0), orient);
+		frame.setPosition(x, y, z);
 
-		printf("read: %s\n",toString().c_str());
+		printf("read: %s\n", toString().c_str());
 	}
 
-    bool operator < (const AnimationObject& other) const
-    {
-        return (time < other.time);
-    }
+	bool operator < (const AnimationObject& other) const
+	{
+		return (time < other.time);
+	}
 
-    std::string toString()
-    {
-    	char buf[1000];
+	std::string toString()
+	{
+		char buf[1000];
 
 		int isSettings_i = isSettings;
 		int showLoopClosures_i = showLoopClosures;
@@ -133,17 +134,17 @@ public:
 		int showCurrentCam_i = showCurrentCam;
 		int isFix_i = isFix;
 
-		qreal x,y,z;
-		frame.getPosition(x,y,z);
+		qreal x, y, z;
+		frame.getPosition(x, y, z);
 
-    	snprintf(buf, 1000, "Animation: %d at %lf (dur %lf) S: %f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d",
-				isSettings_i, time, duration,
-				scaledTH, absTH, showLoopClosures_i, showKeyframes_i, showCurrentCam_i, sparsity, neighb,
-				frame.orientation()[0],frame.orientation()[1],frame.orientation()[2],frame.orientation()[3],
-				x,y,z, isFix_i);
+		snprintf(buf, 1000, "Animation: %d at %lf (dur %lf) S: %f %f %d %d %d %d %d Frame: %lf %lf %lf %lf %f %f %f %d",
+			isSettings_i, time, duration,
+			scaledTH, absTH, showLoopClosures_i, showKeyframes_i, showCurrentCam_i, sparsity, neighb,
+			frame.orientation()[0], frame.orientation()[1], frame.orientation()[2], frame.orientation()[3],
+			x, y, z, isFix_i);
 
-    	return buf;
-    }
+		return buf;
+	}
 };
 
 
@@ -162,14 +163,14 @@ public:
 	void addGraphMsg(const keyframeGraphMsg *msg);
 
 
-protected :
+protected:
 	virtual void draw();
 	virtual void init();
 	virtual void keyPressEvent(QKeyEvent *e);
 	virtual void keyReleaseEvent(QKeyEvent *e);
 	virtual QString helpString() const;
 
-//	virtual void drawText(int x, int y, const QString & text, const QFont & fnt) {printf(text.toStdString().c_str());};
+	//	virtual void drawText(int x, int y, const QString & text, const QFont & fnt) {printf(text.toStdString().c_str());};
 
 
 private:
@@ -221,4 +222,5 @@ private:
 	void remakeAnimation();
 };
 
+}
 

@@ -36,6 +36,9 @@
 
 #include "opencv2/opencv.hpp"
 
+namespace lsd_slam
+{
+
 KeyFrameDisplay::KeyFrameDisplay()
 {
 	originalInput = 0;
@@ -401,5 +404,7 @@ void KeyFrameDisplay::drawPC(float pointSize, float alpha)
 		LightColor[2] = LightColor[1] = LightColor[0] = 1;
 		glLightfv (GL_LIGHT0, GL_AMBIENT_AND_DIFFUSE, LightColor);
 	}
+}
+
 }
 

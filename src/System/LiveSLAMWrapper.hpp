@@ -43,7 +43,7 @@ class SlamSystem;
 class LiveSLAMWrapperROS;
 class InputImageStream;
 class Output3DWrapper;
-
+class CameraModel;
 
 class LiveSLAMWrapper : public Notifiable
 {
@@ -74,7 +74,7 @@ public:
 	
 	
 	inline SlamSystem* getSlamSystem() {return monoOdometry;}
-	
+
 private:
 	
 	InputImageStream* imageStream;
@@ -91,11 +91,8 @@ private:
 	std::string outFileName;
 	std::ofstream* outFile;
 	
-	float fx, fy, cx, cy;
-	int width, height;
-
-
 	int imageSeqNumber;
+	std::unique_ptr<CameraModel> camModel_;
 
 };
 

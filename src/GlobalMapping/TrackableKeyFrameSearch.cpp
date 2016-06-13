@@ -24,18 +24,20 @@
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "DataStructures/Frame.hpp"
 #include "Tracking/SE3Tracker.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 namespace lsd_slam
 {
 
 
-TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, int w, int h, Eigen::Matrix3f K)
+TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, const CameraModel &model)
 : graph(graph)
 {
-	tracker = new SE3Tracker(w,h,K);
+	tracker = new SE3Tracker(model);
 
-	fowX = 2 * atanf((float)((w / K(0,0)) / 2.0f));
-	fowY = 2 * atanf((float)((h / K(1,1)) / 2.0f));
+	vec2 fovXY = model.getFovAngles();
+	fowX = fovXY.x();
+	fowY = fovXY.y();
 
 	msTrackPermaRef=0;
 	nTrackPermaRef=0;

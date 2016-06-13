@@ -20,6 +20,7 @@
 
 #pragma once
 
+namespace lsd_slam{
 
 extern float pointTesselation;
 extern float lineTesselation;
@@ -41,3 +42,5 @@ extern bool saveAllVideo;
 extern int numRefreshedAlready;
 
 extern double lastFrameTime;
+
+}

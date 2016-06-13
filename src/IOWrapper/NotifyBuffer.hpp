@@ -150,6 +150,10 @@ public:
 	 */
 	boost::recursive_mutex& getMutex() {
 		return bufferMutex;
+	} 
+
+	bool isFull() {
+		return static_cast<int>(queue.size()) >= bufferSize;
 	}
 	
 private:

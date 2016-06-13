@@ -25,6 +25,7 @@
 #include "util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 #include <Eigen/Core>
 
@@ -47,12 +48,15 @@ namespace lsd_slam
 #endif
 
 
-SE3Tracker::SE3Tracker(int w, int h, Eigen::Matrix3f K)
+SE3Tracker::SE3Tracker(const CameraModel &model)
 {
-	width = w;
-	height = h;
+	//TODO FIX FOR OMNI
+	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&model);
+	int w = pm->w; int h = pm->h;
+	width = pm->w;
+	height = pm->h;
 
-	this->K = K;
+	this->K = pm->K;
 	fx = K(0,0);
 	fy = K(1,1);
 	cx = K(0,2);

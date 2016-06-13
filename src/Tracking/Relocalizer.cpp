@@ -22,20 +22,17 @@
 #include "DataStructures/Frame.hpp"
 #include "Tracking/SE3Tracker.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 namespace lsd_slam
 {
 
 
-Relocalizer::Relocalizer(int w, int h, Eigen::Matrix3f K)
+Relocalizer::Relocalizer(const CameraModel &model)
+	:camModel_(model.clone())
 {
 	for(int i=0;i<RELOCALIZE_THREADS;i++)
 		running[i] = false;
-
-
-	this->w = w;
-	this->h = h;
-	this->K = K;
 
 	KFForReloc.clear();
 	nextRelocIDX = maxRelocIDX = 0;
@@ -152,7 +149,7 @@ void Relocalizer::threadLoop(int idx)
 {
 	if(!multiThreading && idx != 0) return;
 
-	SE3Tracker* tracker = new SE3Tracker(w,h,K);
+	SE3Tracker* tracker = new SE3Tracker(*camModel_);
 
 	boost::unique_lock<boost::mutex> lock(exMutex);
 	while(continueRunning)

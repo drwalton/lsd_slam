@@ -31,7 +31,7 @@ namespace lsd_slam
 
 class TrackingReference;
 class Frame;
-
+class CameraModel;
 
 struct Sim3ResidualStruct
 {
@@ -112,7 +112,7 @@ public:
 	int buf_warped_size;
 
 
-	Sim3Tracker(int w, int h, Eigen::Matrix3f K);
+	Sim3Tracker(const CameraModel &m);
 	Sim3Tracker(const Sim3Tracker&) = delete;
 	Sim3Tracker& operator=(const Sim3Tracker&) = delete;
 	~Sim3Tracker();

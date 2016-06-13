@@ -18,11 +18,9 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _UNDISTORTER_HPP_
-#define _UNDISTORTER_HPP_
-
+#pragma once
 #include <opencv2/core/core.hpp>
-
+#include <array>
 
 
 namespace lsd_slam
@@ -38,15 +36,15 @@ public:
 	 */
 	virtual void undistort(const cv::Mat& image, cv::OutputArray result) const = 0;
 	
-	/**
-	 * Returns the intrinsic parameter matrix of the undistorted images.
-	 */
-	virtual const cv::Mat& getK() const = 0;
-	
-	/**
-	 * Returns the intrinsic parameter matrix of the original images,
-	 */
-	virtual const cv::Mat& getOriginalK() const = 0;
+	///**
+	// * Returns the intrinsic parameter matrix of the undistorted images.
+	// */
+	//virtual const cv::Mat& getK() const = 0;
+	//
+	///**
+	// * Returns the intrinsic parameter matrix of the original images,
+	// */
+	//virtual const cv::Mat& getOriginalK() const = 0;
 	
 	/**
 	 * Returns the width of the undistorted images in pixels.
@@ -81,6 +79,44 @@ public:
 	static Undistorter* getUndistorterForFile(const char* configFilename);
 };
 
+class UndistorterNop : public Undistorter
+{
+public:
+	explicit UndistorterNop(size_t width, size_t height);
+	virtual ~UndistorterNop();
+
+	virtual void undistort(const cv::Mat& image, cv::OutputArray result) const;
+
+	virtual int getOutputWidth() const;
+	virtual int getOutputHeight() const;
+	virtual int getInputWidth() const;
+	virtual int getInputHeight() const;
+
+	virtual bool isValid() const;
+private:
+	size_t width_, height_;
+};
+
+class UndistorterResize : public Undistorter
+{
+public:
+	explicit UndistorterResize(
+		size_t inWidth, size_t inHeight,
+		size_t outWidth, size_t outHeight);
+	virtual ~UndistorterResize() throw();
+
+	virtual void undistort(const cv::Mat &image, cv::OutputArray result) const;
+	virtual int getOutputWidth() const;
+	virtual int getOutputHeight() const;
+	virtual int getInputWidth() const;
+	virtual int getInputHeight() const;
+
+	virtual bool isValid() const;
+private:
+	size_t inWidth_, inHeight_;
+	size_t outWidth_, outHeight_;
+};
+
 class UndistorterPTAM : public Undistorter
 {
 public:
@@ -94,6 +130,9 @@ public:
 	 * outputWidth outputHeight
 	 */
 	UndistorterPTAM(const char* configFileName);
+	UndistorterPTAM(const std::array<float, 5> &config, 
+		int in_width, int in_height,
+		int out_width, int out_height);
 	
 	/**
 	 * Destructor.
@@ -240,4 +279,3 @@ private:
 };
 
 }
-#endif

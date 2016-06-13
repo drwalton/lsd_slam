@@ -18,10 +18,11 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/globalFuncs.hpp"
-#include "util/SophusUtil.hpp"
+#include "Util/globalFuncs.hpp"
+#include "Util/SophusUtil.hpp"
 #include "opencv2/opencv.hpp"
 #include "DataStructures/Frame.hpp"
+#include <boost/filesystem.hpp>
 
 namespace lsd_slam
 {
@@ -162,4 +163,48 @@ cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width,
 
 	return res;
 }
+
+void processImageWithProgressBar(cv::Size size, std::function<void(int, int)> procPixel)
+{
+	size_t currPercent = 0;
+	for (size_t r = 0; r < size_t(size.height); ++r) {
+		size_t percent = size_t((float(r) / float(size.height)) * 100.f);
+		if (percent > currPercent) {
+			std::cout << "\b\b\b\b" << percent << "%";
+			std::cout.flush();
+			percent = currPercent;
+		}
+		for (size_t c = 0; c < size_t(size.width); ++c) {
+			procPixel(r, c);
+		}
+	}
+	std::cout << "\b\b\b\b100%" << std::endl;
+}
+
+///\brief Ensure that an empty directory of the given name exists.
+///\note If the directory exists, its contents will be deleted.
+///\note Fails if the path contains more than one directory which does
+///      not yet exist.
+///\note Fails if the path exists and is a file, not a directory.
+void makeEmptyDirectory(const std::string &dirPath)
+{
+	boost::filesystem::path path(dirPath);
+	if (!boost::filesystem::exists(path)) {
+		//Folder doesn't exist yet: just make it.
+		boost::filesystem::create_directory(path);
+	} else {
+		if (boost::filesystem::is_regular_file(path)) {
+			throw std::runtime_error("Specified path exists and is a file!");
+		}
+		else if (boost::filesystem::is_directory(path)) {
+			//Folder exists: delete all its contents.
+			for (boost::filesystem::directory_iterator end, it(path); it != end; ++it) {
+				boost::filesystem::remove_all(*it);
+			}
+		} else {
+			throw std::runtime_error("Specified path exists and is not a file or directory!");
+		}
+	}
+}
+
 }

@@ -1,6 +1,9 @@
 add_library(lsd_slam_IOWrapper
+	DirectoryImageStream.cpp
+	DirectoryImageStream.hpp
 	ImageDisplay.hpp
 	InputImageStream.hpp
+	InputImageStream.cpp
 	NotifyBuffer.hpp
 	OpenCV/ImageDisplay_OpenCV.cpp
 	Output3DWrapper.hpp

@@ -31,11 +31,12 @@ namespace lsd_slam
 
 class Frame;
 class Sim3Tracker;
+class CameraModel;
 
 class Relocalizer
 {
 public:
-	Relocalizer(int w, int h, Eigen::Matrix3f K);
+	Relocalizer(const CameraModel &model);
 	~Relocalizer();
 
 	void updateCurrentFrame(std::shared_ptr<Frame> currentFrame);
@@ -47,8 +48,7 @@ public:
 
 	bool isRunning;
 private:
-	int w, h;
-	Eigen::Matrix3f K;
+	std::unique_ptr<CameraModel> camModel_;
 	boost::thread relocThreads[RELOCALIZE_THREADS];
 	bool running[RELOCALIZE_THREADS];
 

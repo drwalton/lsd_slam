@@ -31,6 +31,7 @@
 #include "util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
+#include "CameraModel/ProjCameraModel.hpp"
 
 
 namespace lsd_slam
@@ -38,8 +39,12 @@ namespace lsd_slam
 
 
 
-DepthMap::DepthMap(int w, int h, const Eigen::Matrix3f& K)
+DepthMap::DepthMap(const CameraModel &model)
 {
+	//TODO FIX FOR OMNI
+	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&model);
+	int w = pm->w; int h = pm->h;
+	mat3 K = pm->K;
 	width = w;
 	height = h;
 

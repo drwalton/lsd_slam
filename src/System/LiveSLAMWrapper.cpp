@@ -28,6 +28,7 @@
 #include "IOWrapper/Output3DWrapper.hpp"
 #include "IOWrapper/InputImageStream.hpp"
 #include "util/globalFuncs.hpp"
+#include "CameraModel/CameraModel.hpp"
 
 #include <iostream>
 #include <cstdio>
@@ -38,17 +39,11 @@ namespace lsd_slam
 {
 
 LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper)
+	:camModel_(imageStream->camModel().clone())
 {
 	this->imageStream = imageStream;
 	this->outputWrapper = outputWrapper;
 	imageStream->getBuffer()->setReceiver(this);
-
-	fx = imageStream->fx();
-	fy = imageStream->fy();
-	cx = imageStream->cx();
-	cy = imageStream->cy();
-	width = imageStream->width();
-	height = imageStream->height();
 
 	outFileName = packagePath+"estimated_poses.txt";
 
@@ -57,13 +52,16 @@ LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper*
 
 
 	Sophus::Matrix3f K_sophus;
-	K_sophus << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
+	K_sophus << 
+		camModel_->fx, 0.0, camModel_->cx, 
+		0.0, camModel_->fy, camModel_->cy, 
+		0.0, 0.0, 1.0;
 
 	outFile = nullptr;
 
 
 	// make Odometry
-	monoOdometry = new SlamSystem(width, height, K_sophus, doSlam);
+	monoOdometry = new SlamSystem(*camModel_);
 
 	monoOdometry->setVisualization(outputWrapper);
 
@@ -126,7 +124,7 @@ void LiveSLAMWrapper::newImageCallback(const cv::Mat& img, Timestamp imgTime)
 	
 	// Assert that we work with 8 bit images
 	assert(grayImg.elemSize() == 1);
-	assert(fx != 0 || fy != 0);
+	assert(camModel_->fx != 0 || camModel_->fy != 0);
 
 
 	// need to initialize
@@ -178,8 +176,11 @@ void LiveSLAMWrapper::resetAll()
 		printf("Deleted SlamSystem Object!\n");
 
 		Sophus::Matrix3f K;
-		K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
-		monoOdometry = new SlamSystem(width,height,K, doSlam);
+		K << 
+			camModel_->fx, 0.0, camModel_->cx, 
+			0.0, camModel_->fy, camModel_->cy, 
+			0.0, 0.0, 1.0;
+		monoOdometry = new SlamSystem(*camModel_);
 		monoOdometry->setVisualization(outputWrapper);
 
 	}

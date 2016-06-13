@@ -26,26 +26,30 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 #include "IOWrapper/Timestamp.hpp"
-#include "opencv2/core/core.hpp"
+#include <opencv2/core/core.hpp>
+#include "CameraModel/CameraModel.hpp"
 
-#include "util/SophusUtil.hpp"
+#include "Util/SophusUtil.hpp"
 
 #include "Tracking/Relocalizer.hpp"
-#include "g2o/stuff/timeutil.h"
+#include <g2o/stuff/timeutil.h>
+#include <mutex>
+namespace lsd_slam
+{
+
 #ifdef _WIN32
 using g2o::timeval;
 #endif
 
-namespace lsd_slam
-{
 
 class TrackingReference;
 class KeyFrameGraph;
 class SE3Tracker;
 class Sim3Tracker;
 class DepthMap;
+struct DepthMapDebugSettings;
 class Frame;
 class DataSet;
 class LiveSLAMWrapper;
@@ -64,23 +68,18 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	// settings. Constant from construction onward.
-	int width;
-	int height;
-	Eigen::Matrix3f K;
+	std::unique_ptr<CameraModel> model;
 	const bool SLAMEnabled;
 
 	bool trackingIsGood;
 
-
-	SlamSystem(int w, int h, Eigen::Matrix3f K, bool enableSLAM = true);
+	SlamSystem(const CameraModel &model, bool enableSLAM = true);
 	SlamSystem(const SlamSystem&) = delete;
 	SlamSystem& operator=(const SlamSystem&) = delete;
 	~SlamSystem();
 
 	void randomInit(uchar* image, double timeStamp, int id);
 	void gtDepthInit(uchar* image, float* depth, double timeStamp, int id);
-
-	
 
 	// tracks a frame.
 	// first frame will return Identity = camToWord.
@@ -121,10 +120,10 @@ public:
 	float nAvgTrackFrame, nAvgOptimizationIteration, nAvgFindConstraintsItaration, nAvgFindReferences;
 	struct timeval lastHzUpdate;
 
-
+	bool plotTracking;
+	
+	
 private:
-
-
 	// ============= EXCLUSIVELY TRACKING THREAD (+ init) ===============
 	TrackingReference* trackingReference; // tracking reference for current keyframe. only used by tracking.
 	SE3Tracker* tracker;

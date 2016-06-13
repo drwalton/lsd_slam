@@ -18,7 +18,7 @@
 * along with LSD-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "util/settings.hpp"
+#include "Util/settings.hpp"
 #include <opencv2/opencv.hpp>
 #include <boost/bind.hpp>
 
@@ -28,6 +28,15 @@ namespace lsd_slam
 {
 RunningStats runningStats;
 
+std::string resourcesDir() {
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS
+	static std::string dir = getenv("HOMEDRIVE") + std::string(getenv("HOMEPATH")) + "/Documents/lsd_slam/resources/";
+#else
+	static std::string dir = getenv("HOME") + std::string("/lsd_slam/resources/");
+#endif
+	return dir;
+}
 
 bool autoRun = true;
 bool autoRunWithinFrame = true;

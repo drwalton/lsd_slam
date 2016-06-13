@@ -51,6 +51,7 @@
 #define snprintf _snprintf_s
 #endif 
 
+namespace lsd_slam {
 float timenow()
 {
 	auto n = std::chrono::system_clock::now();
@@ -445,5 +446,6 @@ void PointCloudViewer::keyPressEvent(QKeyEvent *e)
     	  QGLViewer::keyPressEvent(e);
     	  break;
     }
+  }
   }
 

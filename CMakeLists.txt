@@ -14,6 +14,8 @@ find_package(G2O REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Boost COMPONENTS System Thread REQUIRED)
+find_package(libtiff REQUIRED)
+find_package(Assimp REQUIRED)
 
 if(WIN32)
 	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-14.0")
@@ -32,6 +34,7 @@ find_package(QGLViewer REQUIRED)
 message("QOPENGL: ${QT_QTOPENGL_INCLUDE_DIR}")
 include_directories("${QT_QTOPENGL_INCLUDE_DIR}/..")
 
+set(CMAKE_AUTOMOC ON)
 include_directories(
 	${GLEW_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/lsd_slam_core/src
@@ -44,12 +47,15 @@ include_directories(
 	${Boost_INCLUDE_DIR}
 	${QGLVIEWER_INCLUDE_DIR}
 	${G2O_INCLUDE_DIR}
+	${ASSIMP_INCLUDE_DIRS}
+	${libtiff_INCLUDE_DIRS}
 )
 
 include_directories(src)
 add_subdirectory(src)
 
 set(LSD_SLAM_LIBS
+	lsd_slam_CameraModel
 	lsd_slam_System
 	lsd_slam_DataStructures
 	lsd_slam_DepthEstimation

@@ -30,6 +30,9 @@
 #include <fstream>
 #include <algorithm>
 
+namespace lsd_slam
+{
+
 KeyFrameGraphDisplay::KeyFrameGraphDisplay()
 {
 	flushPointcloud = false;
@@ -203,4 +206,5 @@ void KeyFrameGraphDisplay::addGraphMsg(const keyframeGraphMsg *msg)
 	dataMutex.unlock();
 
 //	printf("graph update: %d constraints, %d poses\n", msg->numConstraints, msg->numFrames);
+}
 }

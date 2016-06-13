@@ -26,7 +26,7 @@
 #include "DepthEstimation/DepthMap.hpp"
 #include "Tracking/TrackingReference.hpp"
 #include "LiveSLAMWrapper.hpp"
-#include "util/globalFuncs.hpp"
+#include "Util/globalFuncs.hpp"
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "GlobalMapping/TrackableKeyFrameSearch.hpp"
 #include "GlobalMapping/g2oTypeSim3Sophus.hpp"
@@ -34,7 +34,8 @@
 #include "IOWrapper/Output3DWrapper.hpp"
 #include <g2o/core/robust_kernel_impl.h>
 #include "DataStructures/FrameMemory.hpp"
-#include "deque"
+#include <deque>
+#include "CameraModel/ProjCameraModel.hpp"
 
 // for mkdir
 #include <sys/types.h>
@@ -49,18 +50,19 @@
 using namespace lsd_slam;
 
 
-SlamSystem::SlamSystem(int w, int h, Eigen::Matrix3f K, bool enableSLAM)
-: SLAMEnabled(enableSLAM), relocalizer(w,h,K)
+SlamSystem::SlamSystem(const CameraModel &model, bool enableSLAM)
+	: model(model.clone()),
+	SLAMEnabled(enableSLAM),
+	plotTracking(false),
+	relocalizer(model)
 {
-	if(w%16 != 0 || h%16!=0)
+	if(model.w%16 != 0 || model.h%16!=0)
 	{
-		printf("image dimensions must be multiples of 16! Please crop your images / video accordingly.\n");
+		printf("image dimensions must be multiples of 16! Please crop your "
+			"images / video accordingly.\n");
 		assert(false);
 	}
 
-	this->width = w;
-	this->height = h;
-	this->K = K;
 	trackingIsGood = true;
 
 
@@ -69,13 +71,14 @@ SlamSystem::SlamSystem(int w, int h, Eigen::Matrix3f K, bool enableSLAM)
 	keyFrameGraph = new KeyFrameGraph();
 	createNewKeyFrame = false;
 
-	map =  new DepthMap(w,h,K);
+	map =  new DepthMap(model);
+	
 	
 	newConstraintAdded = false;
 	haveUnmergedOptimizationOffset = false;
 
 
-	tracker = new SE3Tracker(w,h,K);
+	tracker = new SE3Tracker(model);
 	// Do not use more than 4 levels for odometry tracking
 	for (int level = 4; level < PYRAMID_LEVELS; ++level)
 		tracker->settings.maxItsPerLvl[level] = 0;
@@ -85,9 +88,9 @@ SlamSystem::SlamSystem(int w, int h, Eigen::Matrix3f K, bool enableSLAM)
 
 	if(SLAMEnabled)
 	{
-		trackableKeyFrameSearch = new TrackableKeyFrameSearch(keyFrameGraph,w,h,K);
-		constraintTracker = new Sim3Tracker(w,h,K);
-		constraintSE3Tracker = new SE3Tracker(w,h,K);
+		trackableKeyFrameSearch = new TrackableKeyFrameSearch(keyFrameGraph,model);
+		constraintTracker = new Sim3Tracker(model);
+		constraintSE3Tracker = new SE3Tracker(model);
 		newKFTrackingReference = new TrackingReference();
 		candidateTrackingReference = new TrackingReference();
 	}
@@ -477,7 +480,7 @@ void SlamSystem::createNewCurrentKeyframe(std::shared_ptr<Frame> newKeyframeCand
 
 		Eigen::Matrix<float, 20, 1> data;
 		data.setZero();
-		data[0] = runningStats.num_prop_attempts / ((float)width*height);
+		data[0] = runningStats.num_prop_attempts / ((float)model->w*model->h);
 		data[1] = (runningStats.num_prop_created + runningStats.num_prop_merged) / (float)runningStats.num_prop_attempts;
 		data[2] = runningStats.num_prop_removed_colorDiff / (float)runningStats.num_prop_attempts;
 
@@ -654,8 +657,6 @@ void SlamSystem::addTimingSamples()
 
 void SlamSystem::debugDisplayDepthMap()
 {
-
-
 	map->debugPlotDepthMap();
 	double scale = 1;
 	if(currentKeyFrame != 0 && currentKeyFrame != 0)
@@ -671,7 +672,7 @@ void SlamSystem::debugDisplayDepthMap()
 			currentKeyFrame->numFramesTrackedOnThis, currentKeyFrame->numMappedOnThis, (int)unmappedTrackedFrames.size());
 
 	snprintf(buf2,200,"dens %2.0f%%; good %2.0f%%; scale %2.2f; res %2.1f/; usg %2.0f%%; Map: %d F, %d KF, %d E, %.1fm Pts",
-			100*currentKeyFrame->numPoints/(float)(width*height),
+			100*currentKeyFrame->numPoints/(float)(model->w*model->h),
 			100*tracking_lastGoodPerBad,
 			scale,
 			tracking_lastResidual,
@@ -834,7 +835,9 @@ void SlamSystem::gtDepthInit(uchar* image, float* depth, double timeStamp, int i
 
 	currentKeyFrameMutex.lock();
 
-	currentKeyFrame.reset(new Frame(id, width, height, K, timeStamp, image));
+	//TODO OMNI
+	ProjCameraModel *p = dynamic_cast<ProjCameraModel*>(model.get());
+	currentKeyFrame.reset(new Frame(id, p->w, p->h, p->K, timeStamp, image));
 	currentKeyFrame->setDepthFromGroundTruth(depth);
 
 	map->initializeFromGTDepth(currentKeyFrame.get());
@@ -864,7 +867,9 @@ void SlamSystem::randomInit(uchar* image, double timeStamp, int id)
 
 	currentKeyFrameMutex.lock();
 
-	currentKeyFrame.reset(new Frame(id, width, height, K, timeStamp, image));
+	//TODO OMNI
+	ProjCameraModel *p = dynamic_cast<ProjCameraModel*>(model.get());
+	currentKeyFrame.reset(new Frame(id, p->w, p->h, p->K, timeStamp, image));
 	map->initializeRandomly(currentKeyFrame.get());
 	keyFrameGraph->addFrame(currentKeyFrame.get());
 
@@ -890,7 +895,9 @@ void SlamSystem::randomInit(uchar* image, double timeStamp, int id)
 void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilMapped, double timestamp)
 {
 	// Create new frame
-	std::shared_ptr<Frame> trackingNewFrame(new Frame(frameID, width, height, K, timestamp, image));
+	//TODO OMNI
+	ProjCameraModel *p = dynamic_cast<ProjCameraModel*>(model.get());
+	std::shared_ptr<Frame> trackingNewFrame(new Frame(frameID, p->w, p->h, p->K, timestamp, image));
 
 	if(!trackingIsGood)
 	{
@@ -924,8 +931,6 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 			trackingReferencePose->getCamToWorld().inverse() * keyFrameGraph->allFramePoses.back()->getCamToWorld());
 	poseConsistencyMutex.unlock_shared();
 
-
-
 	struct timeval tv_start, tv_end;
 	gettimeofday(&tv_start, NULL);
 
@@ -933,7 +938,6 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 			trackingReference,
 			trackingNewFrame.get(),
 			frameToReference_initialEstimate);
-
 
 	gettimeofday(&tv_end, NULL);
 	msTrackFrame = 0.9f*msTrackFrame + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
@@ -975,7 +979,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 		data[0] = tracker->lastResidual;
 
 		data[3] = tracker->lastGoodCount / (tracker->lastGoodCount + tracker->lastBadCount);
-		data[4] = 4*tracker->lastGoodCount / (width*height);
+		data[4] = 4*tracker->lastGoodCount / (model->w*model->h);
 		data[5] = tracker->pointUsage;
 
 		data[6] = tracker->affineEstimation_a;
