@@ -170,8 +170,14 @@ float doLineStereo(
 	float initialTrackedResidual,
 	RunningStats* const stats,
 	cv::Mat &drawIm,
-	float *matchX, float* matchY)
+	float *matchX, float* matchY,
+	int drawMatchInvChance)
 {
+	bool drawThisTime =
+		(!drawIm.empty()) &&
+		((rand() % drawMatchInvChance) == 0);
+
+
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 	vec3 K_otherToThis_t = model.K * keyframeToReference.translation;
 	mat3 K_otherToThis_R = model.K * keyframeToReference.rotation;
@@ -208,7 +214,7 @@ float doLineStereo(
 	float realVal_m2 = getInterpolatedElement(keyframeImage, u - 2 * epxn*rescaleFactor, v - 2 * epyn*rescaleFactor, model.w);
 	float realVal_p2 = getInterpolatedElement(keyframeImage, u + 2 * epxn*rescaleFactor, v + 2 * epyn*rescaleFactor, model.w);
 
-	if (!drawIm.empty()) {
+	if (!drawIm.empty() && drawIm.cols == model.w) {
 		std::vector<float> searchVals{ realVal_m2, realVal_m1, realVal, realVal_p1, realVal_p2 };
 		cv::Mat searchValMat(cv::Size(searchVals.size(), 1), CV_8UC1);
 		for(size_t i = 0; i < searchVals.size(); ++i) {
@@ -433,10 +439,14 @@ float doLineStereo(
 			e5B = val_cp_m2 - realVal_m2; ee += e5B*e5B;
 		}
 
-		if (!drawIm.empty()) {
+		if (drawThisTime) {
 			vec3 rgb = 255.f * hueToRgb(0.8f * ee / 325125.f);
 			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
-			drawIm.at<cv::Vec3b>(int(cpy), int(cpx)) = rgbB;
+			if(drawIm.cols == model.w * 2) {
+				drawIm.at<cv::Vec3b>(int(cpy), int(cpx) + model.w) = rgbB;
+			} else {
+				drawIm.at<cv::Vec3b>(int(cpy), int(cpx)) = rgbB;
+			}
 		}
 
 		// do I have a new winner??
@@ -494,7 +504,7 @@ float doLineStereo(
 
 		loopCounter++;
 	}
-	if (!drawIm.empty()) {
+	if (!drawIm.empty() && drawIm.cols == model.w) {
 		matchVals.push_back(val_cp_p1);
 		matchVals.push_back(val_cp_p2);
 		cv::Mat searchValMat(cv::Size(matchVals.size(), 1), CV_8UC1);
@@ -557,8 +567,15 @@ float doLineStereo(
 		return r;
 	}
 
-	if (!drawIm.empty()) {
+	if (!drawIm.empty() && drawIm.cols == model.w) {
 		cv::circle(drawIm, cv::Point(int(best_match_x), int(best_match_y)), 5, cv::Scalar(0, 255, 0));
+	}
+	
+	if(drawThisTime && drawIm.cols == 2*model.w) {
+		drawIm.at<cv::Vec3b>(int(best_match_y), int(best_match_x + model.w)) =
+			cv::Vec3b(255, 255, 0);
+		drawIm.at<cv::Vec3b>(int(v), int(u)) =
+			cv::Vec3b(255, 255, 0);
 	}
 
 	result_eplLength = eplLength;
@@ -590,16 +607,30 @@ float DepthMap::doLineStereo(
 	keyframeToReference.rotation = referenceFrame->otherToThis_R;
 	keyframeToReference.translation = referenceFrame->otherToThis_t;
 	float matchx, matchy;
-	float r =  lsd_slam::doLineStereo(
-		u, v, epxn, epyn,
-		min_idepth, prior_idepth, max_idepth,
-		activeKeyFrameImageData, referenceFrameImage,
-		*static_cast<ProjCameraModel*>(model.get()), keyframeToReference,
-		result_idepth, result_var, result_eplLength,
-		activeKeyFrame->gradients(),
-		referenceFrame->initialTrackedResidual,
-		stats,
-		emptyMat, &matchx, &matchy);
+	float r;
+	if(settings.saveSearchRangesImages) {
+    	r =  lsd_slam::doLineStereo(
+    		u, v, epxn, epyn,
+    		min_idepth, prior_idepth, max_idepth,
+    		activeKeyFrameImageData, referenceFrameImage,
+    		*static_cast<ProjCameraModel*>(model.get()), keyframeToReference,
+    		result_idepth, result_var, result_eplLength,
+    		activeKeyFrame->gradients(),
+    		referenceFrame->initialTrackedResidual,
+    		stats,
+    		debugVisualiseSearchRangesIm, &matchx, &matchy,
+			settings.drawMatchInvChance);
+	} else {
+    	r =  lsd_slam::doLineStereo(
+    		u, v, epxn, epyn,
+    		min_idepth, prior_idepth, max_idepth,
+    		activeKeyFrameImageData, referenceFrameImage,
+    		*static_cast<ProjCameraModel*>(model.get()), keyframeToReference,
+    		result_idepth, result_var, result_eplLength,
+    		activeKeyFrame->gradients(),
+    		referenceFrame->initialTrackedResidual,
+    		stats);
+	}
 	if (settings.saveMatchesImages && r > 0.f) {
 		debugVisualiseMatch(vec2(u, v), vec2(matchx, matchy));
 	}

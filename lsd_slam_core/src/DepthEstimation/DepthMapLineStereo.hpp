@@ -25,7 +25,8 @@ float doLineStereo(
 	float initialTrackedResidual,
 	RunningStats* const stats,
 	cv::Mat &drawIm = emptyMat,
-	int *matchX = nullptr, int *matchY = nullptr);
+	float *matchX = nullptr, float *matchY = nullptr,
+	int drawMatchInvChance = 1);
 
 float findDepthAndVarProj(
 	float *result_idepth, float *result_var,
