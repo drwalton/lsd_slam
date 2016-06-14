@@ -27,6 +27,7 @@
 #include "Tracking/LGSX.hpp"
 #include "System/Win32Compatibility.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 
 namespace lsd_slam
 {
@@ -392,10 +393,7 @@ void Sim3Tracker::calcSim3Buffers(
 	// get static values
 	int w = frame->width(level);
 	int h = frame->height(level);
-	float fx_l = frame->model(level).fx;
-	float fy_l = frame->model(level).fy;
-	float cx_l = frame->model(level).cx;
-	float cy_l = frame->model(level).cy;
+	const CameraModel &m = frame->model(level);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rxso3().matrix().cast<float>();
 	Eigen::Matrix3f rotMatUnscaled = referenceToFrame.rotationMatrix().cast<float>();
@@ -431,8 +429,9 @@ void Sim3Tracker::calcSim3Buffers(
 	for(;refPoint<refPoint_max; refPoint++, refGrad++, refColVar++)
 	{
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
-		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
-		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
+		vec2 uv = m.camToPixel(Wxp);
+		float u_new = uv[0];
+		float v_new = uv[1];
 
 		// step 1a: coordinates have to be in image:
 		// (inverse test to exclude NANs)
@@ -452,8 +451,9 @@ void Sim3Tracker::calcSim3Buffers(
 		float rotatedGradX = xRoll0 * (*refGrad)[0] + xRoll1 * (*refGrad)[1];
 		float rotatedGradY = yRoll0 * (*refGrad)[0] + yRoll1 * (*refGrad)[1];
 
-		*(buf_warped_dx+idx) = fx_l * 0.5f * (resInterp[0] + rotatedGradX);
-		*(buf_warped_dy+idx) = fy_l * 0.5f * (resInterp[1] + rotatedGradY);
+		//TODO double check this is OK for omni
+		*(buf_warped_dx+idx) = m.fx * 0.5f * (resInterp[0] + rotatedGradX);
+		*(buf_warped_dy+idx) = m.fy * 0.5f * (resInterp[1] + rotatedGradY);
 #else
 		*(buf_warped_dx+idx) = fx_l * resInterp[0];
 		*(buf_warped_dy+idx) = fy_l * resInterp[1];
@@ -557,147 +557,7 @@ void Sim3Tracker::calcSim3Buffers(
 			Util::displayImage( "WD Res", debugImageWeightedResD );
 		}
 	}
-
 }
-
-
-#if defined(ENABLE_SSE)
-Sim3ResidualStruct Sim3Tracker::calcSim3WeightsAndResidualSSE(
-		const Sim3& referenceToFrame)
-{
-
-	const __m128 txs = _mm_set1_ps((float)(referenceToFrame.translation()[0]));
-	const __m128 tys = _mm_set1_ps((float)(referenceToFrame.translation()[1]));
-	const __m128 tzs = _mm_set1_ps((float)(referenceToFrame.translation()[2]));
-
-	const __m128 zeros = _mm_set1_ps(0.0f);
-	const __m128 ones = _mm_set1_ps(1.0f);
-
-
-	const __m128 depthVarFacs = _mm_set1_ps((float)settings.var_weight);// float depthVarFac = var_weight;	// the depth var is over-confident. this is a constant multiplier to remedy that.... HACK
-	const __m128 sigma_i2s = _mm_set1_ps((float)cameraPixelNoise2);
-
-
-	const __m128 huber_ress = _mm_set1_ps((float)(settings.huber_d));
-
-	__m128 sumResP = zeros;
-	__m128 sumResD = zeros;
-	__m128 numTermsD = zeros;
-
-
-
-	Sim3ResidualStruct sumRes;
-	memset(&sumRes, 0, sizeof(Sim3ResidualStruct));
-
-
-	for(int i=0;i<buf_warped_size-3;i+=4)
-	{
-
-		// calc dw/dd:
-		 //float g0 = (tx * pz - tz * px) / (pz*pz*d);
-		__m128 pzs = _mm_load_ps(buf_warped_z+i);	// z'
-		__m128 pz2ds = _mm_rcp_ps(_mm_mul_ps(_mm_mul_ps(pzs, pzs), _mm_load_ps(buf_d+i)));  // 1 / (z' * z' * d)
-		__m128 g0s = _mm_sub_ps(_mm_mul_ps(pzs, txs), _mm_mul_ps(_mm_load_ps(buf_warped_x+i), tzs));
-		g0s = _mm_mul_ps(g0s,pz2ds);
-
-		 //float g1 = (ty * pz - tz * py) / (pz*pz*d);
-		__m128 g1s = _mm_sub_ps(_mm_mul_ps(pzs, tys), _mm_mul_ps(_mm_load_ps(buf_warped_y+i), tzs));
-		g1s = _mm_mul_ps(g1s,pz2ds);
-
-		 //float g2 = (pz - tz) / (pz*pz*d);
-		__m128 g2s = _mm_sub_ps(pzs, tzs);
-		g2s = _mm_mul_ps(g2s,pz2ds);
-
-		// calc w_p
-		 // float drpdd = gx * g0 + gy * g1;	// ommitting the minus
-		__m128 drpdds = _mm_add_ps(
-				_mm_mul_ps(g0s, _mm_load_ps(buf_warped_dx+i)),
-				_mm_mul_ps(g1s, _mm_load_ps(buf_warped_dy+i)));
-
-		 //float w_p = 1.0f / (sigma_i2 + s * drpdd * drpdd);
-		__m128 w_ps = _mm_rcp_ps(_mm_add_ps(sigma_i2s,
-				_mm_mul_ps(drpdds,
-						_mm_mul_ps(drpdds,
-								_mm_mul_ps(depthVarFacs,
-										_mm_load_ps(buf_idepthVar+i))))));
-
-
-		//float w_d = 1.0f / (sv + g2*g2*s);
-		__m128 w_ds = _mm_rcp_ps(_mm_add_ps(_mm_load_ps(buf_warped_idepthVar+i),
-				_mm_mul_ps(g2s,
-						_mm_mul_ps(g2s,
-								_mm_mul_ps(depthVarFacs,
-										_mm_load_ps(buf_idepthVar+i))))));
-
-		//float weighted_rp = fabs(rp*sqrtf(w_p));
-		__m128 weighted_rps = _mm_mul_ps(_mm_load_ps(buf_warped_residual+i),
-				_mm_sqrt_ps(w_ps));
-		weighted_rps = _mm_max_ps(weighted_rps, _mm_sub_ps(zeros,weighted_rps));
-
-		//float weighted_rd = fabs(rd*sqrtf(w_d));
-		__m128 weighted_rds = _mm_mul_ps(_mm_load_ps(buf_residual_d+i),
-				_mm_sqrt_ps(w_ds));
-		weighted_rds = _mm_max_ps(weighted_rds, _mm_sub_ps(zeros,weighted_rds));
-
-		// depthValid = sv > 0
-		__m128 depthValid = _mm_cmplt_ps(zeros, _mm_load_ps(buf_warped_idepthVar+i));	// bitmask 0xFFFFFFFF for idepth valid, 0x000000 otherwise
-
-
-		// float weighted_abs_res = sv > 0 ? weighted_rd+weighted_rp : weighted_rp;
-		__m128 weighted_abs_ress = _mm_add_ps(_mm_and_ps(weighted_rds,depthValid), weighted_rps);
-
-		//float wh = fabs(weighted_abs_res < huber_res ? 1 : huber_res / weighted_abs_res);
-		__m128 whs = _mm_cmplt_ps(weighted_abs_ress, huber_ress);	// bitmask 0xFFFFFFFF for 1, 0x000000 for huber_res_ponly / weighted_rp
-		whs = _mm_or_ps(
-				_mm_and_ps(whs, ones),
-				_mm_andnot_ps(whs, _mm_mul_ps(huber_ress, _mm_rcp_ps(weighted_abs_ress))));
-
-
-		if(i+3 < buf_warped_size)
-		{
-			//if(sv > 0) sumRes.numTermsD++;
-			numTermsD = _mm_add_ps(numTermsD,
-					_mm_and_ps(depthValid, ones));
-
-			//if(sv > 0) sumRes.sumResD += wh * w_d * rd*rd;
-			sumResD = _mm_add_ps(sumResD,
-					_mm_and_ps(depthValid, _mm_mul_ps(whs, _mm_mul_ps(weighted_rds, weighted_rds))));
-
-			// sumRes.sumResP += wh * w_p * rp*rp;
-			sumResP = _mm_add_ps(sumResP,
-					_mm_mul_ps(whs, _mm_mul_ps(weighted_rps, weighted_rps)));
-		}
-
-		//*(buf_weight_p+i) = wh * w_p;
-		_mm_store_ps(buf_weight_p+i, _mm_mul_ps(whs, w_ps) );
-
-		//if(sv > 0) *(buf_weight_d+i) = wh * w_d; else *(buf_weight_d+i) = 0;
-		_mm_store_ps(buf_weight_d+i, _mm_and_ps(depthValid, _mm_mul_ps(whs, w_ds)) );
-
-	}
-	sumRes.sumResP = SSEE(sumResP,0) + SSEE(sumResP,1) + SSEE(sumResP,2) + SSEE(sumResP,3);
-	sumRes.numTermsP = (buf_warped_size >> 2) << 2;
-
-	sumRes.sumResD = SSEE(sumResD,0) + SSEE(sumResD,1) + SSEE(sumResD,2) + SSEE(sumResD,3);
-	sumRes.numTermsD = SSEE(numTermsD,0) + SSEE(numTermsD,1) + SSEE(numTermsD,2) + SSEE(numTermsD,3);
-
-	sumRes.mean = (sumRes.sumResD + sumRes.sumResP) / (sumRes.numTermsD + sumRes.numTermsP);
-	sumRes.meanD = (sumRes.sumResD) / (sumRes.numTermsD);
-	sumRes.meanP = (sumRes.sumResP) / (sumRes.numTermsP);
-
-	return sumRes;
-}
-#endif
-
-#if defined(ENABLE_NEON)
-Sim3ResidualStruct Sim3Tracker::calcSim3WeightsAndResidualNEON(
-		const Sim3& referenceToFrame)
-{
-	return calcSim3WeightsAndResidual(
-			referenceToFrame);
-}
-#endif
-
 
 Sim3ResidualStruct Sim3Tracker::calcSim3WeightsAndResidual(
 		const Sim3& referenceToFrame)
@@ -813,46 +673,106 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 	ls6.initialize(camModel->w*camModel->h);
 	ls4.initialize(camModel->w*camModel->h);
 
-	for(int i=0;i<buf_warped_size;i++)
-	{
-		float px = *(buf_warped_x+i);	// x'
-		float py = *(buf_warped_y+i);	// y'
-		float pz = *(buf_warped_z+i);	// z'
+	if (camModel->getType() == CameraModelType::PROJ) {
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);	// x'
+			float py = *(buf_warped_y + i);	// y'
+			float pz = *(buf_warped_z + i);	// z'
 
-		float wp = *(buf_weight_p+i);	// wr/wp
-		float wd = *(buf_weight_d+i);	// wr/wd
+			float wp = *(buf_weight_p + i);	// wr/wp
+			float wd = *(buf_weight_d + i);	// wr/wd
 
-		float rp = *(buf_warped_residual+i); // r_p
-		float rd = *(buf_residual_d+i);	 // r_d
+			float rp = *(buf_warped_residual + i); // r_p
+			float rd = *(buf_residual_d + i);	 // r_d
 
-		float gx = *(buf_warped_dx+i);	// \delta_x I
-		float gy = *(buf_warped_dy+i);  // \delta_y I
+			float gx = *(buf_warped_dx + i);	// \delta_x I
+			float gy = *(buf_warped_dy + i);  // \delta_y I
 
 
-		float z = 1.0f / pz;
-		float z_sqr = 1.0f / (pz*pz);
-		Vector6 v;
-		Vector4 v4;
-		v[0] = z*gx + 0;
-		v[1] = 0 +         z*gy;
-		v[2] = (-px * z_sqr) * gx +
-			  (-py * z_sqr) * gy;
-		v[3] = (-px * py * z_sqr) * gx +
-			  (-(1.0f + py * py * z_sqr)) * gy;
-		v[4] = (1.0f + px * px * z_sqr) * gx +
-			  (px * py * z_sqr) * gy;
-		v[5] = (-py * z) * gx +
-			  (px * z) * gy;
+			float z = 1.0f / pz;
+			float z_sqr = 1.0f / (pz*pz);
+			Vector6 v;
+			Vector4 v4;
+			v[0] = z*gx + 0;
+			v[1] = 0 + z*gy;
+			v[2] = (-px * z_sqr) * gx +
+				(-py * z_sqr) * gy;
+			v[3] = (-px * py * z_sqr) * gx +
+				(-(1.0f + py * py * z_sqr)) * gy;
+			v[4] = (1.0f + px * px * z_sqr) * gx +
+				(px * py * z_sqr) * gy;
+			v[5] = (-py * z) * gx +
+				(px * z) * gy;
 
-		// new:
-		v4[0] = z_sqr;
-		v4[1] = z_sqr * py;
-		v4[2] = -z_sqr * px;
-		v4[3] = z;
+			// new:
+			v4[0] = z_sqr;
+			v4[1] = z_sqr * py;
+			v4[2] = -z_sqr * px;
+			v4[3] = z;
 
-		ls6.update(v, rp, wp);		// Jac = - v
-		ls4.update(v4, rd, wd);	// Jac = v4
+			ls6.update(v, rp, wp);		// Jac = - v
+			ls4.update(v4, rd, wd);	// Jac = v4
 
+		}
+	}
+	else  /* CameraModelType::OMNI */ {
+		const OmniCameraModel *m = static_cast<const OmniCameraModel*>(camModel.get());
+		float e = m->e;
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);	// x'
+			float py = *(buf_warped_y + i);	// y'
+			float pz = *(buf_warped_z + i);	// z'
+
+			float wp = *(buf_weight_p + i);	// wr/wp
+			float wd = *(buf_weight_d + i);	// wr/wd
+
+			float rp = *(buf_warped_residual + i); // r_p
+			float rd = *(buf_residual_d + i);	 // r_d
+
+			float gx = *(buf_warped_dx + i);	// \delta_x I
+			float gy = *(buf_warped_dy + i);  // \delta_y I
+
+
+			float z = 1.0f / pz;
+			float n = vec3(px, py, pz).norm();
+			float n_sqr = n*n;
+			float in = 1.f / n;
+			float den = 1.f / ((pz + n*e)*(pz + n*e));
+			Vector6 v;
+
+			float gxd = gx * den, gyd = gy * den;
+
+			float J00 = gxd * (pz + e*(n - (px*px)*in));
+			float J01 = -gyd * (e*px*py * in);
+
+			float J10 = -gxd * (e*px*py * in);
+			float J11 = gyd * (pz + e*(n - (py*py)*in));
+
+			float J20 = -gxd * px*(1.f + pz*e*in);
+			float J21 = -gyd * py*(1.f + pz*e*in);
+
+			v[0] = J00 + J01;
+			v[1] = J10 + J11;
+			v[2] = J20 + J21;
+
+			v[3] = -pz*v[1] + py*v[2];
+			v[4] = pz*v[0] - px*v[2];
+			v[5] = -py*v[0] + px*v[1];
+
+			Vector4 v4;
+
+			// new:
+			v4[0] = n_sqr;
+			v4[1] = n_sqr * py;
+			v4[2] = -n_sqr * px;
+			v4[3] = z;
+
+			ls6.update(v, rp, wp);		// Jac = - v
+			ls4.update(v4, rd, wd);	// Jac = v4
+
+		}
 	}
 
 	ls4.finishNoDivide();
@@ -860,7 +780,6 @@ void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 
 
 	ls7.initializeFrom(ls6, ls4);
-
 }
 
 void Sim3Tracker::calcResidualAndBuffers_debugStart()
