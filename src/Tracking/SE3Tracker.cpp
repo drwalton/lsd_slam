@@ -26,6 +26,7 @@
 #include "IOWrapper/ImageDisplay.hpp"
 #include "Tracking/LGSX.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
+#include "CameraModel/OmniCameraModel.hpp"
 
 #include <Eigen/Core>
 
@@ -287,8 +288,8 @@ SE3 SE3Tracker::trackFrame(
 	if (plotTrackingIterationInfo)
 	{
 		const float* frameImage = frame->image();
-		for (int row = 0; row < camModel->h; ++ row)
-			for (int col = 0; col < camModel->w; ++ col)
+		for (size_t row = 0; row < camModel->h; ++ row)
+			for (size_t col = 0; col < camModel->w; ++ col)
 				setPixelInCvMat(&debugImageSecondFrame,getGrayCvPixel(frameImage[col+row*camModel->w]), col, row, 1);
 	}
 
@@ -884,26 +885,22 @@ float SE3Tracker::calcResidualAndBuffers(
 {
 	calcResidualAndBuffers_debugStart();
 
-	if(plotResidual)
+	if (plotResidual)
 		debugImageResiduals.setTo(0);
 
 
 	int w = frame->width(level);
 	int h = frame->height(level);
-	float fx_l = frame->model(level).fx;
-	float fy_l = frame->model(level).fy;
-	float cx_l = frame->model(level).cx;
-	float cy_l = frame->model(level).cy;
+	const CameraModel &m = frame->model(level);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
 	Eigen::Vector3f transVec = referenceToFrame.translation();
-	
-	const Eigen::Vector3f* refPoint_max = refPoint + refNum;
 
+	const Eigen::Vector3f* refPoint_max = refPoint + refNum;
 
 	const Eigen::Vector4f* frame_gradients = frame->gradients(level);
 
-	int idx=0;
+	int idx = 0;
 
 	float sumResUnweighted = 0;
 
@@ -914,24 +911,23 @@ float SE3Tracker::calcResidualAndBuffers(
 
 	float sumSignedRes = 0;
 
-
-
-	float sxx=0,syy=0,sx=0,sy=0,sw=0;
+	float sxx = 0, syy = 0, sx = 0, sy = 0, sw = 0;
 
 	float usageCount = 0;
 
-	for(;refPoint<refPoint_max; refPoint++, refColVar++, idxBuf++)
+	for (; refPoint<refPoint_max; refPoint++, refColVar++, idxBuf++)
 	{
 
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
-		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
-		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
+		vec2 uv = m.camToPixel(Wxp);
+		float u_new = uv[0];
+		float v_new = uv[1];
 
 		// step 1a: coordinates have to be in image:
 		// (inverse test to exclude NANs)
-		if(!(u_new > 1 && v_new > 1 && u_new < w-2 && v_new < h-2))
+		if (!(u_new > 1 && v_new > 1 && u_new < w - 2 && v_new < h - 2))
 		{
-			if(isGoodOutBuffer != 0)
+			if (isGoodOutBuffer != 0)
 				isGoodOutBuffer[*idxBuf] = false;
 			continue;
 		}
@@ -949,25 +945,33 @@ float SE3Tracker::calcResidualAndBuffers(
 		sy += c2*weight;
 		sw += weight;
 
-		bool isGood = residual*residual / (MAX_DIFF_CONSTANT + MAX_DIFF_GRAD_MULT*(resInterp[0]*resInterp[0] + resInterp[1]*resInterp[1])) < 1;
+		bool isGood = residual*residual /
+			(MAX_DIFF_CONSTANT + MAX_DIFF_GRAD_MULT*(resInterp[0] * resInterp[0]
+				+ resInterp[1] * resInterp[1])) < 1;
 
-		if(isGoodOutBuffer != 0)
+		if (isGoodOutBuffer != 0)
 			isGoodOutBuffer[*idxBuf] = isGood;
 
-		*(buf_warped_x+idx) = Wxp(0);
-		*(buf_warped_y+idx) = Wxp(1);
-		*(buf_warped_z+idx) = Wxp(2);
+		*(buf_warped_x + idx) = Wxp(0);
+		*(buf_warped_y + idx) = Wxp(1);
+		*(buf_warped_z + idx) = Wxp(2);
 
-		*(buf_warped_dx+idx) = fx_l * resInterp[0];
-		*(buf_warped_dy+idx) = fy_l * resInterp[1];
-		*(buf_warped_residual+idx) = residual;
+		*(buf_warped_dx + idx) = m.fx * resInterp[0];
+		*(buf_warped_dy + idx) = m.fy * resInterp[1];
+		//const OmniCameraModel *omModel;
+		//if (omModel = dynamic_cast<const OmniCameraModel*>(&m)) {
+		//	float d = Wxp.norm() * omModel->e;
+		//	*(buf_warped_dx+idx) /= d;
+		//	*(buf_warped_dy+idx) /= d;
+		//}
+		*(buf_warped_residual + idx) = residual;
 
-		*(buf_d+idx) = 1.0f / (*refPoint)[2];
-		*(buf_idepthVar+idx) = (*refColVar)[1];
+		*(buf_d + idx) = 1.0f / (*refPoint)[2];
+		*(buf_idepthVar + idx) = (*refColVar)[1];
 		idx++;
 
 
-		if(isGood)
+		if (isGood)
 		{
 			sumResUnweighted += residual*residual;
 			sumSignedRes += residual;
@@ -981,26 +985,25 @@ float SE3Tracker::calcResidualAndBuffers(
 
 
 		// DEBUG STUFF
-		if(plotTrackingIterationInfo || plotResidual)
+		if (plotTrackingIterationInfo || plotResidual)
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			//TODO PROJ SPECIFIC BIT
-			const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&(frame->model(level)));
-			Eigen::Vector3f point = pm->K * (*refPoint);
-			int x = static_cast<int>(point[0] / point[2] + 0.5f);
-			int y = static_cast<int>(point[1] / point[2] + 0.5f);
+			Eigen::Vector2f point = m.camToPixel((*refPoint));
+			int x = static_cast<int>(point[0]);
+			int y = static_cast<int>(point[1]);
 
-			if(plotTrackingIterationInfo)
+			if (plotTrackingIterationInfo)
 			{
-				setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
-					static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(camModel->w/w));
-				setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(camModel->w/w));
+				setPixelInCvMat(&debugImageOldImageSource, getGrayCvPixel((float)resInterp[2]),
+					static_cast<int>(u_new + 0.5f), static_cast<int>(v_new + 0.5f), (camModel->w / w));
+				setPixelInCvMat(&debugImageOldImageWarped, getGrayCvPixel(
+					(float)resInterp[2]), x, y, (camModel->w / w));
 			}
-			if(isGood)
-				setPixelInCvMat(&debugImageResiduals,getGrayCvPixel(residual+128),x,y,(camModel->w/w));
+			if (isGood)
+				setPixelInCvMat(&debugImageResiduals, getGrayCvPixel(residual + 128), x, y, (camModel->w / w));
 			else
-				setPixelInCvMat(&debugImageResiduals,cv::Vec3b(0,0,255),x,y,(camModel->w/w));
+				setPixelInCvMat(&debugImageResiduals, cv::Vec3b(0, 0, 255), x, y, (camModel->w / w));
 
 		}
 	}
@@ -1012,8 +1015,8 @@ float SE3Tracker::calcResidualAndBuffers(
 	lastBadCount = float(badCount);
 	lastMeanRes = sumSignedRes / goodCount;
 
-	affineEstimation_a_lastIt = sqrtf((syy - sy*sy/sw) / (sxx - sx*sx/sw));
-	affineEstimation_b_lastIt = (sy - affineEstimation_a_lastIt*sx)/sw;
+	affineEstimation_a_lastIt = sqrtf((syy - sy*sy / sw) / (sxx - sx*sx / sw));
+	affineEstimation_b_lastIt = (sy - affineEstimation_a_lastIt*sx) / sw;
 
 	calcResidualAndBuffers_debugFinish(w);
 
@@ -1023,44 +1026,89 @@ float SE3Tracker::calcResidualAndBuffers(
 void SE3Tracker::calculateWarpUpdate(
 		LGS6 &ls)
 {
-//	weightEstimator.reset();
-//	weightEstimator.estimateDistribution(buf_warped_residual, buf_warped_size);
-//	weightEstimator.calcWeights(buf_warped_residual, buf_warped_weights, buf_warped_size);
-//
 	ls.initialize(camModel->w*camModel->h);
-	for(int i=0;i<buf_warped_size;i++)
-	{
-		float px = *(buf_warped_x+i);
-		float py = *(buf_warped_y+i);
-		float pz = *(buf_warped_z+i);
-		float r =  *(buf_warped_residual+i);
-		float gx = *(buf_warped_dx+i);
-		float gy = *(buf_warped_dy+i);
-		// step 3 + step 5 comp 6d error vector
 
-		float z = 1.0f / pz;
-		float z_sqr = 1.0f / (pz*pz);
-		Vector6 v;
-		v[0] = z*gx + 0;
-		v[1] = 0 +         z*gy;
-		v[2] = (-px * z_sqr) * gx +
-			  (-py * z_sqr) * gy;
-		v[3] = (-px * py * z_sqr) * gx +
-			  (-(1.0f + py * py * z_sqr)) * gy;
-		v[4] = (1.0f + px * px * z_sqr) * gx +
-			  (px * py * z_sqr) * gy;
-		v[5] = (-py * z) * gx +
-			  (px * z) * gy;
+	if (camModel->getType() == CameraModelType::PROJ) {
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);
+			float py = *(buf_warped_y + i);
+			float pz = *(buf_warped_z + i);
+			float r = *(buf_warped_residual + i);
+			float gx = *(buf_warped_dx + i);
+			float gy = *(buf_warped_dy + i);
+			// step 3 + step 5 comp 6d error vector
 
-		// step 6: integrate into A and b:
-		ls.update(v, r, *(buf_weight_p+i));
+			float z = 1.0f / pz;
+			float z_sqr = 1.0f / (pz*pz);
+			Vector6 v;
+			v[0] = z*gx + 0;
+			v[1] = 0 + z*gy;
+			v[2] = (-px * z_sqr) * gx +
+				(-py * z_sqr) * gy;
+
+			v[3] = -pz*v[1] + py*v[2];
+			v[4] = pz*v[0] - px*v[2];
+			v[5] = -py*v[0] + px*v[1];
+
+			/*
+			v[3] = (-px * py * z_sqr) * gx +
+			(-(1.0f + py * py * z_sqr)) * gy;
+			v[4] = (1.0f + px * px * z_sqr) * gx +
+			(px * py * z_sqr) * gy;
+			v[5] = (-py * z) * gx +
+			(px * z) * gy;
+			*/
+
+			// step 6: integrate into A and b:
+			ls.update(v, r, *(buf_weight_p + i));
+		}
+	}
+	else /* CameraModelType::OMNI */ {
+		const OmniCameraModel *m = static_cast<const OmniCameraModel*>(camModel.get());
+		float e = m->e;
+		for (int i = 0; i < buf_warped_size; i++)
+		{
+			float px = *(buf_warped_x + i);
+			float py = *(buf_warped_y + i);
+			float pz = *(buf_warped_z + i);
+			float r = *(buf_warped_residual + i);
+			float gx = *(buf_warped_dx + i);
+			float gy = *(buf_warped_dy + i);
+			// step 3 + step 5 comp 6d error vector
+
+			//float z_sqr = 1.0f / (pz*pz);
+			float n = vec3(px, py, pz).norm();
+			float in = 1.f / n;
+			float den = 1.f / ((pz + n*e)*(pz + n*e));
+			Vector6 v;
+
+			float gxd = gx * den, gyd = gy * den;
+
+			float J00 = gxd * (pz + e*(n - (px*px)*in));
+			float J01 = -gyd * (e*px*py * in);
+
+			float J10 = -gxd * (e*px*py * in);
+			float J11 = gyd * (pz + e*(n - (py*py)*in));
+
+			float J20 = -gxd * px*(1.f + pz*e*in);
+			float J21 = -gyd * py*(1.f + pz*e*in);
+
+			v[0] = J00 + J01;
+			v[1] = J10 + J11;
+			v[2] = J20 + J21;
+
+			v[3] = -pz*v[1] + py*v[2];
+			v[4] = pz*v[0] - px*v[2];
+			v[5] = -py*v[0] + px*v[1];
+
+			// step 6: integrate into A and b:
+			ls.update(v, r, *(buf_weight_p + i));
+		}
 	}
 
 	// solve ls
 	ls.finish();
-	//result = ls.A.ldlt().solve(ls.b);
-
-
 }
 
 

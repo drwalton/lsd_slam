@@ -370,6 +370,7 @@ void Sim3Tracker::calcSim3Buffers(
 		const Sim3& referenceToFrame,
 		int level, bool plotWeights)
 {
+	//TODO Omni Code
 	if(plotSim3TrackingIterationInfo)
 	{
 		cv::Vec3b col = cv::Vec3b(255,170,168);
@@ -498,11 +499,9 @@ void Sim3Tracker::calcSim3Buffers(
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			//TODO PROJ SPECIFIC BIT
-			const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&(frame->model(level)));
-			Eigen::Vector3f point = pm->K * (*refPoint);
-			int x = static_cast<int>(point[0] / point[2] + 0.5f);
-			int y = static_cast<int>(point[1] / point[2] + 0.5f);
+			Eigen::Vector2f point = frame->model(level).camToPixel((*refPoint));
+			int x = static_cast<int>(point.x());
+			int y = static_cast<int>(point.y());
 
 			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
 				static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(camModel->w/w));
