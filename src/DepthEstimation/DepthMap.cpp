@@ -104,7 +104,7 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 	int successes = 0;
 
 	for(int y=yMin;y<yMax; y++)
-		for(int x=3;x<camModel_->w-3;x++)
+		for(size_t x=3;x<camModel_->w-3;x++)
 		{
 			int idx = x+y*camModel_->w;
 			DepthMapPixelHypothesis* target = currentDepthMap+idx;
@@ -536,8 +536,8 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 
 	// go through all pixels of OLD image, propagating forwards.
-	for(int y=0;y<camModel_->h;y++)
-		for(int x=0;x<camModel_->w;x++)
+	for(size_t y=0;y<camModel_->h;y++)
+		for(size_t x=0;x<camModel_->w;x++)
 		{
 			DepthMapPixelHypothesis* source = currentDepthMap + x + y*camModel_->w;
 
@@ -791,7 +791,7 @@ template<bool removeOcclusions> void DepthMap::regularizeDepthMapRow(int validit
 
 	for(int y=yMin;y<yMax;y++)
 	{
-		for(int x=regularize_radius;x<camModel_->w-regularize_radius;x++)
+		for(size_t x=regularize_radius;x<camModel_->w-regularize_radius;x++)
 		{
 			DepthMapPixelHypothesis* dest = currentDepthMap + x + y*camModel_->w;
 			DepthMapPixelHypothesis* destRead = otherDepthMap + x + y*camModel_->w;
@@ -917,9 +917,9 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 
 	const float* maxGradients = new_frame->maxGradients();
 
-	for(int y=1;y<camModel_->h-1;y++)
+	for(size_t y=1;y<camModel_->h-1;y++)
 	{
-		for(int x=1;x<camModel_->w-1;x++)
+		for(size_t x=1;x<camModel_->w-1;x++)
 		{
 			if(maxGradients[x+y*camModel_->w] > MIN_ABS_GRAD_CREATE)
 			{

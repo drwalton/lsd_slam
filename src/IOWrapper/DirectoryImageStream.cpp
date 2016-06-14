@@ -33,7 +33,6 @@ void DirectoryImageStream::run()
 void DirectoryImageStream::setCalibration(const std::string &file)
 {
 	InputImageStream::setCalibration(file);
-	//TODO check size is correct.
 }
 
 void DirectoryImageStream::operator()()

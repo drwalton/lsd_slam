@@ -42,52 +42,14 @@ VertexSim3::VertexSim3() : g2o::BaseVertex<7, Sophus::Sim3d>()
 
 bool VertexSim3::write(std::ostream& os) const
 {
-	// TODO
 	assert(false);
 	return false;
-//     Sim3 cam2world(estimate().inverse());
-//     Vector7d lv=cam2world.log();
-//     for (int i=0; i<7; i++){
-//       os << lv[i] << " ";
-//     }
-//     for (int i=0; i<2; i++)
-//     {
-//       os << _focal_length[i] << " ";
-//     }
-//     for (int i=0; i<2; i++)
-//     {
-//       os << _principle_point[i] << " ";
-//     }
-//     return os.good();
 }
 
 bool VertexSim3::read(std::istream& is)
 {
-	// TODO
 	assert(false);
 	return false;
-//     Vector7d cam2world;
-//     for (int i=0; i<6; i++){
-//       is >> cam2world[i];
-//     }
-//     is >> cam2world[6];
-// //    if (! is) {
-// //      // if the scale is not specified we set it to 1;
-// //      std::cerr << "!s";
-// //      cam2world[6]=0.;
-// //    }
-// 
-//     for (int i=0; i<2; i++)
-//     {
-//       is >> _focal_length[i];
-//     }
-//     for (int i=0; i<2; i++)
-//     {
-//       is >> _principle_point[i];
-//     }
-// 
-//     setEstimate(Sim3(cam2world).inverse());
-//     return true;
 }
 
 
@@ -98,42 +60,13 @@ EdgeSim3::EdgeSim3() :
 
 bool EdgeSim3::write(std::ostream& os) const
 {
-	// TODO
 	assert(false);
 	return false;
-//     Sim3 cam2world(measurement().inverse());
-//     Vector7d v7 = cam2world.log();
-//     for (int i=0; i<7; i++)
-//     {
-//       os  << v7[i] << " ";
-//     }
-//     for (int i=0; i<7; i++)
-//       for (int j=i; j<7; j++){
-//         os << " " <<  information()(i,j);
-//     }
-//     return os.good();
 }
 
 bool EdgeSim3::read(std::istream& is)
 {
-	// TODO
 	assert(false);
 	return false;
-//     Vector7d v7;
-//     for (int i=0; i<7; i++){
-//       is >> v7[i];
-//     }
-// 
-//     Sim3 cam2world(v7);
-//     setMeasurement(cam2world.inverse());
-// 
-//     for (int i=0; i<7; i++)
-//       for (int j=i; j<7; j++)
-//       {
-//         is >> information()(i,j);
-//         if (i!=j)
-//           information()(j,i)=information()(i,j);
-//       }
-//     return true;
 }
 }

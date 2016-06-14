@@ -835,8 +835,6 @@ void SlamSystem::gtDepthInit(uchar* image, float* depth, double timeStamp, int i
 
 	currentKeyFrameMutex.lock();
 
-	//TODO OMNI
-	ProjCameraModel *p = dynamic_cast<ProjCameraModel*>(model.get());
 	currentKeyFrame.reset(new Frame(id, *model, timeStamp, image));
 	currentKeyFrame->setDepthFromGroundTruth(depth);
 
@@ -867,8 +865,6 @@ void SlamSystem::randomInit(uchar* image, double timeStamp, int id)
 
 	currentKeyFrameMutex.lock();
 
-	//TODO OMNI
-	ProjCameraModel *p = dynamic_cast<ProjCameraModel*>(model.get());
 	currentKeyFrame.reset(new Frame(id, *model, timeStamp, image));
 	map->initializeRandomly(currentKeyFrame.get());
 	keyFrameGraph->addFrame(currentKeyFrame.get());
@@ -895,8 +891,6 @@ void SlamSystem::randomInit(uchar* image, double timeStamp, int id)
 void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilMapped, double timestamp)
 {
 	// Create new frame
-	//TODO OMNI
-	ProjCameraModel *p = dynamic_cast<ProjCameraModel*>(model.get());
 	std::shared_ptr<Frame> trackingNewFrame(new Frame(frameID, *model, timestamp, image));
 
 	if(!trackingIsGood)
