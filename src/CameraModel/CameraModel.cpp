@@ -45,5 +45,26 @@ std::unique_ptr<CameraModel> CameraModel::loadFromFile(
 	}
 }
 
+std::ostream &operator<<(std::ostream &s, const CameraModel & model)
+{
+	if (model.getType() == CameraModelType::PROJ) {
+		s << "** Projective Camera Model **\n";
+	} else {
+		s << "** Omnidirectional Camera Model **\n";
+	}
+	s << "dims = (" << model.w << ", " << model.h << ")\n";
+	s << "f = (" << model.fx << ", " << model.fy << ")\n";
+	s << "c = (" << model.cx << ", " << model.cy << ")\n";
+
+	if (model.getType() == CameraModelType::OMNI) {
+		auto o = dynamic_cast<const OmniCameraModel*>(&model);
+		s << "e = " << o->e << "\n";
+	} 
+
+	s << std::endl;
+
+	return s;
+}
+
 }
 

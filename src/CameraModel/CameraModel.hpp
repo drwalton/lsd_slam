@@ -54,4 +54,6 @@ public:
 	virtual std::unique_ptr<CameraModel> makeProjCamModel() const = 0;
 };
 
+std::ostream &operator << (std::ostream &s, const CameraModel &model);
+
 }
