@@ -23,6 +23,7 @@ int main(int argc, char **argv)
 	std::cout << "Opening calibration file: \"" << argv[1] << "\"..."; std::cout.flush();
 	stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
 	std::cout << "Done!" << std::endl;
+	std::cout << "Loaded calibration:\n" << stream.camModel() << std::endl;
 
 	std::cout << "Running stream..."; std::cout.flush();
 	stream.run();

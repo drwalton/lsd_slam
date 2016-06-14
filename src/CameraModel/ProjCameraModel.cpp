@@ -20,7 +20,10 @@ vec2 ProjCameraModel::camToPixel(const vec3 &p) const
 
 vec3 ProjCameraModel::pixelToCam(const vec2 &p, float d) const
 {
-	return  Kinv * vec3(p.x(), p.y(), d);
+	return vec3(
+		(p.x()*fxi() + cxi()) * d,
+		(p.y()*fyi() + cyi()) * d,
+		d);
 }
 
 std::vector<std::unique_ptr<CameraModel> >
