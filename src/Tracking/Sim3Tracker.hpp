@@ -24,7 +24,7 @@
 #include "util/EigenCoreInclude.hpp"
 #include "util/SophusUtil.hpp"
 #include "Tracking/LGSX.hpp"
-
+#include <memory>
 
 namespace lsd_slam
 {
@@ -60,12 +60,7 @@ class Sim3Tracker
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	int width, height;
-
-	// camera matrix
-	Eigen::Matrix3f K, KInv;
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
+	std::unique_ptr<CameraModel> camModel;
 	
 	Matrix7x7 lastSim3Hessian;
 

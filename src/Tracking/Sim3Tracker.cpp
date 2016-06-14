@@ -45,28 +45,10 @@ namespace lsd_slam
 
 
 Sim3Tracker::Sim3Tracker(const CameraModel &model)
+	:camModel(model.clone())
 {
-	//TODO FIX FOR OMNI
-	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&model);
-	int w = pm->w; int h = pm->h;
-	width = pm->w;
-	height = pm->h;
-
-	this->K = pm->K;
-	fx = K(0,0);
-	fy = K(1,1);
-	cx = K(0,2);
-	cy = K(1,2);
-
+	int w = model.w, h = model.h;
 	settings = DenseDepthTrackerSettings();
-
-
-	KInv = K.inverse();
-	fxi = KInv(0,0);
-	fyi = KInv(1,1);
-	cxi = KInv(0,2);
-	cyi = KInv(1,2);
-
 
 	buf_warped_residual = (float*)Eigen::internal::aligned_malloc(w*h*sizeof(float));
 	buf_warped_weights = (float*)Eigen::internal::aligned_malloc(w*h*sizeof(float));
@@ -89,20 +71,20 @@ Sim3Tracker::Sim3Tracker(const CameraModel &model)
 
 	buf_warped_size = 0;
 
-	debugImageWeights = cv::Mat(height,width,CV_8UC3);
-	debugImageResiduals = cv::Mat(height,width,CV_8UC3);
-	debugImageSecondFrame = cv::Mat(height,width,CV_8UC3);
-	debugImageOldImageWarped = cv::Mat(height,width,CV_8UC3);
-	debugImageOldImageSource = cv::Mat(height,width,CV_8UC3);
-	debugImageExternalWeights = cv::Mat(height,width,CV_8UC3);
-	debugImageDepthResiduals = cv::Mat(height,width,CV_8UC3);
-	debugImageScaleEstimation = cv::Mat(height,width,CV_8UC3);
+	debugImageWeights = cv::Mat(h,w,CV_8UC3);
+	debugImageResiduals = cv::Mat(h,w,CV_8UC3);
+	debugImageSecondFrame = cv::Mat(h,w,CV_8UC3);
+	debugImageOldImageWarped = cv::Mat(h,w,CV_8UC3);
+	debugImageOldImageSource = cv::Mat(h,w,CV_8UC3);
+	debugImageExternalWeights = cv::Mat(h,w,CV_8UC3);
+	debugImageDepthResiduals = cv::Mat(h,w,CV_8UC3);
+	debugImageScaleEstimation = cv::Mat(h,w,CV_8UC3);
 
-	debugImageHuberWeight = cv::Mat(height,width,CV_8UC3);
-	debugImageWeightD = cv::Mat(height,width,CV_8UC3);
-	debugImageWeightP = cv::Mat(height,width,CV_8UC3);
-	debugImageWeightedResP = cv::Mat(height,width,CV_8UC3);
-	debugImageWeightedResD = cv::Mat(height,width,CV_8UC3);
+	debugImageHuberWeight = cv::Mat(h,w,CV_8UC3);
+	debugImageWeightD = cv::Mat(h,w,CV_8UC3);
+	debugImageWeightP = cv::Mat(h,w,CV_8UC3);
+	debugImageWeightedResP = cv::Mat(h,w,CV_8UC3);
+	debugImageWeightedResD = cv::Mat(h,w,CV_8UC3);
 
 	
 	lastResidual = 0;
@@ -189,7 +171,7 @@ Sim3 Sim3Tracker::trackFrameSim3(
 
 		// evaluate baseline-residual.
 		callOptimized(calcSim3Buffers, (reference, frame, referenceToFrame, lvl));
-		if(buf_warped_size < 0.5 * MIN_GOODPERALL_PIXEL_ABSMIN * (width>>lvl)*(height>>lvl) || buf_warped_size < 10)
+		if(buf_warped_size < 0.5 * MIN_GOODPERALL_PIXEL_ABSMIN * (camModel->w>>lvl)*(camModel->h>>lvl) || buf_warped_size < 10)
 		{
 			diverged = true;
 			return Sim3();
@@ -244,7 +226,7 @@ Sim3 Sim3Tracker::trackFrameSim3(
 
 				// re-evaluate residual
 				callOptimized(calcSim3Buffers,(reference, frame, new_referenceToFrame, lvl));
-				if(buf_warped_size < 0.5 * MIN_GOODPERALL_PIXEL_ABSMIN * (width>>lvl)*(height>>lvl) || buf_warped_size < 10)
+				if(buf_warped_size < 0.5 * MIN_GOODPERALL_PIXEL_ABSMIN * (camModel->w>>lvl)*(camModel->h>>lvl) || buf_warped_size < 10)
 				{
 					diverged = true;
 					return Sim3();
@@ -381,40 +363,6 @@ Sim3 Sim3Tracker::trackFrameSim3(
 
 	return referenceToFrame.inverse();
 }
-
-
-
-
-#if defined(ENABLE_SSE)
-void Sim3Tracker::calcSim3BuffersSSE(
-		const TrackingReference* reference,
-		Frame* frame,
-		const Sim3& referenceToFrame,
-		int level, bool plotWeights)
-{
-	calcSim3Buffers(
-			reference,
-			frame,
-			referenceToFrame,
-			level, plotWeights);
-}
-#endif
-
-#if defined(ENABLE_NEON)
-void Sim3Tracker::calcSim3BuffersNEON(
-		const TrackingReference* reference,
-		Frame* frame,
-		const Sim3& referenceToFrame,
-		int level, bool plotWeights)
-{
-	calcSim3Buffers(
-			reference,
-			frame,
-			referenceToFrame,
-			level, plotWeights);
-}
-#endif
-
 
 void Sim3Tracker::calcSim3Buffers(
 		const TrackingReference* reference,
@@ -557,27 +505,27 @@ void Sim3Tracker::calcSim3Buffers(
 			int y = static_cast<int>(point[1] / point[2] + 0.5f);
 
 			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
-				static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(width/w));
-			setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(width/w));
-			setPixelInCvMat(&debugImageResiduals,getGrayCvPixel(residual_p+128),x,y,(width/w));
+				static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(camModel->w/w));
+			setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(camModel->w/w));
+			setPixelInCvMat(&debugImageResiduals,getGrayCvPixel(residual_p+128),x,y,(camModel->w/w));
 
 			if(*(buf_warped_idepthVar+idx) >= 0)
 			{
-				setPixelInCvMat(&debugImageDepthResiduals,getGrayCvPixel(128 + 800 * *(buf_residual_d+idx)),x,y,(width/w));
+				setPixelInCvMat(&debugImageDepthResiduals,getGrayCvPixel(128 + 800 * *(buf_residual_d+idx)),x,y,(camModel->w/w));
 
 				if(plotWeights)
 				{
-					setPixelInCvMat(&debugImageWeightD,getGrayCvPixel(255 * (1/60.0f) * sqrtf(*(buf_weight_VarD+idx))),x,y,(width/w));
-					setPixelInCvMat(&debugImageWeightedResD,getGrayCvPixel(128 + (128/5.0f) * sqrtf(*(buf_weight_VarD+idx)) * *(buf_residual_d+idx)),x,y,(width/w));
+					setPixelInCvMat(&debugImageWeightD,getGrayCvPixel(255 * (1/60.0f) * sqrtf(*(buf_weight_VarD+idx))),x,y,(camModel->w/w));
+					setPixelInCvMat(&debugImageWeightedResD,getGrayCvPixel(128 + (128/5.0f) * sqrtf(*(buf_weight_VarD+idx)) * *(buf_residual_d+idx)),x,y,(camModel->w/w));
 				}
 			}
 
 
 			if(plotWeights)
 			{
-				setPixelInCvMat(&debugImageWeightP,getGrayCvPixel(255 * 4 * sqrtf(*(buf_weight_VarP+idx))),x,y,(width/w));
-				setPixelInCvMat(&debugImageHuberWeight,getGrayCvPixel(255 * *(buf_weight_Huber+idx)),x,y,(width/w));
-				setPixelInCvMat(&debugImageWeightedResP,getGrayCvPixel(128 + (128/5.0f) * sqrtf(*(buf_weight_VarP+idx)) * *(buf_warped_residual+idx)),x,y,(width/w));
+				setPixelInCvMat(&debugImageWeightP,getGrayCvPixel(255 * 4 * sqrtf(*(buf_weight_VarP+idx))),x,y,(camModel->w/w));
+				setPixelInCvMat(&debugImageHuberWeight,getGrayCvPixel(255 * *(buf_weight_Huber+idx)),x,y,(camModel->w/w));
+				setPixelInCvMat(&debugImageWeightedResP,getGrayCvPixel(128 + (128/5.0f) * sqrtf(*(buf_weight_VarP+idx)) * *(buf_warped_residual+idx)),x,y,(camModel->w/w));
 			}
 		}
 
@@ -859,149 +807,12 @@ Sim3ResidualStruct Sim3Tracker::calcSim3WeightsAndResidual(
 	return sumRes;
 }
 
-
-
-#if defined(ENABLE_SSE)
-void Sim3Tracker::calcSim3LGSSSE(LGS7 &ls7)
-{
-	LGS4 ls4;
-	LGS6 ls6;
-	ls6.initialize(width*height);
-	ls4.initialize(width*height);
-
-	const __m128 zeros = _mm_set1_ps(0.0f);
-
-	for(int i=0;i<buf_warped_size-3;i+=4)
-	{
-		__m128 val1, val2, val3, val4;
-
-		__m128 J41, J42, J43, J44;
-		__m128 J61, J62, J63, J64, J65, J66;
-
-
-		// redefine pz
-		__m128 pz = _mm_load_ps(buf_warped_z+i);
-		pz = _mm_rcp_ps(pz);						// pz := 1/z
-
-		//v4[3] = z;
-		J44 = pz;
-
-		__m128 gx = _mm_load_ps(buf_warped_dx+i);
-		val1 = _mm_mul_ps(pz, gx);			// gx / z => SET [0]
-		//v[0] = z*gx;
-		J61 = val1;
-
-
-
-		__m128 gy = _mm_load_ps(buf_warped_dy+i);
-		val1 = _mm_mul_ps(pz, gy);					// gy / z => SET [1]
-		//v[1] = z*gy;
-		J62 = val1;
-
-
-		__m128 px = _mm_load_ps(buf_warped_x+i);
-		val1 = _mm_mul_ps(px, gy);
-		val1 = _mm_mul_ps(val1, pz);	//  px * gy * z
-		__m128 py = _mm_load_ps(buf_warped_y+i);
-		val2 = _mm_mul_ps(py, gx);
-		val2 = _mm_mul_ps(val2, pz);	//  py * gx * z
-		val1 = _mm_sub_ps(val1, val2);  // px * gy * z - py * gx * z => SET [5]
-		//v[5] = -py * z * gx +  px * z * gy;
-		J66 = val1;
-
-
-		// redefine pz
-		pz = _mm_mul_ps(pz,pz); 		// pz := 1/(z*z)
-
-		//v4[0] = z_sqr;
-		J41 = pz;
-
-		//v4[1] = z_sqr * py;
-		__m128 pypz = _mm_mul_ps(pz, py);
-		J42 = pypz;
-
-		//v4[2] = -z_sqr * px;
-		__m128 mpxpz = _mm_sub_ps(zeros,_mm_mul_ps(pz, px));
-		J43 = mpxpz;
-
-
-
-		// will use these for the following calculations a lot.
-		val1 = _mm_mul_ps(px, gx);
-		val1 = _mm_mul_ps(val1, pz);		// px * z_sqr * gx
-		val2 = _mm_mul_ps(py, gy);
-		val2 = _mm_mul_ps(val2, pz);		// py * z_sqr * gy
-
-
-		val3 = _mm_add_ps(val1, val2);
-		val3 = _mm_sub_ps(zeros,val3);	//-px * z_sqr * gx -py * z_sqr * gy
-		//v[2] = -px * z_sqr * gx -py * z_sqr * gy;	=> SET [2]
-		J63 = val3;
-
-
-		val3 = _mm_mul_ps(val1, py); // px * z_sqr * gx * py
-		val4 = _mm_add_ps(gy, val3); // gy + px * z_sqr * gx * py
-		val3 = _mm_mul_ps(val2, py); // py * py * z_sqr * gy
-		val4 = _mm_add_ps(val3, val4); // gy + px * z_sqr * gx * py + py * py * z_sqr * gy
-		val4 = _mm_sub_ps(zeros,val4); //val4 = -val4.
-		//v[3] = -px * py * z_sqr * gx +
-		//       -py * py * z_sqr * gy +
-		//       -gy;		=> SET [3]
-		J64 = val4;
-
-
-		val3 = _mm_mul_ps(val1, px); // px * px * z_sqr * gx
-		val4 = _mm_add_ps(gx, val3); // gx + px * px * z_sqr * gx
-		val3 = _mm_mul_ps(val2, px); // px * py * z_sqr * gy
-		val4 = _mm_add_ps(val4, val3); // gx + px * px * z_sqr * gx + px * py * z_sqr * gy
-		//v[4] = px * px * z_sqr * gx +
-		//	   px * py * z_sqr * gy +
-		//	   gx;				=> SET [4]
-		J65 = val4;
-
-
-		if(i+3<buf_warped_size)
-		{
-			ls4.updateSSE(J41, J42, J43, J44, _mm_load_ps(buf_residual_d+i), _mm_load_ps(buf_weight_d+i));
-			ls6.updateSSE(J61, J62, J63, J64, J65, J66, _mm_load_ps(buf_warped_residual+i), _mm_load_ps(buf_weight_p+i));
-		}
-		else
-		{
-			for(int k=0;i+k<buf_warped_size;k++)
-			{
-				Vector6 v6;
-				v6 << SSEE(J61,k),SSEE(J62,k),SSEE(J63,k),SSEE(J64,k),SSEE(J65,k),SSEE(J66,k);
-				Vector4 v4;
-				v4 << SSEE(J41,k),SSEE(J42,k),SSEE(J43,k),SSEE(J44,k);
-
-				ls4.update(v4, *(buf_residual_d+i+k), *(buf_weight_d+i+k));
-				ls6.update(v6, *(buf_warped_residual+i+k), *(buf_weight_p+i+k));
-			}
-		}
-	}
-
-	ls4.finishNoDivide();
-	ls6.finishNoDivide();
-	ls7.initializeFrom(ls6, ls4);
-
-
-}
-#endif
-
-#if defined(ENABLE_NEON)
-void Sim3Tracker::calcSim3LGSNEON(LGS7 &ls7)
-{
-	calcSim3LGS(ls7);
-}
-#endif
-
-
 void Sim3Tracker::calcSim3LGS(LGS7 &ls7)
 {
 	LGS4 ls4;
 	LGS6 ls6;
-	ls6.initialize(width*height);
-	ls4.initialize(width*height);
+	ls6.initialize(camModel->w*camModel->h);
+	ls4.initialize(camModel->w*camModel->h);
 
 	for(int i=0;i<buf_warped_size;i++)
 	{
