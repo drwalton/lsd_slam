@@ -49,28 +49,11 @@ namespace lsd_slam
 
 
 SE3Tracker::SE3Tracker(const CameraModel &model)
+	:camModel(model.clone())
 {
-	//TODO FIX FOR OMNI
-	const ProjCameraModel *pm = dynamic_cast<const ProjCameraModel*>(&model);
-	int w = pm->w; int h = pm->h;
-	width = pm->w;
-	height = pm->h;
-
-	this->K = pm->K;
-	fx = K(0,0);
-	fy = K(1,1);
-	cx = K(0,2);
-	cy = K(1,2);
-
+	int w = model.w, h = model.h;
 	settings = DenseDepthTrackerSettings();
 	//settings.maxItsPerLvl[0] = 2;
-
-	KInv = K.inverse();
-	fxi = KInv(0,0);
-	fyi = KInv(1,1);
-	cxi = KInv(0,2);
-	cyi = KInv(1,2);
-
 
 	buf_warped_residual = (float*)Eigen::internal::aligned_malloc(w*h*sizeof(float));
 	buf_warped_dx = (float*)Eigen::internal::aligned_malloc(w*h*sizeof(float));
@@ -85,11 +68,11 @@ SE3Tracker::SE3Tracker(const CameraModel &model)
 
 	buf_warped_size = 0;
 
-	debugImageWeights = cv::Mat(height,width,CV_8UC3);
-	debugImageResiduals = cv::Mat(height,width,CV_8UC3);
-	debugImageSecondFrame = cv::Mat(height,width,CV_8UC3);
-	debugImageOldImageWarped = cv::Mat(height,width,CV_8UC3);
-	debugImageOldImageSource = cv::Mat(height,width,CV_8UC3);
+	debugImageWeights = cv::Mat(h,w,CV_8UC3);
+	debugImageResiduals = cv::Mat(h,w,CV_8UC3);
+	debugImageSecondFrame = cv::Mat(h,w,CV_8UC3);
+	debugImageOldImageWarped = cv::Mat(h,w,CV_8UC3);
+	debugImageOldImageSource = cv::Mat(h,w,CV_8UC3);
 
 
 
@@ -184,7 +167,7 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 	trackingWasGood = true;
 
 	callOptimized(calcResidualAndBuffers, (reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, referenceToFrame, QUICK_KF_CHECK_LVL, false));
-	if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>QUICK_KF_CHECK_LVL)*(height>>QUICK_KF_CHECK_LVL))
+	if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (camModel->w>>QUICK_KF_CHECK_LVL)*(camModel->h>>QUICK_KF_CHECK_LVL))
 	{
 		diverged = true;
 		trackingWasGood = false;
@@ -219,7 +202,7 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 
 			// re-evaluate residual
 			callOptimized(calcResidualAndBuffers, (reference->permaRef_posData, reference->permaRef_colorAndVarData, 0, reference->permaRefNumPts, frame, new_referenceToFrame, QUICK_KF_CHECK_LVL, false));
-			if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>QUICK_KF_CHECK_LVL)*(height>>QUICK_KF_CHECK_LVL))
+			if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (camModel->w>>QUICK_KF_CHECK_LVL)*(camModel->h>>QUICK_KF_CHECK_LVL))
 			{
 				diverged = true;
 				trackingWasGood = false;
@@ -304,9 +287,9 @@ SE3 SE3Tracker::trackFrame(
 	if (plotTrackingIterationInfo)
 	{
 		const float* frameImage = frame->image();
-		for (int row = 0; row < height; ++ row)
-			for (int col = 0; col < width; ++ col)
-				setPixelInCvMat(&debugImageSecondFrame,getGrayCvPixel(frameImage[col+row*width]), col, row, 1);
+		for (int row = 0; row < camModel->h; ++ row)
+			for (int col = 0; col < camModel->w; ++ col)
+				setPixelInCvMat(&debugImageSecondFrame,getGrayCvPixel(frameImage[col+row*camModel->w]), col, row, 1);
 	}
 
 	// ============ track frame ============
@@ -328,7 +311,7 @@ SE3 SE3Tracker::trackFrame(
 		reference->makePointCloud(lvl);
 
 		callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
-		if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (width>>lvl)*(height>>lvl))
+		if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (camModel->w>>lvl)*(camModel->h>>lvl))
 		{
 			diverged = true;
 			trackingWasGood = false;
@@ -373,7 +356,7 @@ SE3 SE3Tracker::trackFrame(
 
 				// re-evaluate residual
 				callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
-				if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN* (width>>lvl)*(height>>lvl))
+				if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN* (camModel->w>>lvl)*(camModel->h>>lvl))
 				{
 					diverged = true;
 					trackingWasGood = false;
@@ -1011,13 +994,13 @@ float SE3Tracker::calcResidualAndBuffers(
 			if(plotTrackingIterationInfo)
 			{
 				setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
-					static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(width/w));
-				setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(width/w));
+					static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(camModel->w/w));
+				setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(camModel->w/w));
 			}
 			if(isGood)
-				setPixelInCvMat(&debugImageResiduals,getGrayCvPixel(residual+128),x,y,(width/w));
+				setPixelInCvMat(&debugImageResiduals,getGrayCvPixel(residual+128),x,y,(camModel->w/w));
 			else
-				setPixelInCvMat(&debugImageResiduals,cv::Vec3b(0,0,255),x,y,(width/w));
+				setPixelInCvMat(&debugImageResiduals,cv::Vec3b(0,0,255),x,y,(camModel->w/w));
 
 		}
 	}
@@ -1037,233 +1020,6 @@ float SE3Tracker::calcResidualAndBuffers(
 	return sumResUnweighted / goodCount;
 }
 
-
-#if defined(ENABLE_SSE)
-void SE3Tracker::calculateWarpUpdateSSE(
-		LGS6 &ls)
-{
-	ls.initialize(width*height);
-
-//	printf("wupd SSE\n");
-	for(int i=0;i<buf_warped_size-3;i+=4)
-	{
-
-		__m128 val1, val2, val3, val4;
-		__m128 J61, J62, J63, J64, J65, J66;
-
-		// redefine pz
-		__m128 pz = _mm_load_ps(buf_warped_z+i);
-		pz = _mm_rcp_ps(pz);						// pz := 1/z
-
-
-		__m128 gx = _mm_load_ps(buf_warped_dx+i);
-		val1 = _mm_mul_ps(pz, gx);			// gx / z => SET [0]
-		//v[0] = z*gx;
-		J61 = val1;
-
-
-
-		__m128 gy = _mm_load_ps(buf_warped_dy+i);
-		val1 = _mm_mul_ps(pz, gy);					// gy / z => SET [1]
-		//v[1] = z*gy;
-		J62 = val1;
-
-
-		__m128 px = _mm_load_ps(buf_warped_x+i);
-		val1 = _mm_mul_ps(px, gy);
-		val1 = _mm_mul_ps(val1, pz);	//  px * gy * z
-		__m128 py = _mm_load_ps(buf_warped_y+i);
-		val2 = _mm_mul_ps(py, gx);
-		val2 = _mm_mul_ps(val2, pz);	//  py * gx * z
-		val1 = _mm_sub_ps(val1, val2);  // px * gy * z - py * gx * z => SET [5]
-		//v[5] = -py * z * gx +  px * z * gy;
-		J66 = val1;
-
-
-		// redefine pz
-		pz = _mm_mul_ps(pz,pz); 		// pz := 1/(z*z)
-
-		// will use these for the following calculations a lot.
-		val1 = _mm_mul_ps(px, gx);
-		val1 = _mm_mul_ps(val1, pz);		// px * z_sqr * gx
-		val2 = _mm_mul_ps(py, gy);
-		val2 = _mm_mul_ps(val2, pz);		// py * z_sqr * gy
-
-
-		val3 = _mm_add_ps(val1, val2);
-		val3 = _mm_sub_ps(_mm_setr_ps(0,0,0,0),val3);	//-px * z_sqr * gx -py * z_sqr * gy
-		//v[2] = -px * z_sqr * gx -py * z_sqr * gy;	=> SET [2]
-		J63 = val3;
-
-
-		val3 = _mm_mul_ps(val1, py); // px * z_sqr * gx * py
-		val4 = _mm_add_ps(gy, val3); // gy + px * z_sqr * gx * py
-		val3 = _mm_mul_ps(val2, py); // py * py * z_sqr * gy
-		val4 = _mm_add_ps(val3, val4); // gy + px * z_sqr * gx * py + py * py * z_sqr * gy
-		val4 = _mm_sub_ps(_mm_setr_ps(0,0,0,0),val4); //val4 = -val4.
-		//v[3] = -px * py * z_sqr * gx +
-		//       -py * py * z_sqr * gy +
-		//       -gy;		=> SET [3]
-		J64 = val4;
-
-
-		val3 = _mm_mul_ps(val1, px); // px * px * z_sqr * gx
-		val4 = _mm_add_ps(gx, val3); // gx + px * px * z_sqr * gx
-		val3 = _mm_mul_ps(val2, px); // px * py * z_sqr * gy
-		val4 = _mm_add_ps(val4, val3); // gx + px * px * z_sqr * gx + px * py * z_sqr * gy
-		//v[4] = px * px * z_sqr * gx +
-		//	   px * py * z_sqr * gy +
-		//	   gx;				=> SET [4]
-		J65 = val4;
-
-		if(i+3<buf_warped_size)
-		{
-			ls.updateSSE(J61, J62, J63, J64, J65, J66, _mm_load_ps(buf_warped_residual+i), _mm_load_ps(buf_weight_p+i));
-		}
-		else
-		{
-			for(int k=0;i+k<buf_warped_size;k++)
-			{
-				Vector6 v6;
-				v6 << SSEE(J61,k),SSEE(J62,k),SSEE(J63,k),SSEE(J64,k),SSEE(J65,k),SSEE(J66,k);
-				ls.update(v6, *(buf_warped_residual+i+k), *(buf_weight_p+i+k));
-			}
-		}
-
-
-	}
-
-	// solve ls
-	ls.finish();
-
-}
-#endif
-
-
-#if defined(ENABLE_NEON)
-void SE3Tracker::calculateWarpUpdateNEON(
-		LGS6 &ls)
-{
-//	weightEstimator.reset();
-//	weightEstimator.estimateDistributionNEON(buf_warped_residual, buf_warped_size);
-//	weightEstimator.calcWeightsNEON(buf_warped_residual, buf_warped_weights, buf_warped_size);
-
-	ls.initialize(width*height);
-	
-	float* cur_buf_warped_z = buf_warped_z;
-	float* cur_buf_warped_x = buf_warped_x;
-	float* cur_buf_warped_y = buf_warped_y;
-	float* cur_buf_warped_dx = buf_warped_dx;
-	float* cur_buf_warped_dy = buf_warped_dy;
-	Vector6 v1,v2,v3,v4;
-	float* v1_ptr;
-	float* v2_ptr;
-	float* v3_ptr;
-	float* v4_ptr;
-	for(int i=0;i<buf_warped_size;i+=4)
-	{
-		v1_ptr = &v1[0];
-		v2_ptr = &v2[0];
-		v3_ptr = &v3[0];
-		v4_ptr = &v4[0];
-	
-		__asm__ __volatile__
-		(
-			"vldmia   %[buf_warped_z]!, {q10}            \n\t" // pz(q10)
-			"vrecpe.f32 q10, q10                         \n\t" // z(q10)
-			
-			"vldmia   %[buf_warped_dx]!, {q11}           \n\t" // gx(q11)
-			"vmul.f32 q0, q10, q11                       \n\t" // q0 = z*gx // = v[0]
-			
-			"vldmia   %[buf_warped_dy]!, {q12}           \n\t" // gy(q12)
-			"vmul.f32 q1, q10, q12                       \n\t" // q1 = z*gy // = v[1]
-			
-			"vldmia   %[buf_warped_x]!, {q13}            \n\t" // px(q13)
-			"vmul.f32 q5, q13, q12                       \n\t" // q5 = px * gy
-			"vmul.f32 q5, q5, q10                        \n\t" // q5 = q5 * z = px * gy * z
-			
-			"vldmia   %[buf_warped_y]!, {q14}            \n\t" // py(q14)
-			"vmul.f32 q3, q14, q11                       \n\t" // q3 = py * gx
-			"vmls.f32 q5, q3, q10                        \n\t" // q5 = px * gy * z - py * gx * z // = v[5] (vmls: multiply and subtract from result)
-			
-			"vmul.f32 q10, q10, q10                      \n\t" // q10 = 1/(pz*pz)
-		
-			"vmul.f32 q6, q13, q11                       \n\t"
-			"vmul.f32 q6, q6, q10                        \n\t" // q6 = val1 in SSE version = px * z_sqr * gx
-			
-			"vmul.f32 q7, q14, q12                       \n\t"
-			"vmul.f32 q7, q7, q10                        \n\t" // q7 = val2 in SSE version = py * z_sqr * gy
-			
-			"vadd.f32 q2, q6, q7                         \n\t"
-			"vneg.f32 q2, q2                             \n\t" // q2 = -px * z_sqr * gx -py * z_sqr * gy // = v[2]
-			
-			"vmul.f32 q8, q6, q14                        \n\t" // val3(q8) = px * z_sqr * gx * py
-			"vadd.f32 q9, q12, q8                        \n\t" // val4(q9) = gy + px * z_sqr * gx * py
-			"vmul.f32 q8, q7, q14                        \n\t" // val3(q8) = py * py * z_sqr * gy
-			"vadd.f32 q9, q8, q9                         \n\t" // val4(q9) = gy + px * z_sqr * gx * py + py * py * z_sqr * gy
-			"vneg.f32 q3, q9                             \n\t" // q3 = v[3]
-			
-			"vst4.32 {d0[0], d2[0], d4[0], d6[0]}, [%[v1]]! \n\t" // store v[0] .. v[3] for 1st value and inc pointer
-			"vst4.32 {d0[1], d2[1], d4[1], d6[1]}, [%[v2]]! \n\t" // store v[0] .. v[3] for 2nd value and inc pointer
-			"vst4.32 {d1[0], d3[0], d5[0], d7[0]}, [%[v3]]! \n\t" // store v[0] .. v[3] for 3rd value and inc pointer
-			"vst4.32 {d1[1], d3[1], d5[1], d7[1]}, [%[v4]]! \n\t" // store v[0] .. v[3] for 4th value and inc pointer
-			
-			"vmul.f32 q8, q6, q13                        \n\t" // val3(q8) = px * px * z_sqr * gx
-			"vadd.f32 q9, q11, q8                        \n\t" // val4(q9) = gx + px * px * z_sqr * gx
-			"vmul.f32 q8, q7, q13                        \n\t" // val3(q8) = px * py * z_sqr * gy
-			"vadd.f32 q4, q9, q8                         \n\t" // q4 = v[4]
-			
-			"vst2.32 {d8[0], d10[0]}, [%[v1]]               \n\t" // store v[4], v[5] for 1st value
-			"vst2.32 {d8[1], d10[1]}, [%[v2]]               \n\t" // store v[4], v[5] for 2nd value
-			"vst2.32 {d9[0], d11[0]}, [%[v3]]               \n\t" // store v[4], v[5] for 3rd value
-			"vst2.32 {d9[1], d11[1]}, [%[v4]]               \n\t" // store v[4], v[5] for 4th value
-
-        : /* outputs */ [buf_warped_z]"+r"(cur_buf_warped_z),
-		                [buf_warped_x]"+r"(cur_buf_warped_x),
-		                [buf_warped_y]"+r"(cur_buf_warped_y),
-		                [buf_warped_dx]"+r"(cur_buf_warped_dx),
-		                [buf_warped_dy]"+r"(cur_buf_warped_dy),
-		                [v1]"+r"(v1_ptr),
-		                [v2]"+r"(v2_ptr),
-		                [v3]"+r"(v3_ptr),
-		                [v4]"+r"(v4_ptr)
-        : /* inputs  */ 
-        : /* clobber */ "memory", "cc", // TODO: is cc necessary?
-	                    "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14"
-		);
-		
-
-		// step 6: integrate into A and b:
-		if(!(i+3>=buf_warped_size))
-		{
-			ls.update(v1, *(buf_warped_residual+i+0), *(buf_weight_p+i+0));
-			ls.update(v2, *(buf_warped_residual+i+1), *(buf_weight_p+i+1));
-			ls.update(v3, *(buf_warped_residual+i+2), *(buf_weight_p+i+2));
-			ls.update(v4, *(buf_warped_residual+i+3), *(buf_weight_p+i+3));
-		}
-		else
-		{
-			ls.update(v1, *(buf_warped_residual+i+0), *(buf_weight_p+i+0));
-
-			if(i+1>=buf_warped_size) break;
-			ls.update(v2, *(buf_warped_residual+i+1), *(buf_weight_p+i+1));
-
-			if(i+2>=buf_warped_size) break;
-			ls.update(v3, *(buf_warped_residual+i+2), *(buf_weight_p+i+2));
-
-			if(i+3>=buf_warped_size) break;
-			ls.update(v4, *(buf_warped_residual+i+3), *(buf_weight_p+i+3));
-		}
-	}
-
-	// solve ls
-	ls.finish();
-	//ls.solve(result);
-
-}
-#endif
-
-
 void SE3Tracker::calculateWarpUpdate(
 		LGS6 &ls)
 {
@@ -1271,7 +1027,7 @@ void SE3Tracker::calculateWarpUpdate(
 //	weightEstimator.estimateDistribution(buf_warped_residual, buf_warped_size);
 //	weightEstimator.calcWeights(buf_warped_residual, buf_warped_weights, buf_warped_size);
 //
-	ls.initialize(width*height);
+	ls.initialize(camModel->w*camModel->h);
 	for(int i=0;i<buf_warped_size;i++)
 	{
 		float px = *(buf_warped_x+i);
