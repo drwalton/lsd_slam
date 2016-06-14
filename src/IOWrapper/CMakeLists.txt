@@ -16,3 +16,5 @@ add_library(lsd_slam_IOWrapper
 	OpenCVImageStream.cpp
 )
 
+set_target_properties(lsd_slam_IOWrapper PROPERTIES FOLDER lsd_slam)
+

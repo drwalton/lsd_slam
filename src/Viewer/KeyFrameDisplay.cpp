@@ -192,6 +192,7 @@ void KeyFrameDisplay::refreshPC()
 					continue;
 			}
 
+			//TODO Omni Correction.
 			tmpBuffer[vertexBufferNumPoints].point[0] = (x*fxi + cxi) * depth;
 			tmpBuffer[vertexBufferNumPoints].point[1] = (y*fyi + cyi) * depth;
 			tmpBuffer[vertexBufferNumPoints].point[2] = depth;

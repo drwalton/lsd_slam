@@ -39,7 +39,7 @@ public:
 	///      or NaNs will be returned).
 	///\note No checking is performed to ensure the projected point
 	///      corresponds to a valid pixel.
-	virtual	vec3 pixelToCam(const vec2 &p, float d = 1.f) const;
+	virtual vec3 pixelToCam(const vec2 &p, float d = 1.f) const;
 
 	virtual std::vector<std::unique_ptr<CameraModel> >
 		createPyramidCameraModels(int nLevels) const;

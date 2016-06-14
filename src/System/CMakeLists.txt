@@ -11,3 +11,5 @@ add_library(lsd_slam_System
 	SlamSystem.hpp
 )
 
+set_target_properties(lsd_slam_System PROPERTIES FOLDER lsd_slam)
+

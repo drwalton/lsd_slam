@@ -10,3 +10,5 @@ add_library(lsd_slam_Tracking
 	TrackingReference.hpp
 )
 
+set_target_properties(lsd_slam_Tracking PROPERTIES FOLDER lsd_slam)
+

@@ -35,7 +35,7 @@ void OpenCVImageStream::setCalibration(const std::string &file)
 	this->cap_.set(CV_CAP_PROP_FRAME_HEIGHT, undistorter_->getInputHeight());
 	int width = static_cast<int>(this->cap_.get(CV_CAP_PROP_FRAME_WIDTH));
 	int height = static_cast<int>(this->cap_.get(CV_CAP_PROP_FRAME_HEIGHT));
-	if (width != camModel().w || height != camModel().h) {
+	if (width != undistorter_->getInputWidth() || height != undistorter_->getInputHeight()) {
 		throw std::runtime_error("Unable to set input OpenCV stream to required width, height!");
 	}
 }

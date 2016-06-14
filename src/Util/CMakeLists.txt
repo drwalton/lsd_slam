@@ -21,3 +21,5 @@ add_library(lsd_slam_Util
 	VectorTypes.hpp
 )
 
+set_target_properties(lsd_slam_Util PROPERTIES FOLDER lsd_slam)
+

@@ -9,3 +9,5 @@ add_library(lsd_slam_DepthEstimation
 	DepthMapPixelHypothesis.hpp
 )
 
+set_target_properties(lsd_slam_DepthEstimation PROPERTIES FOLDER lsd_slam)
+

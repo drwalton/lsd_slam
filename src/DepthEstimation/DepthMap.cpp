@@ -348,23 +348,30 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 	if(min_idepth < 0) min_idepth = 0;
 	if(max_idepth > 1/MIN_DEPTH) max_idepth = 1/MIN_DEPTH;
 
-	stats->num_observe_update_attempted++;
-
 	float result_idepth, result_var, result_eplLength;
-
 	float error;
-	if (camModel_->getType() == CameraModelType::PROJ) {
-		error = doStereoProj(
-			float(x),float(y),epx,epy,
-			min_idepth, target->idepth_smoothed ,max_idepth,
-			refFrame, refFrame->image(0),
-			result_idepth, result_var, result_eplLength, stats);
-	} else /* OMNI */ {
-		error = doStereoOmni(
-			float(x), float(y), epDir,
-			min_idepth, target->idepth_smoothed ,max_idepth,
-			refFrame, refFrame->image(0),
-			result_idepth, result_var, result_eplLength, stats);
+
+	if (max_idepth > min_idepth) {
+
+		stats->num_observe_update_attempted++;
+
+		if (camModel_->getType() == CameraModelType::PROJ) {
+			error = doStereoProj(
+				float(x), float(y), epx, epy,
+				min_idepth, target->idepth_smoothed, max_idepth,
+				refFrame, refFrame->image(0),
+				result_idepth, result_var, result_eplLength, stats);
+		}
+		else /* OMNI */ {
+			error = doStereoOmni(
+				float(x), float(y), epDir,
+				min_idepth, target->idepth_smoothed, max_idepth,
+				refFrame, refFrame->image(0),
+				result_idepth, result_var, result_eplLength, stats);
+		}
+	}
+	else {
+		error = -2;
 	}
 
 	float diff = result_idepth - target->idepth_smoothed;

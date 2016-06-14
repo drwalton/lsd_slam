@@ -1,6 +1,7 @@
 #include "OmniCameraModel.hpp"
 #include "Constants.hpp"
 #include "ProjCameraModel.hpp"
+#include <iostream>
 
 namespace lsd_slam {
 

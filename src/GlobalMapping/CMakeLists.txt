@@ -9,3 +9,5 @@ add_library(lsd_slam_GlobalMapping
 	TrackableKeyFrameSearch.hpp
 )
 
+set_target_properties(lsd_slam_GlobalMapping PROPERTIES FOLDER lsd_slam)
+

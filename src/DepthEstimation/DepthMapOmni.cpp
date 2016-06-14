@@ -803,8 +803,17 @@ bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const 
 	int idx = x+y*camModel_->w;
 
 	// ======= make epl ========
+	if (epDir == nullptr) {
+		throw 1;
+	}
 	*epDir = ref->thisToOther_t.normalized();
 	vec2 epipole = camModel_->camToPixel(ref->thisToOther_t);
+	if (!camModel_->pixelLocValid(epipole)) {
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
+		return false;
+	}
+
+
 	float epx = x - epipole.x();
 	float epy = y - epipole.y();
 

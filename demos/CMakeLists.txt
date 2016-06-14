@@ -1,5 +1,5 @@
 add_executable(ReconstructionDemo ReconstructionDemo.cpp)
-
+set_target_properties(ReconstructionDemo PROPERTIES FOLDER Demos)
 set(QT_LIBRARIES_RELEASE
 	${QT_QTCORE_LIBRARY_RELEASE}
 	${QT_QTGUI_LIBRARY_RELEASE}
