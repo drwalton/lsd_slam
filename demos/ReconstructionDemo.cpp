@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());
+	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(), false);
 	//TODO work out why this causes problems.
 	//slamWrapper.blockTrackUntilMapped = true;
 	std::cout << "Done!" << std::endl;

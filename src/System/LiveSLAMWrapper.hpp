@@ -51,7 +51,7 @@ friend class LiveSLAMWrapperROS;
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper);
+	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, bool singleThread = false);
 
 	/** Destructor. */
 	~LiveSLAMWrapper();

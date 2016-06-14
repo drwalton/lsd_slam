@@ -73,7 +73,7 @@ public:
 
 	bool trackingIsGood;
 
-	SlamSystem(const CameraModel &model, bool enableSLAM = true);
+	SlamSystem(const CameraModel &model, bool enableSLAM = true, bool singleThread = false);
 	SlamSystem(const SlamSystem&) = delete;
 	SlamSystem& operator=(const SlamSystem&) = delete;
 	~SlamSystem();
@@ -124,6 +124,9 @@ public:
 	
 	
 private:
+	const bool singleThread;
+
+
 	// ============= EXCLUSIVELY TRACKING THREAD (+ init) ===============
 	TrackingReference* trackingReference; // tracking reference for current keyframe. only used by tracking.
 	SE3Tracker* tracker;
