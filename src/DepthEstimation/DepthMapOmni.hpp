@@ -65,8 +65,7 @@ float doStereoOmniImpl(
 	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
 	vec3 &bestMatchKeyframe,
 	cv::Mat &drawMat = emptyMat,
-	bool showMatch = false,
-	int drawMatchInvChance = 1);
+	bool showMatch = false);
 
 float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
 	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats);

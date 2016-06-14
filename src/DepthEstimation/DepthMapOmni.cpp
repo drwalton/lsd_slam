@@ -295,7 +295,7 @@ float doStereoOmniImpl(
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	vec2 &bestEpImDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
 	vec3 &bestMatchKeyframe,
-	cv::Mat &drawMatch, bool plotSearch, int drawMatchInvChance)
+	cv::Mat &drawMatch, bool drawThisMatch)
 {
 	if (!(max_idepth > min_idepth)) {
 		std::cout << "wrong inv depths in doOmniStereo" << std::endl;
@@ -305,8 +305,6 @@ float doStereoOmniImpl(
 		std::cout << "negative depth" << std::endl;
 		throw std::runtime_error("negative inv depth in doOmniStereo");
 	}
-
-	bool drawThisMatch = (!drawMatch.empty()) && ((rand() % drawMatchInvChance) == 0);
 
 	if (enablePrintDebugInfo) stats->num_stereo_calls++;
 
@@ -344,16 +342,6 @@ float doStereoOmniImpl(
 		return -1;
 	}
 	
-	if(plotSearch) {
-		cv::Mat findValMat(cv::Size(5,1), CV_8UC1);
-		for(size_t i = 0; i < 5; ++i) {
-			findValMat.at<uchar>(0,i) = uchar(valuesToFind[i]);
-		}
-		cv::Mat showMat;
-		cv::resize(findValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
-		cv::imshow("TO FIND", showMat);
-	}
-
 	//=======BEGIN LINE SEARCH CODE=======
 	std::array<vec3, 5> lineDir;
 	std::array<vec2, 5> linePix;
@@ -401,16 +389,9 @@ float doStereoOmniImpl(
 	}
 	lineValue[3] = getInterpolatedElement(referenceFrameImage, linePix[3], width);
 	
-	if(plotSearch) {
-		for(size_t i = 0; i < 4; ++i) {
-			searchedVals.push_back(lineValue[i]);
-		}
-	}
-
 	if (drawThisMatch && drawMatch.cols == width * 2) {
 		cv::circle(drawMatch, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
 	}
-
 
 	tracedLineLen = 0.f;
 	//Advance along line.
@@ -436,9 +417,6 @@ float doStereoOmniImpl(
 		}
 
 		lineValue[4] = getInterpolatedElement(referenceFrameImage, linePix[4], width);
-		if(plotSearch) {
-			searchedVals.push_back(lineValue[4]);
-		}
 
 		//Check error
 		float err = 0.f;
@@ -461,7 +439,7 @@ float doStereoOmniImpl(
 			if (drawMatch.cols == width * 2) {
 				drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x() + width)) =
 					rgbB;
-			} else {
+			} else if(drawMatch.cols == width) {
 				drawMatch.at<cv::Vec3b>(int(linePix[2].y()), int(linePix[2].x())) =
 					rgbB;
 			}
@@ -540,22 +518,6 @@ float doStereoOmniImpl(
 		}	
 	}
 	
-	if(plotSearch) {
-		cv::Mat searchValMat(cv::Size(searchedVals.size(), 1), CV_8UC1);
-		for(size_t i = 0; i < searchedVals.size(); ++i) {
-			searchValMat.at<uchar>(0,i) = uchar(searchedVals[i]);
-		}
-		cv::Mat showMat;
-		cv::resize(searchValMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
-		cv::imshow("SEARCHED", showMat);
-		cv::Mat ssdMat(cv::Size(ssdColors.size(), 1), CV_8UC3);
-		for(size_t i = 0; i < ssdColors.size(); ++i) {
-			ssdMat.at<cv::Vec3b>(0, i) = ssdColors[i];
-		}
-		cv::resize(ssdMat, showMat, cv::Size(), 10.f, 10.f, cv::INTER_NEAREST);
-		cv::imshow("ERRS", showMat);
-	}
-	
 	//Check if epipolar line left image before any error vals could be found.
 	if (loopCBest < 0) {
 		if (enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
@@ -566,11 +528,6 @@ float doStereoOmniImpl(
 	if (bestMatchErr > 4.0f*(float)MAX_ERROR_STEREO)
 	{
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
-		if (plotSearch) {
-			std::cout << "Stereo failed due to large absolute error value: "
-				<< bestMatchErr << " > " << 4.0f * float(MAX_ERROR_STEREO)
-				<< std::endl;
-		}
 		return -3;
 	}
 
@@ -579,14 +536,6 @@ float doStereoOmniImpl(
 		if (abs(loopCBest - loopCSecondBest) > 1.0f && 
 			MIN_DISTANCE_ERROR_STEREO * bestMatchErr > secondBestMatchErr) {
 			if (enablePrintDebugInfo) stats->num_stereo_invalid_unclear_winner++;
-			if (plotSearch) {
-				std::cout << "Stereo failed due to unclear winner: "
-					<< "First and second best are "
-					<< abs(loopCBest - loopCSecondBest)
-					<< " apart, and errors are " << bestMatchErr << " * "
-					<< MIN_DISTANCE_ERROR_STEREO << " > " << secondBestMatchErr
-					<< std::endl;
-			}
 			return -2;
 		}
 	}
@@ -617,11 +566,6 @@ float doStereoOmniImpl(
 	// check if interpolated error is OK. use evil hack to allow more error if there is a lot of gradient.
 	if (bestMatchErr > (float)MAX_ERROR_STEREO /* + sqrtf(gradAlongLine)*  20*/) {
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
-		if (plotSearch) {
-			std::cout << "Stereo failed: absolute error too large (second check)"
-				<< bestMatchErr << " > " << MAX_ERROR_STEREO << " + "
-				<< sqrtf(gradAlongLine) << " * " << 20 << std::endl;
-		}
 		return -3;
 	}
 
@@ -658,7 +602,7 @@ float DepthMap::doStereoOmni(
 		bestMatchErr = lsd_slam::doStereoOmniImpl(u, v, epDir, min_idepth, prior_idepth, max_idepth,
 			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
 			stats, oModel, referenceFrame->width(), bestEpImDir, bestMatchPos, gradAlongLine, 
-			tracedLineLen, bestMatchKeyframe, debugImages.searchRanges, false, settings.drawMatchInvChance);
+			tracedLineLen, bestMatchKeyframe, debugImages.searchRanges, debugImages.drawMatchHere(u,v));
 	}
 	else {
 

@@ -1712,3 +1712,8 @@ std::vector<FramePoseStruct*> SlamSystem::getAllPoses()
 {
 	return keyFrameGraph->allFramePoses;
 }
+
+DepthMapDebugSettings & lsd_slam::SlamSystem::depthMapDebugSettings()
+{
+	return map->settings;
+}

@@ -135,6 +135,11 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 }
 void DepthMap::observeDepth()
 {
+	if (settings.saveSearchRangeImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ?
+			newest_referenceFrame : oldest_referenceFrame;
+		debugImages.clearSearchRangesIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, camModel_->h-3, 10);
 
@@ -1245,6 +1250,13 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 				runningStats.num_stereo_invalid_twoCrossing,
 				runningStats.num_stereo_invalid_bigErr);
 	}
+
+	if (settings.saveSearchRangeImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "RangeIms/RangeKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugImages.searchRanges);
+	}
 }
 
 void DepthMap::invalidate()
@@ -1439,6 +1451,7 @@ int DepthMap::debugPlotDepthMap()
 	cv::Mat keyFrameImage(activeKeyFrame->height(), activeKeyFrame->width(), CV_32F, const_cast<float*>(activeKeyFrameImageData));
 	keyFrameImage.convertTo(debugImageDepth, CV_8UC1);
 	cv::cvtColor(debugImageDepth, debugImageDepth, CV_GRAY2RGB);
+	assert(debugImageDepth.channels() == 3);
 
 	// debug plot & publish sparse version?
 	int refID = referenceFrameByID_offset;
@@ -1482,6 +1495,12 @@ inline float DepthMap::doStereoProj(
 	RunningStats* stats)
 {
 	if(enablePrintDebugInfo) stats->num_stereo_calls++;
+	bool drawSearchRanges = settings.saveSearchRangeImages &&
+		debugImages.drawMatchHere(u, v);
+
+	if (drawSearchRanges) {
+		cv::circle(debugImages.searchRanges, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
+	}
 
 	// calculate epipolar line start and end point in old image
 	const ProjCameraModel *pm = static_cast<const ProjCameraModel*>(&(referenceFrame->model()));
@@ -1736,6 +1755,14 @@ inline float DepthMap::doStereoProj(
 		}
 
 
+		if (drawSearchRanges) {
+			vec3 rgb = 255.f * hueToRgb(0.8f * ee / 325125.f);
+			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+			debugImages.searchRanges.at<cv::Vec3b>(cpy + 2 * incy,
+				cpx + 2 * incx + camModel_->w) = rgbB;
+		}
+
+
 		// do I have a new winner??
 		// if so: set.
 		if(ee < best_match_err)
@@ -1802,6 +1829,13 @@ inline float DepthMap::doStereoProj(
 	{
 		if(enablePrintDebugInfo) stats->num_stereo_invalid_unclear_winner++;
 		return -2;
+	}
+
+	if (drawSearchRanges) {
+		vec3 rgb(0, 255.f, 255.f);
+		cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
+		debugImages.searchRanges.at<cv::Vec3b>(
+			best_match_y, best_match_x + camModel_->w) = rgbB;
 	}
 
 	bool didSubpixel = false;

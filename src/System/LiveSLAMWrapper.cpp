@@ -34,6 +34,7 @@
 #include <cstdio>
 #include "Win32Compatibility.hpp"
 #include <opencv2/opencv.hpp>
+#include "DepthEstimation/DepthMap.hpp"
 
 namespace lsd_slam
 {
@@ -160,6 +161,19 @@ void LiveSLAMWrapper::logCameraPose(const SE3& camToWorld, double time)
 		outFile = new std::ofstream(outFileName.c_str());
 	outFile->write(buffer,num);
 	outFile->flush();
+}
+
+void LiveSLAMWrapper::saveStereoSearchIms(bool s)
+{
+	monoOdometry->depthMapDebugSettings().saveSearchRangeImages = s;
+	if (s == true) {
+		makeEmptyDirectory(resourcesDir() + "RangeIms/");
+	}
+}
+
+bool LiveSLAMWrapper::saveStereoSearchIms() const
+{
+	return monoOdometry->depthMapDebugSettings().saveSearchRangeImages;
 }
 
 void LiveSLAMWrapper::requestReset()

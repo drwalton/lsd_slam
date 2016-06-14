@@ -122,6 +122,7 @@ public:
 
 	bool plotTracking;
 	
+	DepthMapDebugSettings &depthMapDebugSettings();
 	
 private:
 	const bool singleThread;

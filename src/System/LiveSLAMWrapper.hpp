@@ -78,6 +78,10 @@ public:
 	// Threading stuff
 	bool blockTrackUntilMapped;
 
+	void saveStereoSearchIms(bool s);
+	bool saveStereoSearchIms() const;
+
+
 private:
 	
 	InputImageStream* imageStream;

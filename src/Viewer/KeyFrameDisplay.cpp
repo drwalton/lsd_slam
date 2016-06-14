@@ -143,8 +143,8 @@ void KeyFrameDisplay::refreshPC()
 	vertexBufferNumPoints = 0;
 
 	int total = 0, displayed = 0;
-	for(int y=1;y<camModel_->h-1;y++)
-		for(int x=1;x<camModel_->w-1;x++)
+	for(size_t y=1;y<camModel_->h-1;y++)
+		for(size_t x=1;x<camModel_->w-1;x++)
 		{
 			if(originalInput[x+y*camModel_->w].idepth <= 0) continue;
 			total++;
@@ -204,16 +204,11 @@ void KeyFrameDisplay::refreshPC()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(MyVertex) * vertexBufferNumPoints, tmpBuffer, GL_STATIC_DRAW);
 	vertexBufferIdValid = true;
 
-
-
 	if(!keepInMemory)
 	{
 		delete[] originalInput;
 		originalInput = 0;
 	}
-
-
-
 
 	delete[] tmpBuffer;
 }
@@ -222,7 +217,7 @@ void KeyFrameDisplay::refreshPC()
 
 void KeyFrameDisplay::drawCam(float lineWidth, float* color)
 {
-	if(camModel_->w == 0)
+	if(camModel_.get() == nullptr)
 		return;
 
 
@@ -268,8 +263,8 @@ int KeyFrameDisplay::flushPC(std::ofstream* f)
 
 	MyVertex* tmpBuffer = new MyVertex[camModel_->w*camModel_->h];
 	int num = 0;
-	for(int y=1;y<camModel_->h-1;y++)
-		for(int x=1;x<camModel_->w-1;x++)
+	for(size_t y=1;y<camModel_->h-1;y++)
+		for(size_t x=1;x<camModel_->w-1;x++)
 		{
 			if(originalInput[x+y*camModel_->w].idepth <= 0) continue;
 

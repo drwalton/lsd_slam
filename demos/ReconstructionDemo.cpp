@@ -39,6 +39,7 @@ int main(int argc, char **argv)
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
 	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(), false);
+	slamWrapper.saveStereoSearchIms(true);
 	//TODO work out why this causes problems.
 	//slamWrapper.blockTrackUntilMapped = true;
 	std::cout << "Done!" << std::endl;

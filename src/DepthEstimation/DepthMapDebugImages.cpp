@@ -21,6 +21,15 @@ void makeDebugCompareIm(cv::Mat &i, const float * keyframe, const float * refFra
 	}
 }
 
+DepthMapDebugImages::DepthMapDebugImages()
+	:drawIntervalX(10), drawIntervalY(10)
+{}
+
+bool DepthMapDebugImages::drawMatchHere(size_t x, size_t y) const
+{
+	return ((x % drawIntervalX == 0) && (y % drawIntervalY == 0));
+}
+
 void DepthMapDebugImages::clearMatchesIm(const float * keyframe, const float * refFrame, const CameraModel *camModel)
 {
 	makeDebugCompareIm(matches, keyframe, refFrame, camModel);
