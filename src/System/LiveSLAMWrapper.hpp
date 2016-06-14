@@ -75,6 +75,9 @@ public:
 	
 	inline SlamSystem* getSlamSystem() {return monoOdometry;}
 
+	// Threading stuff
+	bool blockTrackUntilMapped;
+
 private:
 	
 	InputImageStream* imageStream;
@@ -82,8 +85,6 @@ private:
 
 	// initialization stuff
 	bool isInitialized;
-
-
 
 	// monoOdometry
 	SlamSystem* monoOdometry;

@@ -39,7 +39,7 @@ namespace lsd_slam
 {
 
 LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper)
-	:camModel_(imageStream->camModel().clone())
+	:camModel_(imageStream->camModel().clone()), blockTrackUntilMapped(false)
 {
 	this->imageStream = imageStream;
 	this->outputWrapper = outputWrapper;
@@ -135,7 +135,7 @@ void LiveSLAMWrapper::newImageCallback(const cv::Mat& img, Timestamp imgTime)
 	}
 	else if(isInitialized && monoOdometry != nullptr)
 	{
-		monoOdometry->trackFrame(grayImg.data,imageSeqNumber,false,imgTime.toSec());
+		monoOdometry->trackFrame(grayImg.data,imageSeqNumber,blockTrackUntilMapped,imgTime.toSec());
 	}
 }
 

@@ -17,6 +17,7 @@ int main(int argc, char **argv)
 
 	std::cout << "Opening stream: \"" << argv[2] << "\"..."; std::cout.flush();
 	lsd_slam::OpenCVImageStream stream;
+	stream.dropFrames = false;
 	stream.capture().open(lsd_slam::resourcesDir() + argv[2]);
 	std::cout << "Done!" << std::endl;
 
@@ -38,6 +39,8 @@ int main(int argc, char **argv)
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
 	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get());
+	//TODO work out why this causes problems.
+	//slamWrapper.blockTrackUntilMapped = true;
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Starting SLAM wrapper..." << std::endl;
