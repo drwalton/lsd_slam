@@ -5,6 +5,7 @@
 #include "IOWrapper/ViewerOutput3DWrapper.hpp"
 #include "System/LiveSLAMWrapper.hpp"
 #include "System/Win32Compatibility.hpp"
+#include "Util/settings.hpp"
 
 int main(int argc, char **argv)
 {
@@ -16,11 +17,11 @@ int main(int argc, char **argv)
 
 	std::cout << "Opening stream: \"" << argv[2] << "\"..."; std::cout.flush();
 	lsd_slam::OpenCVImageStream stream;
-	stream.capture().open(argv[2]);
+	stream.capture().open(lsd_slam::resourcesDir() + argv[2]);
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Opening calibration file: \"" << argv[1] << "\"..."; std::cout.flush();
-	stream.setCalibration(argv[1]);
+	stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Running stream..."; std::cout.flush();

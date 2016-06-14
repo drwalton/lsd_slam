@@ -63,14 +63,19 @@ std::unique_ptr<CameraModel> ProjCameraModel::clone() const
 vec2 ProjCameraModel::getFovAngles() const
 {
 	return vec2(
-		2.f * atanf((float)((w / fx) / 2.0f)),
-		2.f * atanf((float)((h / fy) / 2.0f))
+		2.f * atan2f((float)(w / fx), 2.0f),
+		2.f * atan2f((float)(h / fy), 2.0f)
 	);
 }
 
 bool ProjCameraModel::pixelLocValid(const vec2 &loc) const
 {
 	return loc.x() > 0.f && loc.x() < w && loc.y() > 0.f && loc.y() < h;
+}
+
+std::unique_ptr<CameraModel> ProjCameraModel::makeProjCamModel() const
+{
+	return clone();
 }
 
 }

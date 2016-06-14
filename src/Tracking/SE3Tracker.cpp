@@ -117,12 +117,9 @@ float SE3Tracker::checkPermaRefOverlap(
 	Sophus::SE3f referenceToFrame = referenceToFrameOrg.cast<float>();
 	boost::unique_lock<boost::mutex> lock2 = boost::unique_lock<boost::mutex>(reference->permaRef_mutex);
 
-	int w2 = reference->width(QUICK_KF_CHECK_LVL)-1;
-	int h2 = reference->height(QUICK_KF_CHECK_LVL)-1;
-	float fx_l = reference->model(QUICK_KF_CHECK_LVL).fx;
-	float fy_l = reference->model(QUICK_KF_CHECK_LVL).fy;
-	float cx_l = reference->model(QUICK_KF_CHECK_LVL).cx;
-	float cy_l = reference->model(QUICK_KF_CHECK_LVL).cy;
+	int w2 = reference->width(QUICK_KF_CHECK_LVL) - 1;
+	int h2 = reference->height(QUICK_KF_CHECK_LVL) - 1;
+	const CameraModel &m = reference->model(QUICK_KF_CHECK_LVL);
 
 	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
 	Eigen::Vector3f transVec = referenceToFrame.translation();
@@ -131,12 +128,13 @@ float SE3Tracker::checkPermaRefOverlap(
 	const Eigen::Vector3f* refPoint = reference->permaRef_posData;
 
 	float usageCount = 0;
-	for(;refPoint<refPoint_max; refPoint++)
+	for (; refPoint<refPoint_max; refPoint++)
 	{
 		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
-		float u_new = (Wxp[0]/Wxp[2])*fx_l + cx_l;
-		float v_new = (Wxp[1]/Wxp[2])*fy_l + cy_l;
-		if((u_new > 0 && v_new > 0 && u_new < w2 && v_new < h2))
+		vec2 uv = m.camToPixel(Wxp);
+		float u_new = uv[0];
+		float v_new = uv[1];
+		if ((u_new > 0 && v_new > 0 && u_new < w2 && v_new < h2))
 		{
 			float depthChange = (*refPoint)[2] / Wxp[2];
 			usageCount += depthChange < 1 ? depthChange : 1;
@@ -475,267 +473,6 @@ SE3 SE3Tracker::trackFrame(
 	frame->pose->trackingParent = reference->keyframe->pose;
 	return toSophus(referenceToFrame.inverse());
 }
-
-
-
-
-#if defined(ENABLE_SSE)
-float SE3Tracker::calcWeightsAndResidualSSE(
-		const Sophus::SE3f& referenceToFrame)
-{
-	const __m128 txs = _mm_set1_ps((float)(referenceToFrame.translation()[0]));
-	const __m128 tys = _mm_set1_ps((float)(referenceToFrame.translation()[1]));
-	const __m128 tzs = _mm_set1_ps((float)(referenceToFrame.translation()[2]));
-
-	const __m128 zeros = _mm_set1_ps(0.0f);
-	const __m128 ones = _mm_set1_ps(1.0f);
-
-
-	const __m128 depthVarFacs = _mm_set1_ps((float)settings.var_weight);// float depthVarFac = var_weight;	// the depth var is over-confident. this is a constant multiplier to remedy that.... HACK
-	const __m128 sigma_i2s = _mm_set1_ps((float)cameraPixelNoise2);
-
-
-	const __m128 huber_res_ponlys = _mm_set1_ps((float)(settings.huber_d/2));
-
-	__m128 sumResP = zeros;
-
-
-	float sumRes = 0;
-
-	for(int i=0;i<buf_warped_size-3;i+=4)
-	{
-//		float px = *(buf_warped_x+i);	// x'
-//		float py = *(buf_warped_y+i);	// y'
-//		float pz = *(buf_warped_z+i);	// z'
-//		float d = *(buf_d+i);	// d
-//		float rp = *(buf_warped_residual+i); // r_p
-//		float gx = *(buf_warped_dx+i);	// \delta_x I
-//		float gy = *(buf_warped_dy+i);  // \delta_y I
-//		float s = depthVarFac * *(buf_idepthVar+i);	// \sigma_d^2
-
-
-		// calc dw/dd (first 2 components):
-		__m128 pzs = _mm_load_ps(buf_warped_z+i);	// z'
-		__m128 pz2ds = _mm_rcp_ps(_mm_mul_ps(_mm_mul_ps(pzs, pzs), _mm_load_ps(buf_d+i)));  // 1 / (z' * z' * d)
-		__m128 g0s = _mm_sub_ps(_mm_mul_ps(pzs, txs), _mm_mul_ps(_mm_load_ps(buf_warped_x+i), tzs));
-		g0s = _mm_mul_ps(g0s,pz2ds); //float g0 = (tx * pz - tz * px) / (pz*pz*d);
-
-		 //float g1 = (ty * pz - tz * py) / (pz*pz*d);
-		__m128 g1s = _mm_sub_ps(_mm_mul_ps(pzs, tys), _mm_mul_ps(_mm_load_ps(buf_warped_y+i), tzs));
-		g1s = _mm_mul_ps(g1s,pz2ds);
-
-		 // float drpdd = gx * g0 + gy * g1;	// ommitting the minus
-		__m128 drpdds = _mm_add_ps(
-				_mm_mul_ps(g0s, _mm_load_ps(buf_warped_dx+i)),
-				_mm_mul_ps(g1s, _mm_load_ps(buf_warped_dy+i)));
-
-		 //float w_p = 1.0f / (sigma_i2 + s * drpdd * drpdd);
-		__m128 w_ps = _mm_rcp_ps(_mm_add_ps(sigma_i2s,
-				_mm_mul_ps(drpdds,
-						_mm_mul_ps(drpdds,
-								_mm_mul_ps(depthVarFacs,
-										_mm_load_ps(buf_idepthVar+i))))));
-
-
-		//float weighted_rp = fabs(rp*sqrtf(w_p));
-		__m128 weighted_rps = _mm_mul_ps(_mm_load_ps(buf_warped_residual+i),
-				_mm_sqrt_ps(w_ps));
-		weighted_rps = _mm_max_ps(weighted_rps, _mm_sub_ps(zeros,weighted_rps));
-
-
-		//float wh = fabs(weighted_rp < huber_res_ponly ? 1 : huber_res_ponly / weighted_rp);
-		__m128 whs = _mm_cmplt_ps(weighted_rps, huber_res_ponlys);	// bitmask 0xFFFFFFFF for 1, 0x000000 for huber_res_ponly / weighted_rp
-		whs = _mm_or_ps(
-				_mm_and_ps(whs, ones),
-				_mm_andnot_ps(whs, _mm_mul_ps(huber_res_ponlys, _mm_rcp_ps(weighted_rps))));
-
-
-
-
-		// sumRes.sumResP += wh * w_p * rp*rp;
-		if(i+3 < buf_warped_size)
-			sumResP = _mm_add_ps(sumResP,
-					_mm_mul_ps(whs, _mm_mul_ps(weighted_rps, weighted_rps)));
-
-		// *(buf_weight_p+i) = wh * w_p;
-		_mm_store_ps(buf_weight_p+i, _mm_mul_ps(whs, w_ps) );
-	}
-	sumRes = SSEE(sumResP,0) + SSEE(sumResP,1) + SSEE(sumResP,2) + SSEE(sumResP,3);
-
-	return sumRes / ((buf_warped_size >> 2)<<2);
-}
-#endif
-
-
-
-#if defined(ENABLE_NEON)
-float SE3Tracker::calcWeightsAndResidualNEON(
-		const Sophus::SE3f& referenceToFrame)
-{
-	float tx = referenceToFrame.translation()[0];
-	float ty = referenceToFrame.translation()[1];
-	float tz = referenceToFrame.translation()[2];
-
-
-	float constants[] = {
-		tx, ty, tz, settings.var_weight,
-		cameraPixelNoise2, settings.huber_d/2, -1, -1 // last values are currently unused
-	};
-	// This could also become a constant if one register could be made free for it somehow
-	float cutoff_res_ponly4[4] = {10000, 10000, 10000, 10000}; // removed
-	float* cur_buf_warped_z = buf_warped_z;
-	float* cur_buf_warped_x = buf_warped_x;
-	float* cur_buf_warped_y = buf_warped_y;
-	float* cur_buf_warped_dx = buf_warped_dx;
-	float* cur_buf_warped_dy = buf_warped_dy;
-	float* cur_buf_warped_residual = buf_warped_residual;
-	float* cur_buf_d = buf_d;
-	float* cur_buf_idepthVar = buf_idepthVar;
-	float* cur_buf_weight_p = buf_weight_p;
-	int loop_count = buf_warped_size / 4;
-	int remaining = buf_warped_size - 4 * loop_count;
-	float sum_vector[] = {0, 0, 0, 0};
-	
-	float sumRes=0;
-
-	
-#ifdef DEBUG
-	loop_count = 0;
-	remaining = buf_warped_size;
-#else
-	if (loop_count > 0)
-	{
-		__asm__ __volatile__
-		(
-			// Extract constants
-			"vldmia   %[constants], {q8-q9}              \n\t" // constants(q8-q9)
-			"vdup.32  q13, d18[0]                        \n\t" // extract sigma_i2 x 4 to q13
-			"vdup.32  q14, d18[1]                        \n\t" // extract huber_res_ponly x 4 to q14
-			//"vdup.32  ???, d19[0]                        \n\t" // extract cutoff_res_ponly x 4 to ???
-			"vdup.32  q9, d16[0]                         \n\t" // extract tx x 4 to q9, overwrite!
-			"vdup.32  q10, d16[1]                        \n\t" // extract ty x 4 to q10
-			"vdup.32  q11, d17[0]                        \n\t" // extract tz x 4 to q11
-			"vdup.32  q8, d17[1]                         \n\t" // extract depthVarFac x 4 to q8, overwrite!
-			
-			"veor     q15, q15, q15                      \n\t" // set sumRes.sumResP(q15) to zero (by xor with itself)
-			".loopcalcWeightsAndResidualNEON:            \n\t"
-			
-				"vldmia   %[buf_idepthVar]!, {q7}           \n\t" // s(q7)
-				"vldmia   %[buf_warped_z]!, {q2}            \n\t" // pz(q2)
-				"vldmia   %[buf_d]!, {q3}                   \n\t" // d(q3)
-				"vldmia   %[buf_warped_x]!, {q0}            \n\t" // px(q0)
-				"vldmia   %[buf_warped_y]!, {q1}            \n\t" // py(q1)
-				"vldmia   %[buf_warped_residual]!, {q4}     \n\t" // rp(q4)
-				"vldmia   %[buf_warped_dx]!, {q5}           \n\t" // gx(q5)
-				"vldmia   %[buf_warped_dy]!, {q6}           \n\t" // gy(q6)
-		
-				"vmul.f32 q7, q7, q8                        \n\t" // s *= depthVarFac
-				"vmul.f32 q12, q2, q2                       \n\t" // pz*pz (q12, temp)
-				"vmul.f32 q3, q12, q3                       \n\t" // pz*pz*d (q3)
-		
-				"vrecpe.f32 q3, q3                          \n\t" // 1/(pz*pz*d) (q3)
-				"vmul.f32 q12, q9, q2                       \n\t" // tx*pz (q12)
-				"vmls.f32 q12, q11, q0                      \n\t" // tx*pz - tz*px (q12) [multiply and subtract] {free: q0}
-				"vmul.f32 q0, q10, q2                       \n\t" // ty*pz (q0) {free: q2}
-				"vmls.f32 q0, q11, q1                       \n\t" // ty*pz - tz*py (q0) {free: q1}
-				"vmul.f32 q12, q12, q3                      \n\t" // g0 (q12)
-				"vmul.f32 q0, q0, q3                        \n\t" // g1 (q0)
-		
-				"vmul.f32 q12, q12, q5                      \n\t" // gx * g0 (q12) {free: q5}
-				"vldmia %[cutoff_res_ponly4], {q5}          \n\t" // cutoff_res_ponly (q5), load for later
-				"vmla.f32 q12, q6, q0                       \n\t" // drpdd = gx * g0 + gy * g1 (q12) {free: q6, q0}
-				
-				"vmov.f32 q1, #1.0                          \n\t" // 1.0 (q1), will be used later
-		
-				"vmul.f32 q12, q12, q12                     \n\t" // drpdd*drpdd (q12)
-				"vmul.f32 q12, q12, q7                      \n\t" // s*drpdd*drpdd (q12)
-				"vadd.f32 q12, q12, q13                     \n\t" // sigma_i2 + s*drpdd*drpdd (q12)
-				"vrecpe.f32 q12, q12                        \n\t" // w_p = 1/(sigma_i2 + s*drpdd*drpdd) (q12) {free: q7}
-		
-				// float weighted_rp = fabs(rp*sqrtf(w_p));
-				"vrsqrte.f32 q7, q12                        \n\t" // 1 / sqrtf(w_p) (q7)
-				"vrecpe.f32 q7, q7                          \n\t" // sqrtf(w_p) (q7)
-				"vmul.f32 q7, q7, q4                        \n\t" // rp*sqrtf(w_p) (q7)
-				"vabs.f32 q7, q7                            \n\t" // weighted_rp (q7)
-		
-				// float wh = fabs(weighted_rp < huber_res_ponly ? 1 : huber_res_ponly / weighted_rp);
-				"vrecpe.f32 q6, q7                          \n\t" // 1 / weighted_rp (q6)
-				"vmul.f32 q6, q6, q14                       \n\t" // huber_res_ponly / weighted_rp (q6)
-				"vclt.f32 q0, q7, q14                       \n\t" // weighted_rp < huber_res_ponly ? all bits 1 : all bits 0 (q0)
-				"vbsl     q0, q1, q6                        \n\t" // sets elements in q0 to 1(q1) where above condition is true, and to q6 where it is false {free: q6}
-				"vabs.f32 q0, q0                            \n\t" // wh (q0)
-		
-				// sumRes.sumResP += wh * w_p * rp*rp
-				"vmul.f32 q4, q4, q4                        \n\t" // rp*rp (q4)
-				"vmul.f32 q4, q4, q12                       \n\t" // w_p*rp*rp (q4)
-				"vmla.f32 q15, q4, q0                       \n\t" // sumRes.sumResP += wh*w_p*rp*rp (q15) {free: q4}
-				
-				// if(weighted_rp > cutoff_res_ponly)
-				//     wh = 0;
-				// *(buf_weight_p+i) = wh * w_p;
-				"vcle.f32 q4, q7, q5                        \n\t" // mask in q4: ! (weighted_rp > cutoff_res_ponly)
-				"vmul.f32 q0, q0, q12                       \n\t" // wh * w_p (q0)
-				"vand     q0, q0, q4                        \n\t" // set q0 to 0 where condition for q4 failed (i.e. weighted_rp > cutoff_res_ponly)
-				"vstmia   %[buf_weight_p]!, {q0}            \n\t"
-				
-			"subs     %[loop_count], %[loop_count], #1    \n\t"
-			"bne      .loopcalcWeightsAndResidualNEON     \n\t"
-				
-			"vstmia   %[sum_vector], {q15}                \n\t"
-
-		: /* outputs */ [buf_warped_z]"+&r"(cur_buf_warped_z),
-						[buf_warped_x]"+&r"(cur_buf_warped_x),
-						[buf_warped_y]"+&r"(cur_buf_warped_y),
-						[buf_warped_dx]"+&r"(cur_buf_warped_dx),
-						[buf_warped_dy]"+&r"(cur_buf_warped_dy),
-						[buf_d]"+&r"(cur_buf_d),
-						[buf_warped_residual]"+&r"(cur_buf_warped_residual),
-						[buf_idepthVar]"+&r"(cur_buf_idepthVar),
-						[buf_weight_p]"+&r"(cur_buf_weight_p),
-						[loop_count]"+&r"(loop_count)
-		: /* inputs  */ [constants]"r"(constants),
-						[cutoff_res_ponly4]"r"(cutoff_res_ponly4),
-						[sum_vector]"r"(sum_vector)
-		: /* clobber */ "memory", "cc",
-						"q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
-		);
-		
-		sumRes += sum_vector[0] + sum_vector[1] + sum_vector[2] + sum_vector[3];
-	}
-#endif
-
-	for(int i=buf_warped_size-remaining; i<buf_warped_size; i++)
-	{
-		float px = *(buf_warped_x+i);	// x'
-		float py = *(buf_warped_y+i);	// y'
-		float pz = *(buf_warped_z+i);	// z'
-		float d = *(buf_d+i);	// d
-		float rp = *(buf_warped_residual+i); // r_p
-		float gx = *(buf_warped_dx+i);	// \delta_x I
-		float gy = *(buf_warped_dy+i);  // \delta_y I
-		float s = settings.var_weight * *(buf_idepthVar+i);	// \sigma_d^2
-
-
-		// calc dw/dd (first 2 components):
-		float g0 = (tx * pz - tz * px) / (pz*pz*d);
-		float g1 = (ty * pz - tz * py) / (pz*pz*d);
-
-
-		// calc w_p
-		float drpdd = gx * g0 + gy * g1;	// ommitting the minus
-		float w_p = 1.0f / (cameraPixelNoise2 + s * drpdd * drpdd);
-		float weighted_rp = fabs(rp*sqrtf(w_p));
-
-		float wh = fabs(weighted_rp < (settings.huber_d/2) ? 1 : (settings.huber_d/2) / weighted_rp);
-
-		sumRes += wh * w_p * rp*rp;
-
-		*(buf_weight_p+i) = wh * w_p;
-	}
-
-	return sumRes / buf_warped_size;
-}
-#endif
 
 float SE3Tracker::calcWeightsAndResidual(
 		const Sophus::SE3f& referenceToFrame)

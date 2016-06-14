@@ -114,60 +114,11 @@ private:
 			int level,
 			bool plotResidual = false);
 
-#if defined(ENABLE_SSE)
-	float calcResidualAndBuffersSSE(
-			const Eigen::Vector3f* refPoint,
-			const Eigen::Vector2f* refColVar,
-			int* idxBuf,
-			int refNum,
-			Frame* frame,
-			const Sophus::SE3f& referenceToFrame,
-			int level,
-			bool plotResidual = false);
-#endif
-#if defined(ENABLE_NEON)
-	float calcResidualAndBuffersNEON(
-			const Eigen::Vector3f* refPoint,
-			const Eigen::Vector2f* refColVar,
-			int* idxBuf,
-			int refNum,
-			Frame* frame,
-			const Sophus::SE3f& referenceToFrame,
-			int level,
-			bool plotResidual = false);
-#endif
-
-
-
-
-
-
 	float calcWeightsAndResidual(
 			const Sophus::SE3f& referenceToFrame);
-#if defined(ENABLE_SSE)
-	float calcWeightsAndResidualSSE(
-			const Sophus::SE3f& referenceToFrame);
-#endif
-#if defined(ENABLE_NEON)
-	float calcWeightsAndResidualNEON(
-			const Sophus::SE3f& referenceToFrame);
-#endif
-
-
-
-
-
 
 	void calculateWarpUpdate(
 			LGS6 &ls);
-#if defined(ENABLE_SSE)
-	void calculateWarpUpdateSSE(
-			LGS6 &ls);
-#endif
-#if defined(ENABLE_NEON)
-	void calculateWarpUpdateNEON(
-			LGS6 &ls);
-#endif
 
 	void calcResidualAndBuffers_debugStart();
 	void calcResidualAndBuffers_debugFinish(int w);

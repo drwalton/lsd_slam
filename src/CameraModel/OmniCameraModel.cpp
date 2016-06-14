@@ -1,6 +1,6 @@
 #include "OmniCameraModel.hpp"
 #include "Constants.hpp"
-
+#include "ProjCameraModel.hpp"
 
 namespace lsd_slam {
 
@@ -115,23 +115,37 @@ std::unique_ptr<CameraModel> OmniCameraModel::clone() const
 	return std::unique_ptr<CameraModel>(new OmniCameraModel(*this));
 }
 
+std::unique_ptr<CameraModel> OmniCameraModel::makeProjCamModel() const
+{
+	return std::make_unique<ProjCameraModel>(fx, fy, cx, cy, w, h);
+}
+
 vec2 OmniCameraModel::getFovAngles() const
 {
-	//N.B. This assumes a minimum FOV of M_PI in both axes.
 	vec2 fovAngles;
-	vec3 maxX = pixelToCam(vec2(w, h/2));
+	vec3 maxX = pixelToCam(vec2(w, h / 2));
+
 	float thetaX = atan2f(maxX.z(), maxX.x());
-	fovAngles.x() = 2.f*thetaX + static_cast<float>(M_PI);
-	vec3 maxY = pixelToCam(vec2(w/2, h));
+	if (maxX.z() < 0.f) {
+		fovAngles.x() = 2.f*thetaX + static_cast<float>(M_PI);
+	} else {
+		fovAngles.x() = static_cast<float>(M_PI) - (2.f*thetaX);
+	}
+
+	vec3 maxY = pixelToCam(vec2(w / 2, h));
 	float thetaY = atan2f(maxY.z(), maxY.y());
-	fovAngles.y() = 2.f*thetaY + static_cast<float>(M_PI);
+	if (maxY.z() < 0.f) {
+		fovAngles.y() = 2.f*thetaY + static_cast<float>(M_PI);
+	} else {
+		fovAngles.y() = static_cast<float>(M_PI) - (2.f*thetaY);
+	}
 	return fovAngles;
 }
 
 bool OmniCameraModel::pixelLocValid(const vec2 &p) const
 {
 	vec2 d = p - c;
-	return d.norm() < r;
+	return d.norm() < r && p.x() < w && p.x() > 0.f && p.y() < h && p.y() > 0.f;
 }
 
 bool OmniCameraModel::pointInImage(const vec3 &p) const

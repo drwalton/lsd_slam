@@ -35,6 +35,8 @@ public:
 	virtual vec2 getFovAngles() const;
 
 	virtual bool pixelLocValid(const vec2 &loc) const;
+
+	virtual std::unique_ptr<CameraModel> makeProjCamModel() const;
 };
 
 }

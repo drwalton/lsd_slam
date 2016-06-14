@@ -76,4 +76,5 @@ function(link_libs_exec_debug TARGET EXEC_LIBS DEBUG_LIBS)
 endfunction()
 
 add_subdirectory(demos)
+add_subdirectory(tests)
 

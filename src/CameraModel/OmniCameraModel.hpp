@@ -78,6 +78,8 @@ public:
 	virtual std::unique_ptr<CameraModel> clone() const;
 
 	const vec2 fovAngles;
+
+	virtual std::unique_ptr<CameraModel> makeProjCamModel() const;
 	
 	virtual vec2 getFovAngles() const;
 private:

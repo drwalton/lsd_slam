@@ -31,9 +31,9 @@ RunningStats runningStats;
 std::string resourcesDir() {
 #ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS
-	static std::string dir = getenv("HOMEDRIVE") + std::string(getenv("HOMEPATH")) + "/Documents/lsd_slam/resources/";
+	static std::string dir = getenv("HOMEDRIVE") + std::string(getenv("HOMEPATH")) + "/Documents/lsd_slam_new/resources/";
 #else
-	static std::string dir = getenv("HOME") + std::string("/lsd_slam/resources/");
+	static std::string dir = getenv("HOME") + std::string("/lsd_slam_new/resources/");
 #endif
 	return dir;
 }
