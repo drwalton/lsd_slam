@@ -36,7 +36,7 @@ struct ModelLoader::Impl
 	void saveFile(const std::string &filename);
 	bool plyIsPointCloud(const std::string &filename);
 	void loadFileAssimp(const std::string &filename);
-	void saveFileAssimp(const std::string &filename);
+	void saveFilePly(const std::string &filename);
 	void loadPlyFile(const std::string &filename);
 	void centerMesh();
 };
@@ -53,7 +53,7 @@ void ModelLoader::Impl::loadFile(const std::string &filename)
 
 void ModelLoader::Impl::saveFile(const std::string &filename)
 {
-	saveFileAssimp(filename);
+	saveFilePly(filename);
 }
 
 void ModelLoader::Impl::loadFileAssimp(const std::string &filename)
@@ -134,82 +134,13 @@ void ModelLoader::Impl::loadFileAssimp(const std::string &filename)
 
 }
 
-void ModelLoader::Impl::saveFileAssimp(const std::string &filename)
+void ModelLoader::Impl::saveFilePly(const std::string &filename)
 {
 	std::vector<float> radii;
 	if (indices.size() == 0) {
 		saveCloudToPlyFile(filename, verts, vertColors, normals, radii, false);
 	} else {
 		saveMeshToPlyFile(filename, verts, vertColors, normals, radii, indices, false);
-	//	Assimp::Exporter exporter;
-
-	//	aiScene scene;
-	//	scene.mRootNode = new aiNode; 
-	//	aiMesh *p;
-	//	unsigned int mMeshes[] = { 0 };
-	//	scene.mRootNode->mMeshes = mMeshes;
-	//	scene.mRootNode->mName = "";
-	//	scene.mRootNode->mNumChildren = 0;
-	//	scene.mRootNode->mNumMeshes = 1;
-	//	scene.mRootNode->mParent = nullptr;
-	//	aiMatrix4x4 transformation = {
-	//		1.f, 0.f, 0.f, 0.f,
-	//		0.f, 1.f, 0.f, 0.f,
-	//		0.f, 0.f, 1.f, 0.f,
-	//		0.f, 0.f, 0.f, 1.f
-	//	};
-	//	scene.mRootNode->mTransformation = transformation;
-
-	//	scene.mMeshes = &p;
-	//	scene.mMeshes[0] = new aiMesh;
-	//	scene.mNumMeshes = 1;
-	//	aiMesh *mesh = scene.mMeshes[0];
-	//	mesh->mVertices = reinterpret_cast<aiVector3D*>(verts.data());
-	//	mesh->mNumVertices = verts.size();
-
-	//	if (indices.size() > 0)
-	//	{
-	//		mesh->mNumFaces = (indices.size() / 3);
-	//		mesh->mFaces = new aiFace[indices.size() / 3];
-	//		for (size_t f = 0; f < mesh->mNumFaces; ++f)
-	//		{
-	//			aiFace &face = mesh->mFaces[f];
-	//			face.mNumIndices = 3;
-	//			face.mIndices = new unsigned int[3];
-	//			for (size_t i = 1; i < 3; ++i)
-	//			{
-	//				face.mIndices[i] = indices[3 * f + i];
-	//			}
-	//		}
-	//	}
-
-	//	if (normals.size() == verts.size())
-	//	{
-	//		mesh->mNormals = reinterpret_cast<aiVector3D*>(verts.data());
-	//	}
-
-	//	if (vertColors.size() == verts.size())
-	//	{
-	//		//TODO implement vertex colors
-	//		std::cout << "Warning: not saving vertex colors!" << std::endl;
-	//	}
-
-	//	if (texCoords.size() == verts.size())
-	//	{
-	//		mesh->mNumUVComponents[0] = 2;
-	//		mesh->mTextureCoords[0] = new aiVector3D[verts.size()];
-
-	//		for (size_t i = 0; i < verts.size(); ++i)
-	//		{
-	//			aiVector3D &t = mesh->mTextureCoords[0][i];
-	//			t.x = texCoords[i](0);
-	//			t.y = texCoords[i](1);
-	//			t.z = 0.0f;
-	//		}
-	//	}
-
-	//	exporter.Export(&scene,
-	//		filename.substr(filename.find_last_of(".") + 1), filename);
 	}
 }
 
@@ -436,10 +367,10 @@ void saveCloudToPlyFile(const std::string &filename,
 				.write((const char*)(&(positions[i].y())), sizeof(float))
 				.write((const char*)(&(positions[i].z())), sizeof(float));
 			if (colors.size() == positions.size()) {
-				cv::Vec3b c(colors[i].x(), colors[i].y(), colors[i].z());
-				file.write((const char*)(&(colors[i][0])), sizeof(char))
-					.write((const char*)(&(colors[i][1])), sizeof(char))
-					.write((const char*)(&(colors[i][2])), sizeof(char));
+				cv::Vec3b c(uchar(colors[i].x()), uchar(colors[i].y()), uchar(colors[i].z()));
+				file.write((const char*)(&(c[0])), sizeof(char))
+					.write((const char*)(&(c[1])), sizeof(char))
+					.write((const char*)(&(c[2])), sizeof(char));
 			}
 			if (normals.size() == positions.size()) {
 				file.write((const char*)(&(normals[i].x())), sizeof(float))
@@ -542,10 +473,10 @@ void saveMeshToPlyFile(const std::string &filename,
 				.write((const char*)(&(positions[i].y())), sizeof(float))
 				.write((const char*)(&(positions[i].z())), sizeof(float));
 			if (colors.size() == positions.size()) {
-				cv::Vec3b c(colors[i].x(), colors[i].y(), colors[i].z());
-				file.write((const char*)(&(colors[i][0])), sizeof(char))
-					.write((const char*)(&(colors[i][1])), sizeof(char))
-					.write((const char*)(&(colors[i][2])), sizeof(char));
+				cv::Vec3b c(uchar(colors[i].x()), uchar(colors[i].y()), uchar(colors[i].z()));
+				file.write((const char*)(&(c[0])), sizeof(char))
+					.write((const char*)(&(c[1])), sizeof(char))
+					.write((const char*)(&(c[2])), sizeof(char));
 			}
 			if (normals.size() == positions.size()) {
 				file.write((const char*)(&(normals[i].x())), sizeof(float))
