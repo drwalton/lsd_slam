@@ -23,10 +23,15 @@ struct keyframeMsg
 	uint32_t height;
 	uint32_t width;
 	float e;
+	vec2 c;
+	float r;
 
 	CameraModelType modelType;
 
 	std::vector<char> pointcloud;
+
+	std::unique_ptr<CameraModel> getCameraModel() const;
+	void setCameraModel(const CameraModel &model);
 };
 
 }

@@ -37,6 +37,8 @@
 namespace lsd_slam
 {
 
+class CameraModel;
+
 struct MyVertex
 {
 	float point[3];
@@ -83,9 +85,7 @@ public:
 private:
 	// camera parameter
 	// fixed.
-	float fx,fy,cx,cy;
-	float fxi,fyi,cxi,cyi;
-	int width, height;
+	std::unique_ptr<CameraModel> camModel_;
 
 	float my_scaledTH, my_absTH, my_scale;
 	int my_minNearSupport;

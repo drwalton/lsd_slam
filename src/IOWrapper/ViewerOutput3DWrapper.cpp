@@ -100,10 +100,7 @@ void ViewerOutput3DWrapper::publishKeyframe(Frame* kf)
 	size_t w = kf->width(), h = kf->height();
 	msg.width = w;
 	msg.height = h;
-	msg.fx = kf->model(publishLevel_).fx;
-	msg.fy = kf->model(publishLevel_).fy;
-	msg.cx = kf->model(publishLevel_).cx;
-	msg.cy = kf->model(publishLevel_).cy;
+	msg.setCameraModel(kf->model(publishLevel_));
 	auto ctw = kf->getScaledCamToWorld().cast<float>();
 	memcpy(&(msg.camToWorld), ctw.data(), 7 * sizeof(float));
 
@@ -136,10 +133,7 @@ void ViewerOutput3DWrapper::publishTrackedFrame(Frame* kf)
 
 
 	memcpy(fMsg.camToWorld.data(), kf->getScaledCamToWorld().cast<float>().data(), sizeof(float) * 7);
-	fMsg.fx = kf->model(publishLevel_).fx;
-	fMsg.fy = kf->model(publishLevel_).fy;
-	fMsg.cx = kf->model(publishLevel_).cx;
-	fMsg.cy = kf->model(publishLevel_).cy;
+	fMsg.setCameraModel(kf->model(publishLevel_));
 	fMsg.width = kf->width(publishLevel_);
 	fMsg.height = kf->height(publishLevel_);
 
