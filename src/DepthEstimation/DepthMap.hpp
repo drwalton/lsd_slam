@@ -44,6 +44,7 @@ struct DepthMapDebugSettings
 	explicit DepthMapDebugSettings();
 	bool saveMatchImages;
 	bool saveSearchRangeImages;
+	bool saveResultImages;
 	int drawMatchInvChance;
 };
 

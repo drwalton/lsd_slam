@@ -54,4 +54,21 @@ void DepthMapDebugImages::clearSearchRangesIm(const float * keyframe, const floa
 	makeDebugCompareIm(searchRanges, keyframe, refFrame, camModel);
 }
 
+void DepthMapDebugImages::clearResultIm(const float * keyframe, const float * refFrame, const CameraModel * model)
+{
+	makeDebugCompareIm(results, keyframe, refFrame, model);
+}
+
+cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
+{
+	if (err > 0.f) {
+		//Green: successful match
+		return cv::Vec3b(0, 255, 0);
+	}
+	//TODO other colours
+
+	//Default colour
+	return cv::Vec3b(255, 255, 255);
+}
+
 }

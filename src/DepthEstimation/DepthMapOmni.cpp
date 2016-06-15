@@ -598,11 +598,12 @@ float DepthMap::doStereoOmni(
 	keyframeToReference.rotation = referenceFrame->otherToThis_R;
 	float gradAlongLine, tracedLineLen;
 	float bestMatchErr;
-	if (settings.saveSearchRangeImages) {
+	if (settings.saveSearchRangeImages || settings.saveResultImages) {
 		bestMatchErr = lsd_slam::doStereoOmniImpl(u, v, epDir, min_idepth, prior_idepth, max_idepth,
 			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
 			stats, oModel, referenceFrame->width(), bestEpImDir, bestMatchPos, gradAlongLine, 
-			tracedLineLen, bestMatchKeyframe, debugImages.searchRanges, debugImages.drawMatchHere(u,v));
+			tracedLineLen, bestMatchKeyframe, debugImages.searchRanges, 
+			settings.saveSearchRangeImages && debugImages.drawMatchHere(u,v));
 	}
 	else {
 
@@ -752,20 +753,15 @@ bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const 
 	}
 	*epDir = ref->thisToOther_t.normalized();
 	vec2 epipole = camModel_->camToPixel(ref->thisToOther_t);
-	if (!camModel_->pixelLocValid(epipole)) {
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
-		return false;
-	}
-
-
 	float epx = x - epipole.x();
 	float epy = y - epipole.y();
 
 	// ======== check epl length =========
-	float eplLengthSquared = epx*epx+epy*epy;
-	if(eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
+	float eplLengthSquared = epx*epx + epy*epy;
+	if (eplLengthSquared < MIN_EPL_LENGTH_SQUARED)
 	{
-		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
+		//Too close to epipole - fail.
+		if (enablePrintDebugInfo) stats->num_observe_skipped_small_epl++;
 		return false;
 	}
 

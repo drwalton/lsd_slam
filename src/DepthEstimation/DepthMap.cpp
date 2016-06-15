@@ -40,6 +40,7 @@ namespace lsd_slam
 DepthMapDebugSettings::DepthMapDebugSettings()
 	:saveMatchImages(false),
 	saveSearchRangeImages(false),
+	saveResultImages(false),
 	drawMatchInvChance(1)
 {}
 
@@ -113,13 +114,29 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 			// ======== 1. check absolute grad =========
 			if(hasHypothesis && keyFrameMaxGradBuf[idx] < MIN_ABS_GRAD_DECREASE)
 			{
+				//Avoid using: has a hypothesis, and grad is too low (will increase error, 
+				// rather than refining depth).
 				target->isValid = false;
 				continue;
 			}
 
-			if(keyFrameMaxGradBuf[idx] < MIN_ABS_GRAD_CREATE || target->blacklisted < MIN_BLACKLIST)
+			if (keyFrameMaxGradBuf[idx] < MIN_ABS_GRAD_CREATE) {
+				//Avoid using - gradient too low to create a new hypothesis here.
 				continue;
+			}
+			if (target->blacklisted < MIN_BLACKLIST) {
+				//Avoid using - this pixel has been blacklisted after failing stereo
+				// too often.
+				if (settings.saveResultImages) {
+					debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(0,0,0);
+				}
+				continue;
+			}
 
+			//Set all pixels used as input to a stereo procedure to white initially.
+			if (settings.saveResultImages) {
+				debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(255,255,255);
+			}
 
 			bool success;
 			if(!hasHypothesis)
@@ -139,6 +156,11 @@ void DepthMap::observeDepth()
 		Frame* refFrame = activeKeyFrameIsReactivated ?
 			newest_referenceFrame : oldest_referenceFrame;
 		debugImages.clearSearchRangesIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+	}
+	if (settings.saveResultImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ?
+			newest_referenceFrame : oldest_referenceFrame;
+		debugImages.clearResultIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
 	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, camModel_->h-3, 10);
@@ -274,6 +296,11 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 			result_idepth, result_var, result_eplLength, stats);
 	}
 
+	if (settings.saveResultImages) {
+		cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
+		debugImages.results.at<cv::Vec3b>(y, x) = color;
+	}
+
 	if(error == -3 || error == -2)
 	{
 		target->blacklisted--;
@@ -375,6 +402,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 				result_idepth, result_var, result_eplLength, stats);
 		}
 
+
 		diff = result_idepth - target->idepth_smoothed;
 	}
 	else {
@@ -382,6 +410,12 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		diff = 0.f;
 	}
 
+	if (settings.saveResultImages) {
+		if (error < 0.f) {
+			cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
+			debugImages.results.at<cv::Vec3b>(y, x) = color;
+		}
+	}
 
 
 	// if oob: (really out of bounds)
@@ -1268,6 +1302,12 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.searchRanges);
 	}
+	if (settings.saveResultImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "ResultIms/ResultKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugImages.results);
+	}
 }
 
 void DepthMap::invalidate()
@@ -2052,6 +2092,11 @@ inline float DepthMap::doStereoProj(
 	result_idepth = idnew_best_match;
 
 	result_eplLength = eplLength;
+
+	if (settings.saveResultImages) {
+		debugImages.results.at<cv::Vec3b>(v, u) =
+			cv::Vec3b(0, 255, 0);
+	}
 
 	return best_match_err;
 }

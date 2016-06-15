@@ -96,17 +96,6 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	float u, float v, std::array<float, 5> &valuesToFind,
 	cv::Mat &visIm = emptyMat);
 
-void findReferenceFrameLineEndpoints(
-	vec3 &pStart, vec3 &pEnd,
-	int u, int v,
-	float depth, float depthStd);
-
-bool findLowestSSDMatch(
-	const RigidTransform &keyframeToReference,
-	const OmniCameraModel &model,
-	const float* keyframe
-	);
-
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float *resultIDepth, float *resultVar,
 	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,

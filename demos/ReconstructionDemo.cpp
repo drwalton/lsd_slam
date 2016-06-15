@@ -45,6 +45,7 @@ int main(int argc, char **argv)
 			lsd_slam::DepthMapInitMode::CONSTANT,
 			true);
 		slamWrapper.saveStereoSearchIms(true);
+		slamWrapper.saveStereoResultIms(true);
 		slamWrapper.plotTracking(true);
 		std::cout << "Done!" << std::endl;
 

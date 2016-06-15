@@ -180,6 +180,18 @@ bool LiveSLAMWrapper::saveStereoSearchIms() const
 {
 	return monoOdometry->depthMapDebugSettings().saveSearchRangeImages;
 }
+void LiveSLAMWrapper::saveStereoResultIms(bool s)
+{
+	monoOdometry->depthMapDebugSettings().saveResultImages = s;
+	if (s == true) {
+		makeEmptyDirectory(resourcesDir() + "ResultIms/");
+	}
+}
+
+bool LiveSLAMWrapper::saveStereoResultIms() const
+{
+	return monoOdometry->depthMapDebugSettings().saveResultImages;
+}
 
 void LiveSLAMWrapper::plotTracking(bool p)
 {

@@ -87,6 +87,8 @@ public:
 
 	void saveStereoSearchIms(bool s);
 	bool saveStereoSearchIms() const;
+	void saveStereoResultIms(bool s);
+	bool saveStereoResultIms() const;
 
 	void plotTracking(bool p);
 	bool plotTracking() const;
