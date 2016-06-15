@@ -23,6 +23,7 @@
 #include "Output3DWrapper.hpp"
 #include <thread>
 #include <memory>
+#include <atomic>
 #include "Viewer/PointCloudViewer.hpp"
 
 namespace lsd_slam {
@@ -48,6 +49,8 @@ public:
 	virtual void publishTrajectoryIncrement(Eigen::Matrix<float, 3, 1> pt, std::string identifier);
 
 	virtual void publishDebugInfo(const Eigen::Matrix<float, 20, 1> &data);
+
+	std::atomic<bool> running;
 
 private:
 	std::thread viewerThread_;

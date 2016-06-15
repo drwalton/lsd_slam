@@ -50,15 +50,17 @@
 using namespace lsd_slam;
 
 
-SlamSystem::SlamSystem(const CameraModel &model, 
+SlamSystem::SlamSystem(const CameraModel &model,
 	bool enableSLAM, bool singleThread,
-	DepthMapInitMode depthMapInitMode)
+	DepthMapInitMode depthMapInitMode,
+	bool saveTrackingInfo)
 	: model(model.clone()),
 	SLAMEnabled(enableSLAM),
 	plotTracking(false),
 	relocalizer(model),
 	singleThread(singleThread),
-	singleThreadMappingInterval(1)
+	singleThreadMappingInterval(1),
+	saveTrackingInfo(saveTrackingInfo)
 {
 	if(model.w%16 != 0 || model.h%16!=0)
 	{
@@ -69,6 +71,10 @@ SlamSystem::SlamSystem(const CameraModel &model,
 
 	trackingIsGood = true;
 
+	if (saveTrackingInfo) {
+		saveTrackingInfoStream.open(resourcesDir() + "/TrackInfo.txt",
+			std::ios::out | std::ios::trunc);
+	}
 
 	currentKeyFrame =  nullptr;
 	trackingReferenceFrameSharedPT = nullptr;
@@ -955,6 +961,13 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 		trackingReference,
 		trackingNewFrame.get(),
 		frameToReference_initialEstimate);
+	
+	if (saveTrackingInfo) {
+		saveTrackingInfoStream <<
+			"**Tracking frame " << frameID << "**\n" <<
+			newRefToFrame_poseUpdate << "\n\n" << std::endl;
+	}
+
 
 	gettimeofday(&tv_end, NULL);
 	msTrackFrame = 0.9f*msTrackFrame + 0.1f*((tv_end.tv_sec - tv_start.tv_sec)*1000.0f + (tv_end.tv_usec - tv_start.tv_usec) / 1000.0f);

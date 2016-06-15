@@ -34,6 +34,7 @@ namespace lsd_slam {
 ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height)
 	:publishLevel_(0), viewer_(nullptr)
 {
+	running = true;
 	if (showViewer) {
 		viewerThread_ = std::thread([this](){
 			std::cout << "Launching viewer thread...\n";
@@ -48,6 +49,7 @@ ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int hei
 			}
 			qapp.exec();
 			viewer_ = nullptr;
+			running = false;
 			std::cout << "Terminating viewer thread...\n";
 		});
 	}
@@ -55,7 +57,9 @@ ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int hei
 
 ViewerOutput3DWrapper::~ViewerOutput3DWrapper()
 {
-
+	if (viewerThread_.joinable()) {
+		viewerThread_.join();
+	}
 }
 
 void ViewerOutput3DWrapper::publishKeyframeGraph(KeyFrameGraph* graph)

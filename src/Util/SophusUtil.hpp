@@ -62,7 +62,6 @@ inline SE3 se3FromSim3(const Sim3& sim3)
 	return SE3(sim3.quaternion(), sim3.translation());
 }
 
-
 }
 
 // Extern templates (see SophusUtil.cpp)
@@ -74,3 +73,4 @@ extern template class Sophus::SE3Group<double, 0>;
 
 extern template class Sophus::Sim3Group<float, 0>;
 extern template class Sophus::Sim3Group<double, 0>;
+

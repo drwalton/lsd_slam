@@ -207,4 +207,22 @@ void makeEmptyDirectory(const std::string &dirPath)
 	}
 }
 
+std::ostream &operator << (std::ostream &s, const SE3 &t)
+{
+	s << "SE3 Element:\n\tRotation:\n" <<
+		t.rotationMatrix() << "\n\tTranslation:\n" <<
+		t.translation() << "\n";
+	return s;
+}
+
+std::ostream &operator << (std::ostream &s, const Sim3 &t)
+{
+
+	s << "Sim3 Element:\n\tRotation:\n" <<
+		t.rotationMatrix() << "\n\tTranslation:\n" <<
+		t.translation() << "\nScale: " << t.scale() << "\n";
+	return s;
+}
+
+
 }

@@ -190,4 +190,7 @@ void processImageWithProgressBar(cv::Size size, std::function<void(int, int)> pr
 ///      not yet exist.
 void makeEmptyDirectory(const std::string &dirPath);
 
+std::ostream &operator << (std::ostream &s, const SE3 &t);
+std::ostream &operator << (std::ostream &s, const Sim3 &t);
+
 }

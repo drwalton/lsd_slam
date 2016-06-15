@@ -22,6 +22,7 @@
 #include <vector>
 #include <deque>
 #include <memory>
+#include <fstream>
 #include <boost/thread.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -77,7 +78,8 @@ public:
 	SlamSystem(const CameraModel &model, 
 		bool enableSLAM = true, 
 		bool singleThread = false,
-		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM);
+		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM,
+		bool saveTrackingInfo = false);
 	SlamSystem(const SlamSystem&) = delete;
 	SlamSystem& operator=(const SlamSystem&) = delete;
 	~SlamSystem();
@@ -284,6 +286,8 @@ private:
 	void optimizationThreadLoopIteration();
 
 
+	bool saveTrackingInfo;
+	std::ofstream saveTrackingInfoStream;
 	
 };
 

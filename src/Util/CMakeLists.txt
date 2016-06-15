@@ -11,6 +11,8 @@ add_library(lsd_slam_Util
 	KahanVal.hpp
 	ModelLoader.cpp
 	ModelLoader.hpp
+	PolylineModelMaker.cpp
+	PolylineModelMaker.hpp
 	settings.cpp
 	settings.hpp
 	SophusUtil.cpp

@@ -20,6 +20,7 @@
 
 #include "sophus/se3.hpp"
 #include "sophus/sim3.hpp"
+#include "SophusUtil.hpp"
 
 // Compile the templates here once so they don't need to be compiled in every
 // other file using them.
@@ -41,4 +42,3 @@ template class Sophus::SE3Group<double, 0>;
 
 template class Sophus::Sim3Group<float, 0>;
 template class Sophus::Sim3Group<double, 0>;
-

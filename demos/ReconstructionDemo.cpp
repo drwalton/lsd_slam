@@ -38,17 +38,20 @@ int main(int argc, char **argv)
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(), 
-		lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
-		lsd_slam::DepthMapInitMode::CONSTANT);
-	slamWrapper.saveStereoSearchIms(true);
-	//TODO work out why this causes problems.
-	//slamWrapper.blockTrackUntilMapped = true;
-	std::cout << "Done!" << std::endl;
+	{
+		lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(),
+			outWrapper->running,
+			lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
+			lsd_slam::DepthMapInitMode::CONSTANT,
+			true);
+		slamWrapper.saveStereoSearchIms(true);
+		slamWrapper.plotTracking(true);
+		std::cout << "Done!" << std::endl;
 
-	std::cout << "Starting SLAM wrapper..." << std::endl;
-	slamWrapper.Loop();
-	
+		std::cout << "Starting SLAM wrapper..." << std::endl;
+		slamWrapper.Loop();
+	}
+
 	std::cout << "Stopping stream..."; std::cout.flush();
 	stream.stop();
 	std::cout << "Done!" << std::endl;

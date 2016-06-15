@@ -41,8 +41,10 @@ namespace lsd_slam
 
 LiveSLAMWrapper::LiveSLAMWrapper(
 	InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
-	ThreadingMode threadMode, DepthMapInitMode depthMapInitMode)
-	:camModel_(imageStream->camModel().clone()), blockTrackUntilMapped(false)
+	std::atomic<bool> &running,
+	ThreadingMode threadMode, DepthMapInitMode depthMapInitMode,
+	bool saveTrackingInfo)
+	:camModel_(imageStream->camModel().clone()), blockTrackUntilMapped(false), running_(running)
 {
 	this->imageStream = imageStream;
 	this->outputWrapper = outputWrapper;
@@ -65,7 +67,7 @@ LiveSLAMWrapper::LiveSLAMWrapper(
 
 	// make Odometry
 	bool singleThread = threadMode == ThreadingMode::SINGLE;
-	monoOdometry = new SlamSystem(*camModel_, true, singleThread, depthMapInitMode);
+	monoOdometry = new SlamSystem(*camModel_, true, singleThread, depthMapInitMode, saveTrackingInfo);
 
 	monoOdometry->setVisualization(outputWrapper);
 
@@ -87,7 +89,7 @@ LiveSLAMWrapper::~LiveSLAMWrapper()
 
 void LiveSLAMWrapper::Loop()
 {
-	while (true) {
+	while (running_) {
 		boost::unique_lock<boost::recursive_mutex> waitLock(imageStream->getBuffer()->getMutex());
 		while (!fullResetRequested && !(imageStream->getBuffer()->size() > 0)) {
 			notifyCondition.wait(waitLock);
@@ -177,6 +179,16 @@ void LiveSLAMWrapper::saveStereoSearchIms(bool s)
 bool LiveSLAMWrapper::saveStereoSearchIms() const
 {
 	return monoOdometry->depthMapDebugSettings().saveSearchRangeImages;
+}
+
+void LiveSLAMWrapper::plotTracking(bool p)
+{
+	monoOdometry->plotTracking = p;
+}
+
+bool LiveSLAMWrapper::plotTracking() const
+{
+	return monoOdometry->plotTracking;
 }
 
 void LiveSLAMWrapper::requestReset()

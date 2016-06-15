@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <atomic>
 
 #include "IOWrapper/Timestamp.hpp"
 #include "IOWrapper/NotifyBuffer.hpp"
@@ -54,8 +55,10 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
+		std::atomic<bool> &running,
 		ThreadingMode threadMode = ThreadingMode::MULTI,
-		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM);
+		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM,
+		bool saveTrackingInfo = false);
 
 	/** Destructor. */
 	~LiveSLAMWrapper();
@@ -85,8 +88,11 @@ public:
 	void saveStereoSearchIms(bool s);
 	bool saveStereoSearchIms() const;
 
+	void plotTracking(bool p);
+	bool plotTracking() const;
 
 private:
+	std::atomic<bool> &running_;
 	
 	InputImageStream* imageStream;
 	Output3DWrapper* outputWrapper;
