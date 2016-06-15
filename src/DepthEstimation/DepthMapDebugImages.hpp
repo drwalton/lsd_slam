@@ -8,6 +8,15 @@ namespace lsd_slam
 
 class CameraModel;
 
+namespace DepthMapErrCode
+{
+const float EPL_NOT_IN_REF_FRAME = -1;
+const float WINNER_NOT_CLEAR = -2;
+const float ERR_TOO_BIG = -3;
+const float NAN_MAKING_EPL = -4;
+const float PADDED_EPL_NOT_IN_REF_FRAME = -5;
+}
+
 struct DepthMapDebugImages
 {
 	explicit DepthMapDebugImages();

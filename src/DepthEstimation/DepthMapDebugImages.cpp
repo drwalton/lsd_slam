@@ -65,7 +65,25 @@ cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 		//Green: successful match
 		return cv::Vec3b(0, 255, 0);
 	}
+	else if (err == DepthMapErrCode::ERR_TOO_BIG) {
+		//Red: error too large
+		return cv::Vec3b(0, 0, 255);
+	}
+	else if (err == DepthMapErrCode::WINNER_NOT_CLEAR) {
+		//Blue: winner not clear
+		return cv::Vec3b(255, 0, 0);
+	}
+	else if (err == DepthMapErrCode::EPL_NOT_IN_REF_FRAME) {
+		//Purple: epipolar line segment did not lie entirely
+		//        inside the reference frame.
+		return cv::Vec3b(255, 0, 255);
+	}
+	else if (err == DepthMapErrCode::NAN_MAKING_EPL) {
+		//Turquoise: NaN encountered in generating epl.
+		return cv::Vec3b(255, 255, 0);
+	}
 	//TODO other colours
+
 
 	//Default colour
 	return cv::Vec3b(255, 255, 255);

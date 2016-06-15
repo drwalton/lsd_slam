@@ -1578,7 +1578,7 @@ inline float DepthMap::doStereoProj(
 	if(!(rescaleFactor > 0.7f && rescaleFactor < 1.4f))
 	{
 		if(enablePrintDebugInfo) stats->num_stereo_rescale_oob++;
-		return -1;
+		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 
 	// calculate values to search for
@@ -1609,14 +1609,14 @@ inline float DepthMap::doStereoProj(
 	if(pFar[2] < 0.001f || max_idepth < min_idepth)
 	{
 		if(enablePrintDebugInfo) stats->num_stereo_inf_oob++;
-		return -1;
+		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 	pFar = pFar / pFar[2]; // pos in new image of point (xy), assuming min_idepth
 
 
 	// check for nan due to eg division by zero.
 	if(isnan((float)(pFar[0]+pClose[0])))
-		return -4;
+		return DepthMapErrCode::NAN_MAKING_EPL;
 
 	// calculate increments in which we will step through the epipolar line.
 	// they are sampleDist (or half sample dist) long
@@ -1624,7 +1624,7 @@ inline float DepthMap::doStereoProj(
 	float incy = pClose[1] - pFar[1];
 	float eplLength = sqrt(incx*incx+incy*incy);
 	if (!(eplLength > 0) || std::isinf(eplLength)) {
-		return -4;
+		return DepthMapErrCode::NAN_MAKING_EPL;
 	}
 
 	if(eplLength > MAX_EPL_LENGTH_CROP)
@@ -1663,7 +1663,7 @@ inline float DepthMap::doStereoProj(
 			pFar[1] >= camModel_->h-SAMPLE_POINT_TO_BORDER)
 	{
 		if(enablePrintDebugInfo) stats->num_stereo_inf_oob++;
-		return -1;
+		return DepthMapErrCode::PADDED_EPL_NOT_IN_REF_FRAME;
 	}
 
 
@@ -1716,7 +1716,7 @@ inline float DepthMap::doStereoProj(
 				)
 		{
 			if(enablePrintDebugInfo) stats->num_stereo_near_oob++;
-			return -1;
+			return DepthMapErrCode::PADDED_EPL_NOT_IN_REF_FRAME;
 		}
 
 
@@ -1871,7 +1871,7 @@ inline float DepthMap::doStereoProj(
 	if(best_match_err > 4.0f*(float)MAX_ERROR_STEREO)
 	{
 		if(enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
-		return -3;
+		return DepthMapErrCode::ERR_TOO_BIG;
 	}
 
 
@@ -1879,7 +1879,7 @@ inline float DepthMap::doStereoProj(
 	if(abs(loopCBest - loopCSecond) > 1.0f && MIN_DISTANCE_ERROR_STEREO * best_match_err > second_best_match_err)
 	{
 		if(enablePrintDebugInfo) stats->num_stereo_invalid_unclear_winner++;
-		return -2;
+		return DepthMapErrCode::WINNER_NOT_CLEAR;
 	}
 
 	if (drawSearchRanges) {
