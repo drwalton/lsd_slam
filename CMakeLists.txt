@@ -51,6 +51,8 @@ include_directories(
 	${libtiff_INCLUDE_DIRS}
 )
 
+message("OPENCV libs: Debug: ${OPENCV_LIBRARIES}, Release: ${OPENCV_LIBRARIESD}")
+
 include_directories(src)
 add_subdirectory(src)
 

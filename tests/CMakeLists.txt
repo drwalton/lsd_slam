@@ -17,3 +17,13 @@ target_link_libraries(TestConvertDepthMaps
 	${OPENCV_LIBRARIES}
 )
 
+add_executable(TestStereoMatching
+	TestStereoMatching.cpp)
+
+set_target_properties(TestStereoMatching PROPERTIES FOLDER Tests)
+
+target_link_libraries(TestStereoMatching
+	${LSD_SLAM_LIBS}
+	${OPENCV_LIBRARIES}
+)
+

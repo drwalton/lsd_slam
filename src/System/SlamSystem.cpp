@@ -50,12 +50,15 @@
 using namespace lsd_slam;
 
 
-SlamSystem::SlamSystem(const CameraModel &model, bool enableSLAM, bool singleThread)
+SlamSystem::SlamSystem(const CameraModel &model, 
+	bool enableSLAM, bool singleThread,
+	DepthMapInitMode depthMapInitMode)
 	: model(model.clone()),
 	SLAMEnabled(enableSLAM),
 	plotTracking(false),
 	relocalizer(model),
-	singleThread(singleThread)
+	singleThread(singleThread),
+	singleThreadMappingInterval(1)
 {
 	if(model.w%16 != 0 || model.h%16!=0)
 	{
@@ -72,7 +75,7 @@ SlamSystem::SlamSystem(const CameraModel &model, bool enableSLAM, bool singleThr
 	keyFrameGraph = new KeyFrameGraph();
 	createNewKeyFrame = false;
 
-	map =  new DepthMap(model);
+	map =  new DepthMap(model, depthMapInitMode);
 	
 	
 	newConstraintAdded = false;
@@ -216,18 +219,23 @@ void SlamSystem::mappingThreadLoop()
 	printf("Started mapping thread!\n");
 	while(keepRunning)
 	{
-		if (!doMappingIteration())
-		{
-			boost::unique_lock<boost::mutex> lock(unmappedTrackedFramesMutex);
-			unmappedTrackedFramesSignal.timed_wait(lock,boost::posix_time::milliseconds(200));	// slight chance of deadlock otherwise
-			lock.unlock();
-		}
-
-		newFrameMappedMutex.lock();
-		newFrameMappedSignal.notify_all();
-		newFrameMappedMutex.unlock();
+		mappingThreadLoopIteration();
 	}
 	printf("Exited mapping thread \n");
+}
+
+void SlamSystem::mappingThreadLoopIteration()
+{
+	if (!doMappingIteration())
+	{
+		boost::unique_lock<boost::mutex> lock(unmappedTrackedFramesMutex);
+		unmappedTrackedFramesSignal.timed_wait(lock,boost::posix_time::milliseconds(200));	// slight chance of deadlock otherwise
+		lock.unlock();
+	}
+
+	newFrameMappedMutex.lock();
+	newFrameMappedSignal.notify_all();
+	newFrameMappedMutex.unlock();
 }
 
 void SlamSystem::finalize()
@@ -274,118 +282,122 @@ void SlamSystem::finalize()
 void SlamSystem::constraintSearchThreadLoop()
 {
 	printf("Started  constraint search thread!\n");
-	
-	boost::unique_lock<boost::mutex> lock(newKeyFrameMutex);
-	int failedToRetrack = 0;
 
-	while(keepRunning)
-	{
-		if(newKeyFrames.size() == 0)
-		{
-			lock.unlock();
-			keyFrameGraph->keyframesForRetrackMutex.lock();
-			bool doneSomething = false;
-			if(keyFrameGraph->keyframesForRetrack.size() > 10)
-			{
-				std::deque< Frame* >::iterator toReTrack = keyFrameGraph->keyframesForRetrack.begin() + (rand() % (keyFrameGraph->keyframesForRetrack.size()/3));
-				Frame* toReTrackFrame = *toReTrack;
-
-				keyFrameGraph->keyframesForRetrack.erase(toReTrack);
-				keyFrameGraph->keyframesForRetrack.push_back(toReTrackFrame);
-
-				keyFrameGraph->keyframesForRetrackMutex.unlock();
-
-				int found = findConstraintsForNewKeyFrames(toReTrackFrame, false, false, 2.0);
-				if(found == 0)
-					failedToRetrack++;
-				else
-					failedToRetrack=0;
-
-				if(failedToRetrack < (int)keyFrameGraph->keyframesForRetrack.size() - 5)
-					doneSomething = true;
-			}
-			else
-				keyFrameGraph->keyframesForRetrackMutex.unlock();
-
-			lock.lock();
-
-			if(!doneSomething)
-			{
-				if(enablePrintDebugInfo && printConstraintSearchInfo)
-					printf("nothing to re-track... waiting.\n");
-				newKeyFrameCreatedSignal.timed_wait(lock,boost::posix_time::milliseconds(500));
-
-			}
-		}
-		else
-		{
-			Frame* newKF = newKeyFrames.front();
-			newKeyFrames.pop_front();
-			lock.unlock();
-
-			struct timeval tv_start, tv_end;
-			gettimeofday(&tv_start, NULL);
-
-			findConstraintsForNewKeyFrames(newKF, true, true, 1.0);
-			failedToRetrack=0;
-			gettimeofday(&tv_end, NULL);
-			msFindConstraintsItaration = 0.9f*msFindConstraintsItaration + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
-			nFindConstraintsItaration++;
-
-			FrameMemory::getInstance().pruneActiveFrames();
-			lock.lock();
-		}
-
-
-		if(doFullReConstraintTrack)
-		{
-			lock.unlock();
-			printf("Optizing Full Map!\n");
-
-			int added = 0;
-			for(unsigned int i=0;i<keyFrameGraph->keyframesAll.size();i++)
-			{
-				if(keyFrameGraph->keyframesAll[i]->pose->isInGraph)
-					added += findConstraintsForNewKeyFrames(keyFrameGraph->keyframesAll[i], false, false, 1.0);
-			}
-
-			printf("Done optizing Full Map! Added %d constraints.\n", added);
-
-			doFullReConstraintTrack = false;
-
-			lastNumConstraintsAddedOnFullRetrack = added;
-			lock.lock();
-		}
-
-
-
+	while(keepRunning){
+		constraintSearchThreadLoopIteration();
 	}
 
 	printf("Exited constraint search thread \n");
+}
+
+void SlamSystem::constraintSearchThreadLoopIteration()
+{
+	static boost::unique_lock<boost::mutex> lock(newKeyFrameMutex);
+	static int failedToRetrack = 0;
+	if(newKeyFrames.size() == 0)
+	{
+		lock.unlock();
+		keyFrameGraph->keyframesForRetrackMutex.lock();
+		bool doneSomething = false;
+		if(keyFrameGraph->keyframesForRetrack.size() > 10)
+		{
+			std::deque< Frame* >::iterator toReTrack = keyFrameGraph->keyframesForRetrack.begin() + (rand() % (keyFrameGraph->keyframesForRetrack.size()/3));
+			Frame* toReTrackFrame = *toReTrack;
+
+			keyFrameGraph->keyframesForRetrack.erase(toReTrack);
+			keyFrameGraph->keyframesForRetrack.push_back(toReTrackFrame);
+
+			keyFrameGraph->keyframesForRetrackMutex.unlock();
+
+			int found = findConstraintsForNewKeyFrames(toReTrackFrame, false, false, 2.0);
+			if(found == 0)
+				failedToRetrack++;
+			else
+				failedToRetrack=0;
+
+			if(failedToRetrack < (int)keyFrameGraph->keyframesForRetrack.size() - 5)
+				doneSomething = true;
+		}
+		else
+			keyFrameGraph->keyframesForRetrackMutex.unlock();
+
+		lock.lock();
+
+		if(!doneSomething)
+		{
+			if(enablePrintDebugInfo && printConstraintSearchInfo)
+				printf("nothing to re-track... waiting.\n");
+			newKeyFrameCreatedSignal.timed_wait(lock,boost::posix_time::milliseconds(500));
+
+		}
+	}
+	else
+	{
+		Frame* newKF = newKeyFrames.front();
+		newKeyFrames.pop_front();
+		lock.unlock();
+
+		struct timeval tv_start, tv_end;
+		gettimeofday(&tv_start, NULL);
+
+		findConstraintsForNewKeyFrames(newKF, true, true, 1.0);
+		failedToRetrack=0;
+		gettimeofday(&tv_end, NULL);
+		msFindConstraintsItaration = 0.9f*msFindConstraintsItaration + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+		nFindConstraintsItaration++;
+
+		FrameMemory::getInstance().pruneActiveFrames();
+		lock.lock();
+	}
+
+
+	if(doFullReConstraintTrack)
+	{
+		lock.unlock();
+		printf("Optizing Full Map!\n");
+
+		int added = 0;
+		for(unsigned int i=0;i<keyFrameGraph->keyframesAll.size();i++)
+		{
+			if(keyFrameGraph->keyframesAll[i]->pose->isInGraph)
+				added += findConstraintsForNewKeyFrames(keyFrameGraph->keyframesAll[i], false, false, 1.0);
+		}
+
+		printf("Done optizing Full Map! Added %d constraints.\n", added);
+
+		doFullReConstraintTrack = false;
+
+		lastNumConstraintsAddedOnFullRetrack = added;
+		lock.lock();
+	}
 }
 
 void SlamSystem::optimizationThreadLoop()
 {
 	printf("Started optimization thread \n");
 
-	while(keepRunning)
-	{
-		boost::unique_lock<boost::mutex> lock(newConstraintMutex);
-		if(!newConstraintAdded)
-			newConstraintCreatedSignal.timed_wait(lock,boost::posix_time::milliseconds(2000));	// slight chance of deadlock otherwise
-		newConstraintAdded = false;
-		lock.unlock();
-
-		if(doFinalOptimization)
-		{
-			printf("doing final optimization iteration!\n");
-			optimizationIteration(50, 0.001f);
-			doFinalOptimization = false;
-		}
-		while(optimizationIteration(5, 0.02f));
+	while(keepRunning){
+		optimizationThreadLoopIteration();
 	}
 
 	printf("Exited optimization thread \n");
+}
+
+void SlamSystem::optimizationThreadLoopIteration()
+{
+	boost::unique_lock<boost::mutex> lock(newConstraintMutex);
+	if(!newConstraintAdded)
+		newConstraintCreatedSignal.timed_wait(lock,boost::posix_time::milliseconds(2000));	// slight chance of deadlock otherwise
+	newConstraintAdded = false;
+	lock.unlock();
+
+	if(doFinalOptimization)
+	{
+		printf("doing final optimization iteration!\n");
+		optimizationIteration(50, 0.001f);
+		doFinalOptimization = false;
+	}
+	while(optimizationIteration(5, 0.02f));
 }
 
 void SlamSystem::publishKeyframeGraph()
@@ -422,14 +434,20 @@ void SlamSystem::finishCurrentKeyframe()
 			keyFrameGraph->totalVertices ++;
 			keyFrameGraph->keyframesAllMutex.unlock();
 
-			newKeyFrameMutex.lock();
-			newKeyFrames.push_back(currentKeyFrame.get());
-			newKeyFrameCreatedSignal.notify_all();
-			newKeyFrameMutex.unlock();
+			if (singleThread) {
+				newKeyFrames.push_back(currentKeyFrame.get());
+				constraintSearchThreadLoopIteration();
+				optimizationThreadLoopIteration();
+			} else {
+				newKeyFrameMutex.lock();
+				newKeyFrames.push_back(currentKeyFrame.get());
+				newKeyFrameCreatedSignal.notify_all();
+				newKeyFrameMutex.unlock();
+			}
 		}
 	}
 
-	if(outputWrapper!= 0)
+	if(outputWrapper != 0)
 		outputWrapper->publishKeyframe(currentKeyFrame.get());
 }
 
@@ -1048,14 +1066,15 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 		lock.unlock();
 	}
 
-
+	//In single threaded mode, run mapping, constraint search and optimisation
+	// in the same thread as tracking.
 	if (singleThread) {
-		mappingThreadLoop();
-		if (SLAMEnabled)
-		{
-			constraintSearchThreadLoop();
-			optimizationThreadLoop();
+		static unsigned long counter = 0;
+
+		if (counter % singleThreadMappingInterval == 0) {
+			mappingThreadLoopIteration();
 		}
+		++counter;
 	}
 }
 

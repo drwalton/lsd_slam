@@ -38,7 +38,9 @@ int main(int argc, char **argv)
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
-	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(), false);
+	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(), 
+		lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
+		lsd_slam::DepthMapInitMode::CONSTANT);
 	slamWrapper.saveStereoSearchIms(true);
 	//TODO work out why this causes problems.
 	//slamWrapper.blockTrackUntilMapped = true;

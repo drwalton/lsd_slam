@@ -26,6 +26,7 @@
 #include "util/SophusUtil.hpp"
 #include "g2o/stuff/timeutil.h"
 #include "DepthMapDebugImages.hpp"
+#include "DepthMapInitMode.hpp"
 #ifdef _WIN32
 using g2o::timeval;
 #endif
@@ -55,7 +56,7 @@ class DepthMap
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	DepthMap(const CameraModel &model);
+	DepthMap(const CameraModel &model, DepthMapInitMode mode = DepthMapInitMode::RANDOM);
 	DepthMap(const DepthMap&) = delete;
 	DepthMap& operator=(const DepthMap&) = delete;
 	~DepthMap();
@@ -113,6 +114,7 @@ public:
 
 private:
 	std::unique_ptr<CameraModel> camModel_;
+	const DepthMapInitMode initMode_;
 
 	// ============= parameter copies for convenience ===========================
 	// these are just copies of the pointers given to this function, for convenience.

@@ -3,6 +3,7 @@ add_library(lsd_slam_DepthEstimation
 	DepthMap.hpp
 	DepthMapDebugImages.cpp
 	DepthMapDebugImages.hpp
+	DepthMapInitMode.hpp
 	DepthMapOmni.cpp
 	DepthMapOmni.hpp
 	DepthMapPixelHypothesis.cpp

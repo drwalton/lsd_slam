@@ -36,6 +36,7 @@
 #include "Tracking/Relocalizer.hpp"
 #include <g2o/stuff/timeutil.h>
 #include <mutex>
+#include "DepthEstimation/DepthMap.hpp"
 namespace lsd_slam
 {
 
@@ -73,7 +74,10 @@ public:
 
 	bool trackingIsGood;
 
-	SlamSystem(const CameraModel &model, bool enableSLAM = true, bool singleThread = false);
+	SlamSystem(const CameraModel &model, 
+		bool enableSLAM = true, 
+		bool singleThread = false,
+		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM);
 	SlamSystem(const SlamSystem&) = delete;
 	SlamSystem& operator=(const SlamSystem&) = delete;
 	~SlamSystem();
@@ -126,7 +130,7 @@ public:
 	
 private:
 	const bool singleThread;
-
+	int singleThreadMappingInterval;
 
 	// ============= EXCLUSIVELY TRACKING THREAD (+ init) ===============
 	TrackingReference* trackingReference; // tracking reference for current keyframe. only used by tracking.
@@ -242,6 +246,7 @@ private:
 	
 
 	void mappingThreadLoop();
+	void mappingThreadLoopIteration();
 
 	void finishCurrentKeyframe();
 	void discardCurrentKeyframe();
@@ -260,6 +265,7 @@ private:
 	void takeRelocalizeResult();
 
 	void constraintSearchThreadLoop();
+	void constraintSearchThreadLoopIteration();
 	/** Calculates a scale independent error norm for reciprocal tracking results a and b with associated information matrices. */
 	float tryTrackSim3(
 			TrackingReference* A, TrackingReference* B,
@@ -275,6 +281,7 @@ private:
 			float strictness);
 
 	void optimizationThreadLoop();
+	void optimizationThreadLoopIteration();
 
 
 	

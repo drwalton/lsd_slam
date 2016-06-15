@@ -29,6 +29,7 @@
 #include "IOWrapper/NotifyBuffer.hpp"
 #include "IOWrapper/TimestampedObject.hpp"
 #include "util/SophusUtil.hpp"
+#include "DepthEstimation/DepthMapInitMode.hpp"
 
 namespace cv {
 	class Mat;
@@ -49,9 +50,12 @@ class LiveSLAMWrapper : public Notifiable
 {
 friend class LiveSLAMWrapperROS;
 public:
+	enum class ThreadingMode {SINGLE, MULTI};
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, bool singleThread = false);
+	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
+		ThreadingMode threadMode = ThreadingMode::MULTI,
+		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM);
 
 	/** Destructor. */
 	~LiveSLAMWrapper();

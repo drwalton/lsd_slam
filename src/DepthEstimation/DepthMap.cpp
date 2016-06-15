@@ -44,8 +44,8 @@ DepthMapDebugSettings::DepthMapDebugSettings()
 {}
 
 
-DepthMap::DepthMap(const CameraModel &model)
-	:camModel_(model.clone())
+DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
+	:camModel_(model.clone()), initMode_(mode)
 {
 	int w = camModel_->w, h = camModel_->h;
 	activeKeyFrame = 0;
@@ -354,7 +354,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 	if(max_idepth > 1/MIN_DEPTH) max_idepth = 1/MIN_DEPTH;
 
 	float result_idepth, result_var, result_eplLength;
-	float error;
+	float error, diff;
 
 	if (max_idepth > min_idepth) {
 
@@ -374,12 +374,14 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 				refFrame, refFrame->image(0),
 				result_idepth, result_var, result_eplLength, stats);
 		}
+
+		diff = result_idepth - target->idepth_smoothed;
 	}
 	else {
 		error = -2;
+		diff = 0.f;
 	}
 
-	float diff = result_idepth - target->idepth_smoothed;
 
 
 	// if oob: (really out of bounds)
@@ -922,6 +924,10 @@ void DepthMap::regularizeDepthMap(bool removeOcclusions, int validityTH)
 
 void DepthMap::initializeRandomly(Frame* new_frame)
 {
+	if (initMode_ == DepthMapInitMode::CONSISTENT) {
+		srand(1);
+	}
+
 	activeKeyFramelock = new_frame->getActiveLock();
 	activeKeyFrame = new_frame;
 	activeKeyFrameImageData = activeKeyFrame->image(0);
@@ -935,7 +941,12 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 		{
 			if(maxGradients[x+y*camModel_->w] > MIN_ABS_GRAD_CREATE)
 			{
-				float idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
+				float idepth;
+				if (initMode_ == DepthMapInitMode::CONSTANT) {
+					idepth = 1.f;
+				} else {
+					idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
+				}
 				currentDepthMap[x+y*camModel_->w] = DepthMapPixelHypothesis(
 						idepth,
 						idepth,
@@ -1496,7 +1507,7 @@ inline float DepthMap::doStereoProj(
 {
 	if(enablePrintDebugInfo) stats->num_stereo_calls++;
 	bool drawSearchRanges = settings.saveSearchRangeImages &&
-		debugImages.drawMatchHere(u, v);
+		debugImages.drawMatchHere(size_t(u), size_t(v));
 
 	if (drawSearchRanges) {
 		cv::circle(debugImages.searchRanges, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));

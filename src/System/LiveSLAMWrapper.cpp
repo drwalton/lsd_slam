@@ -39,7 +39,9 @@
 namespace lsd_slam
 {
 
-LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, bool singleThread)
+LiveSLAMWrapper::LiveSLAMWrapper(
+	InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
+	ThreadingMode threadMode, DepthMapInitMode depthMapInitMode)
 	:camModel_(imageStream->camModel().clone()), blockTrackUntilMapped(false)
 {
 	this->imageStream = imageStream;
@@ -62,7 +64,8 @@ LiveSLAMWrapper::LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper*
 
 
 	// make Odometry
-	monoOdometry = new SlamSystem(*camModel_, true, singleThread);
+	bool singleThread = threadMode == ThreadingMode::SINGLE;
+	monoOdometry = new SlamSystem(*camModel_, true, singleThread, depthMapInitMode);
 
 	monoOdometry->setVisualization(outputWrapper);
 
