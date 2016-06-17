@@ -1084,20 +1084,23 @@ float doStereoOmniImpl2(
 	}
 	lineValue[2] = getInterpolatedElement(referenceFrameImage,
 		linePix[2], width);
-	a += oModel.getEpipolarParamIncrement(a, lineInfRf, lineCloseDirRf, GRADIENT_SAMPLE_DIST);
+
+	a += oModel.getEpipolarParamIncrement(a, lineInfRf, lineCloseDirRf, -GRADIENT_SAMPLE_DIST);
 	lineDir[1] = a*lineInfRf + (1.f - a)*lineCloseDirRf;
 	linePix[1] = oModel.camToPixel(lineDir[1]);
 	if (!oModel.pixelLocValid(linePix[1])) {
 		return -1;
 	}
 	lineValue[1] = getInterpolatedElement(referenceFrameImage, linePix[1], width);
-	a += oModel.getEpipolarParamIncrement(a, lineInfRf, lineCloseDirRf, GRADIENT_SAMPLE_DIST);
+
+	a += oModel.getEpipolarParamIncrement(a, lineInfRf, lineCloseDirRf, -GRADIENT_SAMPLE_DIST);
 	lineDir[0] = a*lineInfRf + (1.f - a)*lineCloseDirRf;
 	linePix[0] = oModel.camToPixel(lineDir[0]);
 	if (!oModel.pixelLocValid(linePix[0])) {
 		return -1;
 	}
 	lineValue[0] = getInterpolatedElement(referenceFrameImage, linePix[0], width);
+
 	a = lineStartAlpha;
 	a += oModel.getEpipolarParamIncrement(a, lineCloseDirRf, lineInfRf, GRADIENT_SAMPLE_DIST);
 	lineDir[3] = a*lineCloseDirRf + (1.f - a)*lineInfRf;
