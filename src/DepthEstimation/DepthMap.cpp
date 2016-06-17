@@ -263,6 +263,12 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		{
 			if(plotStereoImages)
 				debugImageHypothesisHandling.at<cv::Vec3b>(y, x) = cv::Vec3b(255,0,0); // BLUE for SKIPPED NOT GOOD TRACKED
+
+			if (settings.saveResultImages) {
+				cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(
+					DepthMapErrCode::SKIP_BAD_TRACKING);
+				debugImages.results.at<cv::Vec3b>(y, x) = color;
+			}
 			return false;
 		}
 	}
@@ -273,9 +279,12 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 	if (camModel_->getType() == CameraModelType::PROJ) {
 		isGood = makeAndCheckEPLProj(x, y, refFrame, &epx, &epy, stats);
 	} else /* OMNI */ {
-		isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
+		//isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
+		isGood = true;
 	}
-	if(!isGood) return false;
+	if (!isGood) {
+		return false;
+	}
 
 	if(enablePrintDebugInfo) stats->num_observe_create_attempted++;
 
@@ -294,6 +303,7 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 			0.0f, 1.0f, 1.0f / MIN_DEPTH,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
+		result_var = 0.2f;
 	}
 
 	if (settings.saveResultImages) {
@@ -307,8 +317,12 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		if(enablePrintDebugInfo) stats->num_observe_blacklisted++;
 	}
 
-	if(error < 0 || result_var > MAX_VAR)
+	if (error < 0) {
 		return false;
+	}
+	if(result_var > MAX_VAR) {
+		return false;
+	}
 	
 	result_idepth = static_cast<float>(UNZERO(result_idepth));
 

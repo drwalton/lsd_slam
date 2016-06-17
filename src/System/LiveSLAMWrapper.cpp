@@ -67,7 +67,9 @@ LiveSLAMWrapper::LiveSLAMWrapper(
 
 	// make Odometry
 	bool singleThread = threadMode == ThreadingMode::SINGLE;
-	monoOdometry = new SlamSystem(*camModel_, true, singleThread, depthMapInitMode, saveTrackingInfo);
+	//TODO temp. set to false.
+	bool enableSLAM = true;
+	monoOdometry = new SlamSystem(*camModel_, enableSLAM, singleThread, depthMapInitMode, saveTrackingInfo);
 
 	monoOdometry->setVisualization(outputWrapper);
 

@@ -82,8 +82,24 @@ cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 		//Turquoise: NaN encountered in generating epl.
 		return cv::Vec3b(255, 255, 0);
 	}
-	//TODO other colours
+	else if (err == DepthMapErrCode::PADDED_EPL_NOT_IN_REF_FRAME) {
+		//Dark Purple: Padded line wouldn't fit in ref. frame.
+		return cv::Vec3b(128, 0, 128);
+	}
+	else if (err == DepthMapErrCode::START_TOO_NEAR_EPIPOLE) {
+		//Dark Green: Started too near to epipole
+		return cv::Vec3b(0, 128, 0);
+	}
+	else if (err == DepthMapErrCode::TRACED_LINE_TOO_LONG) {
+		//Dark Blue: Line ended up too long when tracing.
+		return cv::Vec3b(128, 0, 0);
+	}
 
+	//TODO other colours
+	else if (err == DepthMapErrCode::SKIP_BAD_TRACKING) {
+		//Dark Red: Bad Tracking
+		return cv::Vec3b(0, 0, 128);
+	}
 
 	//Default colour
 	return cv::Vec3b(255, 255, 255);
