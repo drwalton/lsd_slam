@@ -7,6 +7,9 @@
 #include <opencv2/opencv.hpp>
 #include <cmath>
 
+#include "DepthMapDebugDefines.hpp"
+
+
 ///This file contains the depth estimation functions specific to Omnidirectional
 /// camera models.
 
@@ -596,7 +599,7 @@ float DepthMap::doStereoOmni(
 	RunningStats* stats)
 {
 	OmniCameraModel &oModel = static_cast<OmniCameraModel&>(*camModel_);
-	
+
 	vec2 bestEpImDir;
 	vec3 bestMatchPos;
 	vec3 bestMatchKeyframe;
@@ -607,21 +610,24 @@ float DepthMap::doStereoOmni(
 	float bestMatchErr;
 	float idepth;
 	size_t bestMatchLoopC;
-	if (settings.saveSearchRangeImages || settings.saveResultImages) {
-		bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
-			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-			stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos,
-			bestMatchLoopC, gradAlongLine, 
-			tracedLineLen, bestMatchKeyframe, debugImages.searchRanges, 
-			settings.saveSearchRangeImages && debugImages.drawMatchHere(u,v));
-	}
-	else {
-
-		bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
-			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-			stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, 
-			bestMatchLoopC, gradAlongLine, tracedLineLen, bestMatchKeyframe);
-	}
+#if DEBUG_SAVE_SEARCH_RANGE_IMS || DEBUG_SAVE_RESULT_IMS
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	bool saveSearchRangeIms = true;
+#else
+	bool saveSearchRangeIms = false;
+#endif
+	bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
+		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+		stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos,
+		bestMatchLoopC, gradAlongLine,
+		tracedLineLen, bestMatchKeyframe, debugImages.searchRanges,
+		saveSearchRangeIms && debugImages.drawMatchHere(u, v));
+#else
+	bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
+		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+		stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, 
+		bestMatchLoopC, gradAlongLine, tracedLineLen, bestMatchKeyframe);
+#endif
 
 	if (bestMatchErr >= 0.f) {
 		result_idepth = idepth;
@@ -636,13 +642,13 @@ float DepthMap::doStereoOmni(
 		//	if (result_idepth != result_idepth) {
 		//		throw std::runtime_error("idepth is nan");
 		//	}
-			if (settings.saveMatchImages) {
-				debugImages.visualiseMatch(
-					vec2(u, v), camModel_->camToPixel(bestMatchPos), camModel_.get());
-			}
-			if (settings.savePixelDisparityImages) {
-				debugImages.visualisePixelDisparity(u, v, bestMatchLoopC);
-			}
+#if DEBUG_SAVE_MATCH_IMS
+			debugImages.visualiseMatch(
+				vec2(u, v), camModel_->camToPixel(bestMatchPos), camModel_.get());
+#endif
+#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
+			debugImages.visualisePixelDisparity(u, v, bestMatchLoopC);
+#endif
 		//	return r;
 		//}
 	}

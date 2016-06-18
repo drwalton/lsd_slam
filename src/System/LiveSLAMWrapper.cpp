@@ -69,7 +69,8 @@ LiveSLAMWrapper::LiveSLAMWrapper(
 	bool singleThread = threadMode == ThreadingMode::SINGLE;
 	//TODO temp. set to false.
 	bool enableSLAM = true;
-	monoOdometry = new SlamSystem(*camModel_, enableSLAM, singleThread, depthMapInitMode, saveTrackingInfo);
+	monoOdometry = new SlamSystem(*camModel_, enableSLAM, 
+		singleThread, depthMapInitMode, saveTrackingInfo);
 
 	monoOdometry->setVisualization(outputWrapper);
 
@@ -168,46 +169,6 @@ void LiveSLAMWrapper::logCameraPose(const SE3& camToWorld, double time)
 		outFile = new std::ofstream(outFileName.c_str());
 	outFile->write(buffer,num);
 	outFile->flush();
-}
-
-void LiveSLAMWrapper::saveStereoSearchIms(bool s)
-{
-	monoOdometry->depthMapDebugSettings().saveSearchRangeImages = s;
-	if (s == true) {
-		makeEmptyDirectory(resourcesDir() + "RangeIms/");
-	}
-}
-
-bool LiveSLAMWrapper::saveStereoSearchIms() const
-{
-	return monoOdometry->depthMapDebugSettings().saveSearchRangeImages;
-}
-void LiveSLAMWrapper::saveStereoResultIms(bool s)
-{
-	monoOdometry->depthMapDebugSettings().saveResultImages = s;
-	if (s == true) {
-		makeEmptyDirectory(resourcesDir() + "ResultIms/");
-	}
-}
-void LiveSLAMWrapper::saveDepthIms(bool s)
-{
-	monoOdometry->depthMapDebugSettings().saveIDepthImages = s;
-	if (s == true) {
-		makeEmptyDirectory(resourcesDir() + "DepthIms/");
-	}
-}
-
-void LiveSLAMWrapper::savePixelDispIms(bool s)
-{
-	monoOdometry->depthMapDebugSettings().savePixelDisparityImages = s;
-	if (s == true) {
-		makeEmptyDirectory(resourcesDir() + "PixelDispIms/");
-	}
-}
-
-bool LiveSLAMWrapper::saveStereoResultIms() const
-{
-	return monoOdometry->depthMapDebugSettings().saveResultImages;
 }
 
 void LiveSLAMWrapper::plotTracking(bool p)

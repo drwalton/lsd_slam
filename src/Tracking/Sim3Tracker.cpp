@@ -46,7 +46,9 @@ namespace lsd_slam
 
 
 Sim3Tracker::Sim3Tracker(const CameraModel &model)
+	//TODO TMP TEST
 	:camModel(model.clone())
+	//:camModel(model.makeOmniCamModel())
 {
 	int w = model.w, h = model.h;
 	settings = DenseDepthTrackerSettings();

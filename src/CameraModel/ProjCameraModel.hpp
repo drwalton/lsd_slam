@@ -37,6 +37,7 @@ public:
 	virtual bool pixelLocValid(const vec2 &loc) const;
 
 	virtual std::unique_ptr<CameraModel> makeProjCamModel() const;
+	virtual std::unique_ptr<CameraModel> makeOmniCamModel() const;
 };
 
 }

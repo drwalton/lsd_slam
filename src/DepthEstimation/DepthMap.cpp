@@ -33,17 +33,13 @@
 #include "GlobalMapping/KeyFrameGraph.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
 
+#include "DepthMapDebugDefines.hpp"
 
 namespace lsd_slam
 {
 
 DepthMapDebugSettings::DepthMapDebugSettings()
-	:saveMatchImages(false),
-	saveSearchRangeImages(false),
-	saveResultImages(false),
-	saveIDepthImages(false),
-	savePixelDisparityImages(false),
-	drawMatchInvChance(1)
+	:drawMatchInvChance(1)
 {}
 
 
@@ -51,7 +47,8 @@ DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
 //TODO TMP
 	:camModel_(model.clone()), 
 	//:camModel_(model.makeProjCamModel()), 
-	initMode_(mode)
+	initMode_(mode),
+	activeKeyFrameImageData(nullptr)
 {
 	int w = camModel_->w, h = camModel_->h;
 	activeKeyFrame = 0;
@@ -132,16 +129,16 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 			if (target->blacklisted < MIN_BLACKLIST) {
 				//Avoid using - this pixel has been blacklisted after failing stereo
 				// too often.
-				if (settings.saveResultImages) {
-					debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(0,0,0);
-				}
+#if DEBUG_SAVE_RESULT_IMS
+				debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(0,0,0);
+#endif
 				continue;
 			}
 
 			//Set all pixels used as input to a stereo procedure to white initially.
-			if (settings.saveResultImages) {
-				debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(255,255,255);
-			}
+#if DEBUG_SAVE_RESULT_IMS
+			debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(255,255,255);
+#endif
 
 			bool success;
 			if(!hasHypothesis)
@@ -157,26 +154,56 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 }
 void DepthMap::observeDepth()
 {
-	if (settings.saveSearchRangeImages) {
-		Frame* refFrame = activeKeyFrameIsReactivated ?
-			newest_referenceFrame : oldest_referenceFrame;
-		debugImages.clearSearchRangesIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	{
+		if (activeKeyFrameImageData != nullptr) {
+			Frame* refFrame = activeKeyFrameIsReactivated ?
+				newest_referenceFrame : oldest_referenceFrame;
+			debugImages.clearSearchRangesIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+		}
 	}
-	if (settings.saveResultImages) {
-		Frame* refFrame = activeKeyFrameIsReactivated ?
-			newest_referenceFrame : oldest_referenceFrame;
-		debugImages.clearResultIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+#endif
+#if DEBUG_SAVE_RESULT_IMS
+	{
+		if (activeKeyFrameImageData != nullptr) {
+			Frame* refFrame = activeKeyFrameIsReactivated ?
+				newest_referenceFrame : oldest_referenceFrame;
+			debugImages.clearResultIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+		}
 	}
-	if (settings.saveIDepthImages) {
-		Frame* refFrame = activeKeyFrameIsReactivated ?
-			newest_referenceFrame : oldest_referenceFrame;
-		debugImages.clearDepthIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+#endif
+#if DEBUG_SAVE_IDEPTH_IMS
+	{
+		if (activeKeyFrameImageData != nullptr) {
+			Frame* refFrame = activeKeyFrameIsReactivated ?
+				newest_referenceFrame : oldest_referenceFrame;
+			debugImages.clearDepthIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+		}
 	}
-	if (settings.savePixelDisparityImages) {
-		Frame* refFrame = activeKeyFrameIsReactivated ?
-			newest_referenceFrame : oldest_referenceFrame;
-		debugImages.clearPixelDisparityIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+#endif
+#if DEBUG_SAVE_VAR_IMS
+	{
+		if (activeKeyFrameImageData != nullptr) {
+			Frame* refFrame = activeKeyFrameIsReactivated ?
+				newest_referenceFrame : oldest_referenceFrame;
+			debugImages.clearVarIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+		}
 	}
+#endif
+#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+	{
+		debugImages.clearFramePtCloud();
+	}
+#endif
+#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
+	{
+		if (activeKeyFrameImageData != nullptr) {
+			Frame* refFrame = activeKeyFrameIsReactivated ?
+				newest_referenceFrame : oldest_referenceFrame;
+			debugImages.clearPixelDisparityIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+		}
+	}
+#endif
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, camModel_->h-3, 10);
 
@@ -279,11 +306,11 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 			if(plotStereoImages)
 				debugImageHypothesisHandling.at<cv::Vec3b>(y, x) = cv::Vec3b(255,0,0); // BLUE for SKIPPED NOT GOOD TRACKED
 
-			if (settings.saveResultImages) {
-				cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(
-					DepthMapErrCode::SKIP_BAD_TRACKING);
-				debugImages.results.at<cv::Vec3b>(y, x) = color;
-			}
+#if DEBUG_SAVE_RESULT_IMS
+			cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(
+				DepthMapErrCode::SKIP_BAD_TRACKING);
+			debugImages.results.at<cv::Vec3b>(y, x) = color;
+#endif
 			return false;
 		}
 	}
@@ -320,10 +347,12 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 			result_idepth, result_var, result_eplLength, stats);
 	}
 
-	if (settings.saveResultImages) {
+#if DEBUG_SAVE_RESULT_IMS
+	{
 		cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
 		debugImages.results.at<cv::Vec3b>(y, x) = color;
 	}
+#endif
 
 	if(error == DepthMapErrCode::ERR_TOO_BIG ||
 		error == DepthMapErrCode::WINNER_NOT_CLEAR)
@@ -440,11 +469,12 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		diff = 0.f;
 	}
 
-	if (settings.saveResultImages) {
+#if DEBUG_SAVE_RESULT_IMS
+	{
 		cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
 		debugImages.results.at<cv::Vec3b>(y, x) = color;
 	}
-
+#endif
 
 	// if oob: (really out of bounds)
 	if(error == -1)
@@ -516,10 +546,23 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 	else
 	{
-		if (settings.saveIDepthImages) {
-			debugImages.depths.at<cv::Vec3b>(cv::Point(x, y)) =
-				DepthMapDebugImages::getIDepthVisColor(result_idepth);
+#if DEBUG_SAVE_IDEPTH_IMS
+		debugImages.depths.at<cv::Vec3b>(cv::Point(x, y)) =
+			DepthMapDebugImages::getIDepthVisColor(result_idepth);
+#endif
+#if DEBUG_SAVE_VAR_IMS
+		debugImages.addVar(x, y, result_var);
+#endif
+#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+		{
+			float depth = 1.f / result_idepth;
+			if (std::isfinite(depth)) {
+				vec3 pt = camModel_->pixelToCam(vec2(x, y), depth);
+				debugImages.addFramePt(pt, activeKeyFrameImageData[y*camModel_->w + x]);
+				//debugImages.addFramePt(pt, debugImages.pixelDisparity.at<cv::Vec3b>(y,x)[0]);
+			}
 		}
+#endif
 
 		// one more successful observation!
 		if(enablePrintDebugInfo) stats->num_observe_good++;
@@ -1329,30 +1372,54 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 				runningStats.num_stereo_invalid_bigErr);
 	}
 
-	if (settings.saveSearchRangeImages) {
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	{
 		std::stringstream ss;
 		ss << resourcesDir() << "RangeIms/RangeKF" << activeKeyFrame->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.searchRanges);
 	}
-	if (settings.saveResultImages) {
+#endif
+#if DEBUG_SAVE_RESULT_IMS
+	{
 		std::stringstream ss;
 		ss << resourcesDir() << "ResultIms/ResultKF" << activeKeyFrame->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.results);
 	}
-	if (settings.saveIDepthImages) {
+#endif
+#if DEBUG_SAVE_IDEPTH_IMS
+	{
 		std::stringstream ss;
 		ss << resourcesDir() << "DepthIms/DepthKF" << activeKeyFrame->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.depths);
 	}
-	if (settings.savePixelDisparityImages) {
+#endif
+#if DEBUG_SAVE_VAR_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "VarIms/VarKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugImages.vars);
+	}
+#endif
+#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "FramePtClouds/CloudKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".ply";
+		debugImages.framePtCloud.saveFile(ss.str());
+	}
+#endif
+#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
+	{
 		std::stringstream ss;
 		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << activeKeyFrame->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.pixelDisparity);
 	}
+#endif
 }
 
 void DepthMap::invalidate()
@@ -1499,8 +1566,6 @@ void DepthMap::addTimingSample()
 					msSetDepth, nAvgSetDepth);
 		}
 	}
-
-
 }
 
 void DepthMap::finalizeKeyFrame()
@@ -1591,12 +1656,15 @@ inline float DepthMap::doStereoProj(
 	RunningStats* stats)
 {
 	if(enablePrintDebugInfo) stats->num_stereo_calls++;
-	bool drawSearchRanges = settings.saveSearchRangeImages &&
-		debugImages.drawMatchHere(size_t(u), size_t(v));
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	bool drawThisPixel = debugImages.drawMatchHere(size_t(u), size_t(v));
+#endif
 
-	if (drawSearchRanges) {
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	if (drawThisPixel) {
 		cv::circle(debugImages.searchRanges, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
 	}
+#endif
 
 	// calculate epipolar line start and end point in old image
 	const ProjCameraModel *pm = static_cast<const ProjCameraModel*>(camModel_.get());
@@ -1851,12 +1919,14 @@ inline float DepthMap::doStereoProj(
 		}
 
 
-		if (drawSearchRanges) {
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+		if (drawThisPixel) {
 			vec3 rgb = 255.f * hueToRgb(0.8f * ee / 325125.f);
 			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
 			debugImages.searchRanges.at<cv::Vec3b>(cpy + 2 * incy,
 				cpx + 2 * incx + camModel_->w) = rgbB;
 		}
+#endif
 
 
 		// do I have a new winner??
@@ -1927,15 +1997,17 @@ inline float DepthMap::doStereoProj(
 		return DepthMapErrCode::WINNER_NOT_CLEAR;
 	}
 
-	if (drawSearchRanges) {
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	if (drawThisPixel) {
 		vec3 rgb(0, 255.f, 255.f);
 		cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
 		debugImages.searchRanges.at<cv::Vec3b>(
 			best_match_y, best_match_x + camModel_->w) = rgbB;
 	}
+#endif
 
 	bool didSubpixel = false;
-	if(useSubpixelStereo)
+	if(false /*useSubpixelStereo*/)
 	{
 		// ================== compute exact match =========================
 		// compute gradients (they are actually only half the real gradient)
@@ -2138,10 +2210,10 @@ inline float DepthMap::doStereoProj(
 
 	result_eplLength = eplLength;
 
-	if (settings.saveResultImages) {
-		debugImages.results.at<cv::Vec3b>(v, u) =
-			cv::Vec3b(0, 255, 0);
-	}
+#if DEBUG_SAVE_RESULT_IMS
+	debugImages.results.at<cv::Vec3b>(v, u) =
+		cv::Vec3b(0, 255, 0);
+#endif
 
 	return best_match_err;
 }

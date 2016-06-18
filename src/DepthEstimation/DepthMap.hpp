@@ -42,11 +42,7 @@ class CameraModel;
 struct DepthMapDebugSettings
 {
 	explicit DepthMapDebugSettings();
-	bool saveMatchImages;
-	bool saveSearchRangeImages;
-	bool saveResultImages;
-	bool saveIDepthImages;
-	bool savePixelDisparityImages;
+	bool convertDepths;
 	int drawMatchInvChance;
 };
 

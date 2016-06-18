@@ -1,4 +1,5 @@
 #include "ProjCameraModel.hpp"
+#include "OmniCameraModel.hpp"
 #include <Eigen/Dense>
 
 namespace lsd_slam {
@@ -79,6 +80,12 @@ bool ProjCameraModel::pixelLocValid(const vec2 &loc) const
 std::unique_ptr<CameraModel> ProjCameraModel::makeProjCamModel() const
 {
 	return clone();
+}
+
+std::unique_ptr<CameraModel> ProjCameraModel::makeOmniCamModel() const
+{
+	return std::unique_ptr<CameraModel>(
+		new OmniCameraModel(fx, fy, cx, cy, w, h, 0.f, vec2(w/2, h/2), w*h));
 }
 
 }

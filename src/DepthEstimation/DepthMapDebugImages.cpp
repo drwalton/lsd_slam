@@ -71,9 +71,34 @@ void DepthMapDebugImages::visualisePixelDisparity(size_t x, size_t y, size_t dis
 	pixelDisparity.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 
+void DepthMapDebugImages::clearVarIm(const float * keyframe, const float * refFrame, const CameraModel * model)
+{
+	makeDebugCompareIm(vars, keyframe, refFrame, model);
+}
+
+void DepthMapDebugImages::addVar(size_t x, size_t y, float var)
+{
+	vec3 rgb = 255*hueToRgb(var  / MAX_VAR);
+	vars.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
+}
+
 void DepthMapDebugImages::clearPixelDisparityIm(const float * keyframe, const float * refFrame, const CameraModel * model)
 {
 	makeDebugCompareIm(pixelDisparity, keyframe, refFrame, model);
+}
+
+void DepthMapDebugImages::clearFramePtCloud()
+{
+	framePtCloud.vertices() = std::vector<vec3>();
+	framePtCloud.vertColors() = std::vector<vec3>();
+}
+
+void DepthMapDebugImages::addFramePt(const vec3 & point, const float color)
+{
+	framePtMutex.lock();
+	framePtCloud.vertices().push_back(point);
+	framePtCloud.vertColors().push_back(vec3(color, color, color));
+	framePtMutex.unlock();
 }
 
 cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)

@@ -2,6 +2,8 @@
 
 #include <opencv2/opencv.hpp>
 #include "Util/VectorTypes.hpp"
+#include "Util/ModelLoader.hpp"
+#include <mutex>
 
 namespace lsd_slam
 {
@@ -39,7 +41,11 @@ struct DepthMapDebugImages
 
 	cv::Mat depths;
 
+	cv::Mat vars;
+
 	cv::Mat pixelDisparity;
+
+	ModelLoader framePtCloud;
 
 	bool drawMatchHere(size_t x, size_t y) const;
 	size_t drawIntervalX, drawIntervalY;
@@ -53,7 +59,15 @@ struct DepthMapDebugImages
 	void clearDepthIm(const float *keyframe, const float *refFrame, const CameraModel *model);
 	void visualisePixelDisparity(size_t x, size_t y, size_t disparity);
 
+	void clearVarIm(const float *keyframe, const float *refFrame, const CameraModel *model);
+	void addVar(size_t x, size_t y, float var);
+
 	void clearPixelDisparityIm(const float *keyframe, const float *refFrame, const CameraModel *model);
+
+	void clearFramePtCloud();
+	void addFramePt(const vec3 &point, const float color);
+	std::mutex framePtMutex;
+
 
 	static cv::Vec3b getStereoResultVisColor(float err);
 

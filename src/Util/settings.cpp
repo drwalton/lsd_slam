@@ -21,7 +21,8 @@
 #include "Util/settings.hpp"
 #include <opencv2/opencv.hpp>
 #include <boost/bind.hpp>
-
+#include "DepthEstimation/DepthMapDebugDefines.hpp"
+#include "globalFuncs.hpp"
 
 
 namespace lsd_slam
@@ -36,6 +37,33 @@ std::string resourcesDir() {
 	static std::string dir = getenv("HOME") + std::string("/lsd_slam_new/resources/");
 #endif
 	return dir;
+}
+
+void makeDebugDirectories()
+{
+	std::cout << "Clearing debug directories..."; std::cout.flush();
+#if DEBUG_SAVE_VAR_IMS
+	makeEmptyDirectory(resourcesDir() + "VarIms/");
+#endif
+#if DEBUG_SAVE_IDEPTH_IMS
+	makeEmptyDirectory(resourcesDir() + "IDepthIms/");
+#endif
+#if DEBUG_SAVE_MATCH_IMS
+	makeEmptyDirectory(resourcesDir() + "MatchIms/");
+#endif
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	makeEmptyDirectory(resourcesDir() + "RangeIms/");
+#endif
+#if DEBUG_SAVE_RESULT_IMS
+	makeEmptyDirectory(resourcesDir() + "ResultIms/");
+#endif
+#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
+	makeEmptyDirectory(resourcesDir() + "PixelDispIms/");
+#endif
+#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+	makeEmptyDirectory(resourcesDir() + "FramePtClouds/");
+#endif
+	std::cout << "Done!" << std::endl;
 }
 
 bool autoRun = true;

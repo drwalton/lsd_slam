@@ -121,6 +121,11 @@ std::unique_ptr<CameraModel> OmniCameraModel::makeProjCamModel() const
 	return std::make_unique<ProjCameraModel>(fx, fy, cx, cy, w, h);
 }
 
+std::unique_ptr<CameraModel> OmniCameraModel::makeOmniCamModel() const
+{
+	return this->clone();
+}
+
 vec2 OmniCameraModel::getFovAngles() const
 {
 	vec2 fovAngles;

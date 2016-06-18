@@ -85,14 +85,6 @@ public:
 	// Threading stuff
 	bool blockTrackUntilMapped;
 
-	void saveStereoSearchIms(bool s);
-	bool saveStereoSearchIms() const;
-	void saveStereoResultIms(bool s);
-	bool saveStereoResultIms() const;
-	void saveDepthIms(bool s);
-	void savePixelDispIms(bool s);
-
-
 	void plotTracking(bool p);
 	bool plotTracking() const;
 

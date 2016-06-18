@@ -9,6 +9,8 @@
 
 int main(int argc, char **argv)
 {
+	lsd_slam::makeDebugDirectories();
+
 	if (argc < 3) {
 		std::cout << "Usage: ReconstructionDemo: [calibrationfile] [input]\n"
 			"Input can either be a video file, or a number, specifying a live camera." << std::endl;
@@ -44,11 +46,6 @@ int main(int argc, char **argv)
 			lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
 			lsd_slam::DepthMapInitMode::CONSTANT,
 			true);
-		slamWrapper.saveStereoSearchIms(true);
-		slamWrapper.saveStereoResultIms(true);
-		slamWrapper.saveDepthIms(true);
-		slamWrapper.savePixelDispIms(true);
-		slamWrapper.plotTracking(true);
 		std::cout << "Done!" << std::endl;
 
 		std::cout << "Starting SLAM wrapper..." << std::endl;

@@ -80,6 +80,7 @@ public:
 	const vec2 fovAngles;
 
 	virtual std::unique_ptr<CameraModel> makeProjCamModel() const;
+	virtual std::unique_ptr<CameraModel> makeOmniCamModel() const;
 	
 	virtual vec2 getFovAngles() const;
 private:
