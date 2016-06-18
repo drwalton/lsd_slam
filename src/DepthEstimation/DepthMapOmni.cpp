@@ -720,14 +720,14 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*otherDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 
 	a = 0.f;
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
@@ -735,14 +735,14 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
 	
 	return true;
 }
@@ -1077,7 +1077,7 @@ float doStereoOmniImpl2(
 
 	float a = lineStartAlpha; vec3 dir;
 	//Find first 4 values along line.
-	lineDir[2] = a*lineInfRf + (1.f - a)*lineCloseDirRf;
+	lineDir[2] = a*lineCloseDirRf + (1.f - a)*lineInfRf;
 	linePix[2] = oModel.camToPixel(lineDir[2]);
 	if (!oModel.pixelLocValid(linePix[2])) {
 		return -1;
@@ -1086,7 +1086,7 @@ float doStereoOmniImpl2(
 		linePix[2], width);
 
 	a += oModel.getEpipolarParamIncrement(a, lineInfRf, lineCloseDirRf, -GRADIENT_SAMPLE_DIST);
-	lineDir[1] = a*lineInfRf + (1.f - a)*lineCloseDirRf;
+	lineDir[1] = a*lineCloseDirRf + (1.f - a)*lineInfRf;
 	linePix[1] = oModel.camToPixel(lineDir[1]);
 	if (!oModel.pixelLocValid(linePix[1])) {
 		return -1;
@@ -1094,7 +1094,7 @@ float doStereoOmniImpl2(
 	lineValue[1] = getInterpolatedElement(referenceFrameImage, linePix[1], width);
 
 	a += oModel.getEpipolarParamIncrement(a, lineInfRf, lineCloseDirRf, -GRADIENT_SAMPLE_DIST);
-	lineDir[0] = a*lineInfRf + (1.f - a)*lineCloseDirRf;
+	lineDir[0] = a*lineCloseDirRf + (1.f - a)*lineInfRf;
 	linePix[0] = oModel.camToPixel(lineDir[0]);
 	if (!oModel.pixelLocValid(linePix[0])) {
 		return -1;
