@@ -46,6 +46,8 @@ int main(int argc, char **argv)
 			true);
 		slamWrapper.saveStereoSearchIms(true);
 		slamWrapper.saveStereoResultIms(true);
+		slamWrapper.saveDepthIms(true);
+		slamWrapper.savePixelDispIms(true);
 		slamWrapper.plotTracking(true);
 		std::cout << "Done!" << std::endl;
 

@@ -37,6 +37,10 @@ struct DepthMapDebugImages
 	// for failure.
 	cv::Mat results;
 
+	cv::Mat depths;
+
+	cv::Mat pixelDisparity;
+
 	bool drawMatchHere(size_t x, size_t y) const;
 	size_t drawIntervalX, drawIntervalY;
 
@@ -46,7 +50,14 @@ struct DepthMapDebugImages
 	void clearSearchRangesIm(const float *keyframe, const float *refFrame, const CameraModel *camModel);
 	void clearResultIm(const float *keyframe, const float *refFrame, const CameraModel *model);
 
+	void clearDepthIm(const float *keyframe, const float *refFrame, const CameraModel *model);
+	void visualisePixelDisparity(size_t x, size_t y, size_t disparity);
+
+	void clearPixelDisparityIm(const float *keyframe, const float *refFrame, const CameraModel *model);
+
 	static cv::Vec3b getStereoResultVisColor(float err);
+
+	static cv::Vec3b getIDepthVisColor(float idepth);
 };
 
 }

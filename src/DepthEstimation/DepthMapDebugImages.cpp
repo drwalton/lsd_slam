@@ -59,9 +59,26 @@ void DepthMapDebugImages::clearResultIm(const float * keyframe, const float * re
 	makeDebugCompareIm(results, keyframe, refFrame, model);
 }
 
+void DepthMapDebugImages::clearDepthIm(const float * keyframe, const float *refFrame, const CameraModel * model)
+{
+
+	makeDebugCompareIm(depths, keyframe, refFrame, model);
+}
+
+void DepthMapDebugImages::visualisePixelDisparity(size_t x, size_t y, size_t disparity)
+{
+	vec3 rgb = 255*hueToRgb(float(disparity % 4)  / 5.f);
+	pixelDisparity.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
+}
+
+void DepthMapDebugImages::clearPixelDisparityIm(const float * keyframe, const float * refFrame, const CameraModel * model)
+{
+	makeDebugCompareIm(pixelDisparity, keyframe, refFrame, model);
+}
+
 cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 {
-	if (err > 0.f) {
+	if (err >= 0.f) {
 		//Green: successful match
 		return cv::Vec3b(0, 255, 0);
 	}
@@ -103,6 +120,12 @@ cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 
 	//Default colour
 	return cv::Vec3b(255, 255, 255);
+}
+
+cv::Vec3b DepthMapDebugImages::getIDepthVisColor(float idepth)
+{
+	vec3 rgb = 255*hueToRgb(idepth  * MIN_DEPTH);
+	return cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 
 }

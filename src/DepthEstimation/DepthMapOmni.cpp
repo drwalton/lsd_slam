@@ -606,10 +606,12 @@ float DepthMap::doStereoOmni(
 	float gradAlongLine, tracedLineLen;
 	float bestMatchErr;
 	float idepth;
+	size_t bestMatchLoopC;
 	if (settings.saveSearchRangeImages || settings.saveResultImages) {
 		bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
 			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-			stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, gradAlongLine, 
+			stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos,
+			bestMatchLoopC, gradAlongLine, 
 			tracedLineLen, bestMatchKeyframe, debugImages.searchRanges, 
 			settings.saveSearchRangeImages && debugImages.drawMatchHere(u,v));
 	}
@@ -617,10 +619,11 @@ float DepthMap::doStereoOmni(
 
 		bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
 			activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
-			stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, gradAlongLine, tracedLineLen, bestMatchKeyframe);
+			stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, 
+			bestMatchLoopC, gradAlongLine, tracedLineLen, bestMatchKeyframe);
 	}
 
-	if (bestMatchErr > 0.f) {
+	if (bestMatchErr >= 0.f) {
 		result_idepth = idepth;
 		float var = findVarOmni(u, v, bestMatchPos.normalized(), gradAlongLine,
 				bestEpImDir, activeKeyFrame->gradients(0), referenceFrame->initialTrackedResidual,
@@ -636,6 +639,9 @@ float DepthMap::doStereoOmni(
 			if (settings.saveMatchImages) {
 				debugImages.visualiseMatch(
 					vec2(u, v), camModel_->camToPixel(bestMatchPos), camModel_.get());
+			}
+			if (settings.savePixelDisparityImages) {
+				debugImages.visualisePixelDisparity(u, v, bestMatchLoopC);
 			}
 		//	return r;
 		//}
@@ -942,7 +948,7 @@ float doStereoOmniImpl2(
 	const float* const keyframe, const float* referenceFrameImage,
 	const RigidTransform &keyframeToReference,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
-	float &iDepth, vec2 &bestEpImDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
+	float &iDepth, vec2 &bestEpImDir, vec3 &bestMatchPos, size_t &bestMatchLoopC, float &gradAlongLine, float &tracedLineLen,
 	vec3 &bestMatchKeyframe,
 	cv::Mat &drawMatch, bool drawThisMatch)
 {
@@ -970,17 +976,14 @@ float doStereoOmniImpl2(
 	vec3 lineCloseRf = keyframeToReference * vec3(lineDirKf / max_idepth);
 	float lineCloseIdepth = max_idepth;
 	vec3 lineInfRf = keyframeToReference.rotation * lineDirKf;
-	vec3 lineFarRf;
-	float lineStartAlpha, lineEndAlpha = 1.f;
+	float lineStartAlpha = min_idepth / max_idepth, lineEndAlpha = 1.f;
 	vec3 lineCloseDirRf = lineCloseRf.normalized();
 	vec3 lineFarDirRf;
 	if (!std::isfinite(1.f / min_idepth)) {
-		lineFarRf = lineFarDirRf = lineInfRf;
-		lineStartAlpha = 0.f;
+		lineFarDirRf = lineInfRf;
 	} else {
-		lineFarRf = keyframeToReference * vec3(lineDirKf / min_idepth);
-		lineFarDirRf = lineFarRf.normalized();
-		lineStartAlpha = (lineFarDirRf - lineInfRf).norm() / (lineCloseDirRf - lineInfRf).norm();
+		lineFarDirRf = lineStartAlpha*lineInfRf + (1.f - lineStartAlpha)*lineCloseDirRf;
+		lineFarDirRf.normalize();
 	}
 
 	//Check if line is too long, and avoid processing if this is the case.
@@ -998,10 +1001,10 @@ float doStereoOmniImpl2(
 	float lineLen = (lineFarPixRf - lineClosePixRf).norm();
 
 	//Extend line, if it isn't long enough
-	if (lineLen < MIN_EPL_LENGTH_CROP) {
+	if (lineLen < MIN_EPL_LENGTH_CROP+2) {
 		vec3 padFarDirRf, padCloseDirRf;
 		vec2 padFarPixRf, padClosePixRf;
-		float amtToPad = MIN_EPL_LENGTH_CROP - lineLen;
+		float amtToPad = MIN_EPL_LENGTH_CROP+2 - lineLen;
 		//First try padding backwards, towards the infinity point.
 		if (lineStartAlpha > 0.f) {
 			//Can pad backwards - not yet at infinity point.
@@ -1016,7 +1019,7 @@ float doStereoOmniImpl2(
 				if (oModel.pixelLocValid(padFarPixRf)) {
 					//Padding was successful
 					lineStartAlpha = padLineStartAlpha;
-					amtToPad = MIN_EPL_LENGTH_CROP - (padFarPixRf - lineClosePixRf).norm();
+					amtToPad = MIN_EPL_LENGTH_CROP+2 - (padFarPixRf - lineClosePixRf).norm();
 				}
 				else {
 					//Padded far point not in image: fail.
@@ -1054,7 +1057,8 @@ float doStereoOmniImpl2(
 	}
 	if(!valuesToFindFound) {
 		//5 values centered around point not available.
-		return -1;
+		//TODO use better err code.
+		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 
 	//=======BEGIN LINE SEARCH CODE=======
@@ -1296,7 +1300,9 @@ float doStereoOmniImpl2(
 		throw std::runtime_error("bestEpImDir != bestEpImDir");
 	}
 
-	iDepth = bestMatchA * max_idepth;
+	//TODO TMP
+	iDepth = bestMatchA;// *max_idepth;
+	bestMatchLoopC = loopCBest;
 	
 	return bestMatchErr;
 }

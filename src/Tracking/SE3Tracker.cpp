@@ -50,9 +50,7 @@ namespace lsd_slam
 
 
 SE3Tracker::SE3Tracker(const CameraModel &model)
-	//TODO tmp.
-	//:camModel(model.clone())
-	:camModel(model.makeProjCamModel())
+	:camModel(model.clone())
 {
 	int w = model.w, h = model.h;
 	settings = DenseDepthTrackerSettings();

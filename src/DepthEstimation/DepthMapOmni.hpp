@@ -75,7 +75,9 @@ float doStereoOmniImpl2(
 	const RigidTransform &keyframeToReference,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	float &idepth,
-	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
+	vec2 &bestEpDir, vec3 &bestMatchPos,
+	size_t &bestMatchLoopC,
+	float &gradAlongLine, float &tracedLineLen,
 	vec3 &bestMatchKeyframe,
 	cv::Mat &drawMat = emptyMat,
 	bool showMatch = false);

@@ -189,6 +189,21 @@ void LiveSLAMWrapper::saveStereoResultIms(bool s)
 		makeEmptyDirectory(resourcesDir() + "ResultIms/");
 	}
 }
+void LiveSLAMWrapper::saveDepthIms(bool s)
+{
+	monoOdometry->depthMapDebugSettings().saveIDepthImages = s;
+	if (s == true) {
+		makeEmptyDirectory(resourcesDir() + "DepthIms/");
+	}
+}
+
+void LiveSLAMWrapper::savePixelDispIms(bool s)
+{
+	monoOdometry->depthMapDebugSettings().savePixelDisparityImages = s;
+	if (s == true) {
+		makeEmptyDirectory(resourcesDir() + "PixelDispIms/");
+	}
+}
 
 bool LiveSLAMWrapper::saveStereoResultIms() const
 {

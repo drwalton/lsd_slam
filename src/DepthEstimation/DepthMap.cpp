@@ -41,12 +41,17 @@ DepthMapDebugSettings::DepthMapDebugSettings()
 	:saveMatchImages(false),
 	saveSearchRangeImages(false),
 	saveResultImages(false),
+	saveIDepthImages(false),
+	savePixelDisparityImages(false),
 	drawMatchInvChance(1)
 {}
 
 
 DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
-	:camModel_(model.clone()), initMode_(mode)
+//TODO TMP
+	:camModel_(model.clone()), 
+	//:camModel_(model.makeProjCamModel()), 
+	initMode_(mode)
 {
 	int w = camModel_->w, h = camModel_->h;
 	activeKeyFrame = 0;
@@ -161,6 +166,16 @@ void DepthMap::observeDepth()
 		Frame* refFrame = activeKeyFrameIsReactivated ?
 			newest_referenceFrame : oldest_referenceFrame;
 		debugImages.clearResultIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+	}
+	if (settings.saveIDepthImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ?
+			newest_referenceFrame : oldest_referenceFrame;
+		debugImages.clearDepthIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+	}
+	if (settings.savePixelDisparityImages) {
+		Frame* refFrame = activeKeyFrameIsReactivated ?
+			newest_referenceFrame : oldest_referenceFrame;
+		debugImages.clearPixelDisparityIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
 	}
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, camModel_->h-3, 10);
@@ -303,7 +318,6 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 			0.0f, 1.0f, 1.0f / MIN_DEPTH,
 			refFrame, refFrame->image(0),
 			result_idepth, result_var, result_eplLength, stats);
-		result_var = 0.2f;
 	}
 
 	if (settings.saveResultImages) {
@@ -311,7 +325,8 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		debugImages.results.at<cv::Vec3b>(y, x) = color;
 	}
 
-	if(error == -3 || error == -2)
+	if(error == DepthMapErrCode::ERR_TOO_BIG ||
+		error == DepthMapErrCode::WINNER_NOT_CLEAR)
 	{
 		target->blacklisted--;
 		if(enablePrintDebugInfo) stats->num_observe_blacklisted++;
@@ -383,7 +398,8 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 	if (camModel_->getType() == CameraModelType::PROJ) {
 		isGood = makeAndCheckEPLProj(x, y, refFrame, &epx, &epy, stats);
 	} else /* OMNI */ {
-		isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
+		//isGood = makeAndCheckEPLOmni(x, y, refFrame, &epDir, stats);
+		isGood = true;
 	}
 	if(!isGood) return false;
 
@@ -425,10 +441,8 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 	}
 
 	if (settings.saveResultImages) {
-		if (error < 0.f) {
-			cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
-			debugImages.results.at<cv::Vec3b>(y, x) = color;
-		}
+		cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
+		debugImages.results.at<cv::Vec3b>(y, x) = color;
 	}
 
 
@@ -502,6 +516,11 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 	else
 	{
+		if (settings.saveIDepthImages) {
+			debugImages.depths.at<cv::Vec3b>(cv::Point(x, y)) =
+				DepthMapDebugImages::getIDepthVisColor(result_idepth);
+		}
+
 		// one more successful observation!
 		if(enablePrintDebugInfo) stats->num_observe_good++;
 
@@ -1322,6 +1341,18 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.results);
 	}
+	if (settings.saveIDepthImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "DepthIms/DepthKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugImages.depths);
+	}
+	if (settings.savePixelDisparityImages) {
+		std::stringstream ss;
+		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << activeKeyFrame->id() <<
+			"_f" << referenceFrames[0]->id() << ".png";
+		cv::imwrite(ss.str(), debugImages.pixelDisparity);
+	}
 }
 
 void DepthMap::invalidate()
@@ -1568,7 +1599,7 @@ inline float DepthMap::doStereoProj(
 	}
 
 	// calculate epipolar line start and end point in old image
-	const ProjCameraModel *pm = static_cast<const ProjCameraModel*>(&(referenceFrame->model()));
+	const ProjCameraModel *pm = static_cast<const ProjCameraModel*>(camModel_.get());
 	Eigen::Vector3f KinvP = Eigen::Vector3f(pm->fxi()*u+pm->cxi(),pm->fyi()*v+pm->cyi(),1.0f);
 	mat3 K_otherToThis_R = pm->K * referenceFrame->otherToThis_R;
 	vec3 K_otherToThis_t = pm->K * referenceFrame->otherToThis_t;
@@ -1586,7 +1617,7 @@ inline float DepthMap::doStereoProj(
 		|| firstY <= 0 || firstY >= camModel_->h - 2
 		|| lastX <= 0 || lastX >= camModel_->w - 2
 		|| lastY <= 0 || lastY >= camModel_->h - 2) {
-		return -1;
+		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 
 	if(!(rescaleFactor > 0.7f && rescaleFactor < 1.4f))
