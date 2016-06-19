@@ -44,6 +44,7 @@ int main(int argc, char **argv)
 		lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(),
 			outWrapper->running,
 			lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
+			lsd_slam::LiveSLAMWrapper::LoopClosureMode::DISABLED,
 			lsd_slam::DepthMapInitMode::CONSTANT,
 			true);
 		std::cout << "Done!" << std::endl;

@@ -47,7 +47,7 @@ using g2o::timeval;
 
 
 class TrackingReference;
-class KeyFrameGraph;
+class KeyframeGraph;
 class SE3Tracker;
 class Sim3Tracker;
 class DepthMap;
@@ -56,7 +56,7 @@ class Frame;
 class DataSet;
 class LiveSLAMWrapper;
 class Output3DWrapper;
-class TrackableKeyFrameSearch;
+class TrackableKeyframeSearch;
 class FramePoseStruct;
 struct KFConstraintStruct;
 
@@ -71,12 +71,12 @@ public:
 
 	// settings. Constant from construction onward.
 	std::unique_ptr<CameraModel> model;
-	const bool SLAMEnabled;
+	const bool loopClosureEnabled;
 
 	bool trackingIsGood;
 
 	SlamSystem(const CameraModel &model, 
-		bool enableSLAM = true, 
+		bool doLoopClosure = true, 
 		bool singleThread = false,
 		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM,
 		bool saveTrackingInfo = false);
@@ -99,7 +99,7 @@ public:
 	/** Does an offline optimization step. */
 	void optimizeGraph();
 
-	inline Frame* getCurrentKeyframe() {return currentKeyFrame.get();}	// not thread-safe!
+	inline Frame* getCurrentKeyframe() {return currentKeyframe.get();}	// not thread-safe!
 
 	/** Returns the current pose estimate. */
 	SE3 getCurrentPoseEstimate();
@@ -111,7 +111,7 @@ public:
 
 	bool doMappingIteration();
 
-	int findConstraintsForNewKeyFrames(Frame* newKeyFrame, bool forceParent=true, bool useFABMAP=true, float closeCandidatesTH=1.0);
+	int findConstraintsForNewKeyframes(Frame* newKeyframe, bool forceParent=true, bool useFABMAP=true, float closeCandidatesTH=1.0);
 	
 	bool optimizationIteration(int itsPerTry, float minChange);
 	
@@ -151,7 +151,7 @@ private:
 
 
 	// ============= EXCLUSIVELY FIND-CONSTRAINT THREAD (+ init) =============
-	TrackableKeyFrameSearch* trackableKeyFrameSearch;
+	TrackableKeyframeSearch* trackableKeyframeSearch;
 	Sim3Tracker* constraintTracker;
 	SE3Tracker* constraintSE3Tracker;
 	TrackingReference* newKFTrackingReference;
@@ -182,7 +182,7 @@ private:
 
 	// Individual / no locking
 	Output3DWrapper* outputWrapper;	// no lock required
-	KeyFrameGraph* keyFrameGraph;	// has own locks
+	KeyframeGraph* keyframeGraph;	// has own locks
 
 
 
@@ -190,7 +190,7 @@ private:
 	// Mapping: if (create) use candidate, reset create.
 	// => no locking required.
 	std::shared_ptr<Frame> latestTrackedFrame;
-	bool createNewKeyFrame;
+	bool createNewKeyframe;
 
 
 
@@ -201,15 +201,15 @@ private:
 
 
 	// PUSHED by Mapping, READ & CLEARED by constraintFinder
-	std::deque< Frame*, std::allocator<Frame*> > newKeyFrames;
-	boost::mutex newKeyFrameMutex;
-	boost::condition_variable newKeyFrameCreatedSignal;
+	std::deque< Frame*, std::allocator<Frame*> > newKeyframes;
+	boost::mutex newKeyframeMutex;
+	boost::condition_variable newKeyframeCreatedSignal;
 
 
 	// SET & READ EVERYWHERE
-	std::shared_ptr<Frame> currentKeyFrame;	// changed (and, for VO, maybe deleted)  only by Mapping thread within exclusive lock.
-	std::shared_ptr<Frame> trackingReferenceFrameSharedPT;	// only used in odometry-mode, to keep a keyframe alive until it is deleted. ONLY accessed whithin currentKeyFrameMutex lock.
-	boost::mutex currentKeyFrameMutex;
+	std::shared_ptr<Frame> currentKeyframe;	// changed (and, for VO, maybe deleted)  only by Mapping thread within exclusive lock.
+	std::shared_ptr<Frame> trackingReferenceFrameSharedPT;	// only used in odometry-mode, to keep a keyframe alive until it is deleted. ONLY accessed whithin currentKeyframeMutex lock.
+	boost::mutex currentKeyframeMutex;
 
 
 

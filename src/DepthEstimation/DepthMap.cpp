@@ -30,7 +30,7 @@
 #include "DataStructures/Frame.hpp"
 #include "util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
-#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "GlobalMapping/KeyframeGraph.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
 
 #include "DepthMapDebugDefines.hpp"
@@ -48,11 +48,11 @@ DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
 	:camModel_(model.clone()), 
 	//:camModel_(model.makeProjCamModel()), 
 	initMode_(mode),
-	activeKeyFrameImageData(nullptr)
+	activeKeyframeImageData(nullptr)
 {
 	int w = camModel_->w, h = camModel_->h;
-	activeKeyFrame = 0;
-	activeKeyFrameIsReactivated = false;
+	activeKeyframe = 0;
+	activeKeyframeIsReactivated = false;
 	otherDepthMap = new DepthMapPixelHypothesis[w*h];
 	currentDepthMap = new DepthMapPixelHypothesis[w*h];
 
@@ -76,8 +76,8 @@ DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
 
 DepthMap::~DepthMap()
 {
-	if(activeKeyFrame != 0)
-		activeKeyFramelock.unlock();
+	if(activeKeyframe != 0)
+		activeKeyframelock.unlock();
 
 	debugImageHypothesisHandling.release();
 	debugImageHypothesisPropagation.release();
@@ -102,7 +102,7 @@ void DepthMap::reset()
 
 void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 {
-	const float* keyFrameMaxGradBuf = activeKeyFrame->maxGradients(0);
+	const float* keyframeMaxGradBuf = activeKeyframe->maxGradients(0);
 
 	int successes = 0;
 
@@ -114,7 +114,7 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 			bool hasHypothesis = target->isValid;
 
 			// ======== 1. check absolute grad =========
-			if(hasHypothesis && keyFrameMaxGradBuf[idx] < MIN_ABS_GRAD_DECREASE)
+			if(hasHypothesis && keyframeMaxGradBuf[idx] < MIN_ABS_GRAD_DECREASE)
 			{
 				//Avoid using: has a hypothesis, and grad is too low (will increase error, 
 				// rather than refining depth).
@@ -122,7 +122,7 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 				continue;
 			}
 
-			if (keyFrameMaxGradBuf[idx] < MIN_ABS_GRAD_CREATE) {
+			if (keyframeMaxGradBuf[idx] < MIN_ABS_GRAD_CREATE) {
 				//Avoid using - gradient too low to create a new hypothesis here.
 				continue;
 			}
@@ -144,7 +144,7 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 			if(!hasHypothesis)
 				success = observeDepthCreate(x, y, idx, stats);
 			else
-				success = observeDepthUpdate(x, y, idx, keyFrameMaxGradBuf, stats);
+				success = observeDepthUpdate(x, y, idx, keyframeMaxGradBuf, stats);
 
 			if(success)
 				successes++;
@@ -156,37 +156,37 @@ void DepthMap::observeDepth()
 {
 #if DEBUG_SAVE_SEARCH_RANGE_IMS
 	{
-		if (activeKeyFrameImageData != nullptr) {
-			Frame* refFrame = activeKeyFrameIsReactivated ?
+		if (activeKeyframeImageData != nullptr) {
+			Frame* refFrame = activeKeyframeIsReactivated ?
 				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearSearchRangesIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+			debugImages.clearSearchRangesIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
 		}
 	}
 #endif
 #if DEBUG_SAVE_RESULT_IMS
 	{
-		if (activeKeyFrameImageData != nullptr) {
-			Frame* refFrame = activeKeyFrameIsReactivated ?
+		if (activeKeyframeImageData != nullptr) {
+			Frame* refFrame = activeKeyframeIsReactivated ?
 				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearResultIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+			debugImages.clearResultIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
 		}
 	}
 #endif
 #if DEBUG_SAVE_IDEPTH_IMS
 	{
-		if (activeKeyFrameImageData != nullptr) {
-			Frame* refFrame = activeKeyFrameIsReactivated ?
+		if (activeKeyframeImageData != nullptr) {
+			Frame* refFrame = activeKeyframeIsReactivated ?
 				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearDepthIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+			debugImages.clearDepthIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
 		}
 	}
 #endif
 #if DEBUG_SAVE_VAR_IMS
 	{
-		if (activeKeyFrameImageData != nullptr) {
-			Frame* refFrame = activeKeyFrameIsReactivated ?
+		if (activeKeyframeImageData != nullptr) {
+			Frame* refFrame = activeKeyframeIsReactivated ?
 				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearVarIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+			debugImages.clearVarIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
 		}
 	}
 #endif
@@ -197,10 +197,10 @@ void DepthMap::observeDepth()
 #endif
 #if DEBUG_SAVE_PIXEL_DISPARITY_IMS
 	{
-		if (activeKeyFrameImageData != nullptr) {
-			Frame* refFrame = activeKeyFrameIsReactivated ?
+		if (activeKeyframeImageData != nullptr) {
+			Frame* refFrame = activeKeyframeIsReactivated ?
 				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearPixelDisparityIm(activeKeyFrameImageData, refFrame->image(), camModel_.get());
+			debugImages.clearPixelDisparityIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
 		}
 	}
 #endif
@@ -210,7 +210,7 @@ void DepthMap::observeDepth()
 	if(enablePrintDebugInfo && printObserveStatistics)
 	{
 		printf("OBSERVE (%d): %d / %d created; %d / %d updated; %d skipped; %d init-blacklisted\n",
-				activeKeyFrame->id(),
+				activeKeyframe->id(),
 				runningStats.num_observe_created,
 				runningStats.num_observe_create_attempted,
 				runningStats.num_observe_updated,
@@ -224,7 +224,7 @@ void DepthMap::observeDepth()
 	if(enablePrintDebugInfo && printObservePurgeStatistics)
 	{
 		printf("OBS-PRG (%d): Good: %d; inconsistent: %d; notfound: %d; oob: %d; failed: %d; addSkip: %d;\n",
-				activeKeyFrame->id(),
+				activeKeyframe->id(),
 				runningStats.num_observe_good,
 				runningStats.num_observe_inconsistent,
 				runningStats.num_observe_notfound,
@@ -263,8 +263,8 @@ bool DepthMap::makeAndCheckEPLProj(const int x, const int y, const Frame* const 
 
 
 	// ===== check epl-grad magnitude ======
-	float gx = activeKeyFrameImageData[idx+1] - activeKeyFrameImageData[idx-1];
-	float gy = activeKeyFrameImageData[idx+camModel_->w] - activeKeyFrameImageData[idx-camModel_->w];
+	float gx = activeKeyframeImageData[idx+1] - activeKeyframeImageData[idx-1];
+	float gy = activeKeyframeImageData[idx+camModel_->w] - activeKeyframeImageData[idx-camModel_->w];
 	float eplGradSquared = gx * epx + gy * epy;
 	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
 
@@ -296,9 +296,9 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 {
 	DepthMapPixelHypothesis* target = currentDepthMap+idx;
 
-	Frame* refFrame = activeKeyFrameIsReactivated ? newest_referenceFrame : oldest_referenceFrame;
+	Frame* refFrame = activeKeyframeIsReactivated ? newest_referenceFrame : oldest_referenceFrame;
 
-	if(refFrame->getTrackingParent() == activeKeyFrame)
+	if(refFrame->getTrackingParent() == activeKeyframe)
 	{
 		bool* wasGoodDuringTracking = refFrame->refPixelWasGoodNoCreate();
 		if(wasGoodDuringTracking != 0 && !wasGoodDuringTracking[(x >> SE3TRACKING_MIN_LEVEL) + (camModel_->w >> SE3TRACKING_MIN_LEVEL)*(y >> SE3TRACKING_MIN_LEVEL)])
@@ -384,13 +384,13 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 	return true;
 }
 
-bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats)
+bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyframeMaxGradBuf, RunningStats* const &stats)
 {
 	DepthMapPixelHypothesis* target = currentDepthMap+idx;
 	Frame* refFrame;
 
 
-	if(!activeKeyFrameIsReactivated)
+	if(!activeKeyframeIsReactivated)
 	{
 		if((int)target->nextStereoFrameMinID - referenceFrameByID_offset >= (int)referenceFrameByID.size())
 		{
@@ -410,7 +410,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		refFrame = newest_referenceFrame;
 
 
-	if(refFrame->getTrackingParent() == activeKeyFrame)
+	if(refFrame->getTrackingParent() == activeKeyframe)
 	{
 		bool* wasGoodDuringTracking = refFrame->refPixelWasGoodNoCreate();
 		if(wasGoodDuringTracking != 0 && !wasGoodDuringTracking[(x >> SE3TRACKING_MIN_LEVEL) + (camModel_->w >> SE3TRACKING_MIN_LEVEL)*(y >> SE3TRACKING_MIN_LEVEL)])
@@ -558,7 +558,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 			float depth = 1.f / result_idepth;
 			if (std::isfinite(depth)) {
 				vec3 pt = camModel_->pixelToCam(vec2(x, y), depth);
-				debugImages.addFramePt(pt, activeKeyFrameImageData[y*camModel_->w + x]);
+				debugImages.addFramePt(pt, activeKeyframeImageData[y*camModel_->w + x]);
 				//debugImages.addFramePt(pt, debugImages.pixelDisparity.at<cv::Vec3b>(y,x)[0]);
 			}
 		}
@@ -586,7 +586,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 		// increase validity!
 		target->validity_counter += VALIDITY_COUNTER_INC;
-		float absGrad = keyFrameMaxGradBuf[idx];
+		float absGrad = keyframeMaxGradBuf[idx];
 		if(target->validity_counter > VALIDITY_COUNTER_MAX+absGrad*(VALIDITY_COUNTER_MAX_VARIABLE)/255.0f)
 			target->validity_counter = static_cast<int>(
 				VALIDITY_COUNTER_MAX+absGrad*(VALIDITY_COUNTER_MAX_VARIABLE)/255.0f);
@@ -594,7 +594,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		// increase Skip!
 		if(result_eplLength < MIN_EPL_LENGTH_CROP)
 		{
-			float inc = activeKeyFrame->numFramesTrackedOnThis / (float)(activeKeyFrame->numMappedOnThis+5);
+			float inc = activeKeyframe->numFramesTrackedOnThis / (float)(activeKeyframe->numMappedOnThis+5);
 			if(inc < 3) inc = 3;
 
 			inc +=  ((int)(result_eplLength*10000)%2);
@@ -628,10 +628,10 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	runningStats.num_prop_merged = 0;
 
 
-	if(new_keyframe->getTrackingParent() != activeKeyFrame)
+	if(new_keyframe->getTrackingParent() != activeKeyframe)
 	{
 		printf("WARNING: propagating depth from frame %d to %d, which was tracked on a different frame (%d).\nWhile this should work, it is not recommended.",
-				activeKeyFrame->id(), new_keyframe->id(),
+				activeKeyframe->id(), new_keyframe->id(),
 				new_keyframe->getTrackingParent()->id());
 	}
 
@@ -648,10 +648,10 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	Eigen::Matrix3f trafoInv_R = oldToNew_SE3.rotationMatrix().matrix().cast<float>();
 
 
-	const bool* trackingWasGood = new_keyframe->getTrackingParent() == activeKeyFrame ? new_keyframe->refPixelWasGoodNoCreate() : 0;
+	const bool* trackingWasGood = new_keyframe->getTrackingParent() == activeKeyframe ? new_keyframe->refPixelWasGoodNoCreate() : 0;
 
 
-	const float* activeKFImageData = activeKeyFrame->image(0);
+	const float* activeKFImageData = activeKeyframe->image(0);
 	const float* newKFMaxGrad = new_keyframe->maxGradients(0);
 	const float* newKFImageData = new_keyframe->image(0);
 
@@ -808,7 +808,7 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* stats)
 {
 	// =========== regularize fill holes
-	const float* keyFrameMaxGradBuf = activeKeyFrame->maxGradients(0);
+	const float* keyframeMaxGradBuf = activeKeyframe->maxGradients(0);
 
 	for(int y=yMin; y<yMax; y++)
 	{
@@ -817,7 +817,7 @@ void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* 
 			int idx = x+y*camModel_->w;
 			DepthMapPixelHypothesis* dest = otherDepthMap + idx;
 			if(dest->isValid) continue;
-			if(keyFrameMaxGradBuf[idx]<MIN_ABS_GRAD_DECREASE) continue;
+			if(keyframeMaxGradBuf[idx]<MIN_ABS_GRAD_DECREASE) continue;
 
 			int* io = validityIntegralBuffer + idx;
 			int val = io[2+2*camModel_->w] - io[2-3*camModel_->w] - io[-3+2*camModel_->w] + io[-3-3*camModel_->w];
@@ -1022,7 +1022,7 @@ void DepthMap::regularizeDepthMap(bool removeOcclusions, int validityTH)
 
 	if(enablePrintDebugInfo && printRegularizeStatistics)
 		printf("REGULARIZE (%d): %d smeared; %d blacklisted /%d new); %d deleted; %d occluded; %d filled\n",
-				activeKeyFrame->id(),
+				activeKeyframe->id(),
 				runningStats.num_reg_smeared,
 				runningStats.num_reg_blacklisted,
 				runningStats.num_reg_setBlacklisted,
@@ -1038,10 +1038,10 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 		srand(1);
 	}
 
-	activeKeyFramelock = new_frame->getActiveLock();
-	activeKeyFrame = new_frame;
-	activeKeyFrameImageData = activeKeyFrame->image(0);
-	activeKeyFrameIsReactivated = false;
+	activeKeyframelock = new_frame->getActiveLock();
+	activeKeyframe = new_frame;
+	activeKeyframeImageData = activeKeyframe->image(0);
+	activeKeyframeIsReactivated = false;
 
 	const float* maxGradients = new_frame->maxGradients();
 
@@ -1073,7 +1073,7 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 	}
 
 
-	activeKeyFrame->setDepth(currentDepthMap);
+	activeKeyframe->setDepth(currentDepthMap);
 }
 
 
@@ -1082,18 +1082,18 @@ void DepthMap::setFromExistingKF(Frame* kf)
 {
 	assert(kf->hasIDepthBeenSet());
 
-	activeKeyFramelock = kf->getActiveLock();
-	activeKeyFrame = kf;
+	activeKeyframelock = kf->getActiveLock();
+	activeKeyframe = kf;
 
-	const float* idepth = activeKeyFrame->idepth_reAct();
-	const float* idepthVar = activeKeyFrame->idepthVar_reAct();
-	const unsigned char* validity = activeKeyFrame->validity_reAct();
+	const float* idepth = activeKeyframe->idepth_reAct();
+	const float* idepthVar = activeKeyframe->idepthVar_reAct();
+	const unsigned char* validity = activeKeyframe->validity_reAct();
 
 	DepthMapPixelHypothesis* pt = currentDepthMap;
-	activeKeyFrame->numMappedOnThis = 0;
-	activeKeyFrame->numFramesTrackedOnThis = 0;
-	activeKeyFrameImageData = activeKeyFrame->image(0);
-	activeKeyFrameIsReactivated = true;
+	activeKeyframe->numMappedOnThis = 0;
+	activeKeyframe->numFramesTrackedOnThis = 0;
+	activeKeyframeImageData = activeKeyframe->image(0);
+	activeKeyframeIsReactivated = true;
 
 	for(size_t y=0;y<camModel_->h;y++)
 	{
@@ -1127,10 +1127,10 @@ void DepthMap::initializeFromGTDepth(Frame* new_frame)
 {
 	assert(new_frame->hasIDepthBeenSet());
 
-	activeKeyFramelock = new_frame->getActiveLock();
-	activeKeyFrame = new_frame;
-	activeKeyFrameImageData = activeKeyFrame->image(0);
-	activeKeyFrameIsReactivated = false;
+	activeKeyframelock = new_frame->getActiveLock();
+	activeKeyframe = new_frame;
+	activeKeyframeImageData = activeKeyframe->image(0);
+	activeKeyframeIsReactivated = false;
 
 	const float* idepth = new_frame->idepth();
 
@@ -1175,7 +1175,7 @@ void DepthMap::initializeFromGTDepth(Frame* new_frame)
 	}
 
 
-	activeKeyFrame->setDepth(currentDepthMap);
+	activeKeyframe->setDepth(currentDepthMap);
 }
 
 void DepthMap::resetCounters()
@@ -1246,20 +1246,20 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	{
 		assert(frame->hasTrackingParent());
 
-		if(frame->getTrackingParent() != activeKeyFrame)
+		if(frame->getTrackingParent() != activeKeyframe)
 		{
 			printf("WARNING: updating frame %d with %d, which was tracked on a different frame (%d).\nWhile this should work, it is not recommended.",
-					activeKeyFrame->id(), frame->id(),
+					activeKeyframe->id(), frame->id(),
 					frame->getTrackingParent()->id());
 		}
 
 		Sim3 refToKf;
-		if(frame->pose->trackingParent->frameID == activeKeyFrame->id())
+		if(frame->pose->trackingParent->frameID == activeKeyframe->id())
 			refToKf = frame->pose->thisToParent_raw;
 		else
-			refToKf = activeKeyFrame->getScaledCamToWorld().inverse() *  frame->getScaledCamToWorld();
+			refToKf = activeKeyframe->getScaledCamToWorld().inverse() *  frame->getScaledCamToWorld();
 
-		frame->prepareForStereoWith(activeKeyFrame, refToKf, *camModel_, 0);
+		frame->prepareForStereoWith(activeKeyframe, refToKf, *camModel_, 0);
 
 		while((int)referenceFrameByID.size() + referenceFrameByID_offset <= frame->id())
 			referenceFrameByID.push_back(frame.get());
@@ -1270,8 +1270,8 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	
 	if(plotStereoImages)
 	{
-		cv::Mat keyFrameImage(activeKeyFrame->height(), activeKeyFrame->width(), CV_32F, const_cast<float*>(activeKeyFrameImageData));
-		keyFrameImage.convertTo(debugImageHypothesisHandling, CV_8UC1);
+		cv::Mat keyframeImage(activeKeyframe->height(), activeKeyframe->width(), CV_32F, const_cast<float*>(activeKeyframeImageData));
+		keyframeImage.convertTo(debugImageHypothesisHandling, CV_8UC1);
 		cv::cvtColor(debugImageHypothesisHandling, debugImageHypothesisHandling, CV_GRAY2RGB);
 
 		cv::Mat oldest_refImage(oldest_referenceFrame->height(), oldest_referenceFrame->width(), CV_32F, const_cast<float*>(oldest_referenceFrame->image(0)));
@@ -1308,10 +1308,10 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 
 	
 	// Update depth in keyframe
-	if(!activeKeyFrame->depthHasBeenUpdatedFlag)
+	if(!activeKeyframe->depthHasBeenUpdatedFlag)
 	{
 		gettimeofday(&tv_start, NULL);
-		activeKeyFrame->setDepth(currentDepthMap);
+		activeKeyframe->setDepth(currentDepthMap);
 		gettimeofday(&tv_end, NULL);
 		msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 		nSetDepth++;
@@ -1323,8 +1323,8 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	nUpdate++;
 
 
-	activeKeyFrame->numMappedOnThis++;
-	activeKeyFrame->numMappedOnThisTotal++;
+	activeKeyframe->numMappedOnThis++;
+	activeKeyframe->numMappedOnThisTotal++;
 
 
 	if(plotStereoImages)
@@ -1375,7 +1375,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 #if DEBUG_SAVE_SEARCH_RANGE_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "RangeIms/RangeKF" << activeKeyFrame->id() <<
+		ss << resourcesDir() << "RangeIms/RangeKF" << activeKeyframe->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.searchRanges);
 	}
@@ -1383,7 +1383,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 #if DEBUG_SAVE_RESULT_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "ResultIms/ResultKF" << activeKeyFrame->id() <<
+		ss << resourcesDir() << "ResultIms/ResultKF" << activeKeyframe->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.results);
 	}
@@ -1391,7 +1391,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 #if DEBUG_SAVE_IDEPTH_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "DepthIms/DepthKF" << activeKeyFrame->id() <<
+		ss << resourcesDir() << "DepthIms/DepthKF" << activeKeyframe->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.depths);
 	}
@@ -1399,7 +1399,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 #if DEBUG_SAVE_VAR_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "VarIms/VarKF" << activeKeyFrame->id() <<
+		ss << resourcesDir() << "VarIms/VarKF" << activeKeyframe->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.vars);
 	}
@@ -1407,7 +1407,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 #if DEBUG_SAVE_FRAME_POINT_CLOUDS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "FramePtClouds/CloudKF" << activeKeyFrame->id() <<
+		ss << resourcesDir() << "FramePtClouds/CloudKF" << activeKeyframe->id() <<
 			"_f" << referenceFrames[0]->id() << ".ply";
 		debugImages.framePtCloud.saveFile(ss.str());
 	}
@@ -1415,7 +1415,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 #if DEBUG_SAVE_PIXEL_DISPARITY_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << activeKeyFrame->id() <<
+		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << activeKeyframe->id() <<
 			"_f" << referenceFrames[0]->id() << ".png";
 		cv::imwrite(ss.str(), debugImages.pixelDisparity);
 	}
@@ -1424,18 +1424,18 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 
 void DepthMap::invalidate()
 {
-	if(activeKeyFrame==0) return;
-	activeKeyFrame=0;
-	activeKeyFramelock.unlock();
+	if(activeKeyframe==0) return;
+	activeKeyframe=0;
+	activeKeyframelock.unlock();
 }
 
-void DepthMap::createKeyFrame(Frame* new_keyframe)
+void DepthMap::createKeyframe(Frame* new_keyframe)
 {
 	assert(isValid());
 	assert(new_keyframe != nullptr);
 	assert(new_keyframe->hasTrackingParent());
 
-	//boost::shared_lock<boost::shared_mutex> lock = activeKeyFrame->getActiveLock();
+	//boost::shared_lock<boost::shared_mutex> lock = activeKeyframe->getActiveLock();
 	boost::shared_lock<boost::shared_mutex> lock2 = new_keyframe->getActiveLock();
 
 	struct timeval tv_start_all, tv_end_all;
@@ -1446,8 +1446,8 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 
 	if(plotStereoImages)
 	{
-		cv::Mat keyFrameImage(new_keyframe->height(), new_keyframe->width(), CV_32F, const_cast<float*>(new_keyframe->image(0)));
-		keyFrameImage.convertTo(debugImageHypothesisPropagation, CV_8UC1);
+		cv::Mat keyframeImage(new_keyframe->height(), new_keyframe->width(), CV_32F, const_cast<float*>(new_keyframe->image(0)));
+		keyframeImage.convertTo(debugImageHypothesisPropagation, CV_8UC1);
 		cv::cvtColor(debugImageHypothesisPropagation, debugImageHypothesisPropagation, CV_GRAY2RGB);
 	}
 
@@ -1462,10 +1462,10 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 	msPropagate = 0.9f*msPropagate + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nPropagate++;
 
-	activeKeyFrame = new_keyframe;
-	activeKeyFramelock = activeKeyFrame->getActiveLock();
-	activeKeyFrameImageData = new_keyframe->image(0);
-	activeKeyFrameIsReactivated = false;
+	activeKeyframe = new_keyframe;
+	activeKeyframelock = activeKeyframe->getActiveLock();
+	activeKeyframeImageData = new_keyframe->image(0);
+	activeKeyframeIsReactivated = false;
 
 
 
@@ -1512,13 +1512,13 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 		source->idepth_var *= rescaleFactor2;
 		source->idepth_var_smoothed *= rescaleFactor2;
 	}
-	activeKeyFrame->pose->thisToParent_raw = sim3FromSE3(oldToNew_SE3.inverse(), rescaleFactor);
-	activeKeyFrame->pose->invalidateCache();
+	activeKeyframe->pose->thisToParent_raw = sim3FromSE3(oldToNew_SE3.inverse(), rescaleFactor);
+	activeKeyframe->pose->invalidateCache();
 
 	// Update depth in keyframe
 
 	gettimeofday(&tv_start, NULL);
-	activeKeyFrame->setDepth(currentDepthMap);
+	activeKeyframe->setDepth(currentDepthMap);
 	gettimeofday(&tv_end, NULL);
 	msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nSetDepth++;
@@ -1531,7 +1531,7 @@ void DepthMap::createKeyFrame(Frame* new_keyframe)
 
 	if(plotStereoImages)
 	{
-		//Util::displayImage( "KeyFramePropagation", debugImageHypothesisPropagation );
+		//Util::displayImage( "KeyframePropagation", debugImageHypothesisPropagation );
 	}
 
 }
@@ -1568,7 +1568,7 @@ void DepthMap::addTimingSample()
 	}
 }
 
-void DepthMap::finalizeKeyFrame()
+void DepthMap::finalizeKeyframe()
 {
 	assert(isValid());
 
@@ -1590,9 +1590,9 @@ void DepthMap::finalizeKeyFrame()
 	nRegularize++;
 
 	gettimeofday(&tv_start, NULL);
-	activeKeyFrame->setDepth(currentDepthMap);
-	activeKeyFrame->calculateMeanInformation();
-	activeKeyFrame->takeReActivationData(currentDepthMap);
+	activeKeyframe->setDepth(currentDepthMap);
+	activeKeyframe->calculateMeanInformation();
+	activeKeyframe->takeReActivationData(currentDepthMap);
 	gettimeofday(&tv_end, NULL);
 	msSetDepth = 0.9f*msSetDepth + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nSetDepth++;
@@ -1607,10 +1607,10 @@ void DepthMap::finalizeKeyFrame()
 
 int DepthMap::debugPlotDepthMap()
 {
-	if(activeKeyFrame == 0) return 1;
+	if(activeKeyframe == 0) return 1;
 
-	cv::Mat keyFrameImage(activeKeyFrame->height(), activeKeyFrame->width(), CV_32F, const_cast<float*>(activeKeyFrameImageData));
-	keyFrameImage.convertTo(debugImageDepth, CV_8UC1);
+	cv::Mat keyframeImage(activeKeyframe->height(), activeKeyframe->width(), CV_32F, const_cast<float*>(activeKeyframeImageData));
+	keyframeImage.convertTo(debugImageDepth, CV_8UC1);
 	cv::cvtColor(debugImageDepth, debugImageDepth, CV_GRAY2RGB);
 	assert(debugImageDepth.channels() == 3);
 
@@ -1695,11 +1695,11 @@ inline float DepthMap::doStereoProj(
 	}
 
 	// calculate values to search for
-	float realVal_p1 = getInterpolatedElement(activeKeyFrameImageData,u + epxn*rescaleFactor, v + epyn*rescaleFactor, camModel_->w);
-	float realVal_m1 = getInterpolatedElement(activeKeyFrameImageData,u - epxn*rescaleFactor, v - epyn*rescaleFactor, camModel_->w);
-	float realVal = getInterpolatedElement(activeKeyFrameImageData,u, v, camModel_->w);
-	float realVal_m2 = getInterpolatedElement(activeKeyFrameImageData,u - 2*epxn*rescaleFactor, v - 2*epyn*rescaleFactor, camModel_->w);
-	float realVal_p2 = getInterpolatedElement(activeKeyFrameImageData,u + 2*epxn*rescaleFactor, v + 2*epyn*rescaleFactor, camModel_->w);
+	float realVal_p1 = getInterpolatedElement(activeKeyframeImageData,u + epxn*rescaleFactor, v + epyn*rescaleFactor, camModel_->w);
+	float realVal_m1 = getInterpolatedElement(activeKeyframeImageData,u - epxn*rescaleFactor, v - epyn*rescaleFactor, camModel_->w);
+	float realVal = getInterpolatedElement(activeKeyframeImageData,u, v, camModel_->w);
+	float realVal_m2 = getInterpolatedElement(activeKeyframeImageData,u - 2*epxn*rescaleFactor, v - 2*epyn*rescaleFactor, camModel_->w);
+	float realVal_p2 = getInterpolatedElement(activeKeyframeImageData,u + 2*epxn*rescaleFactor, v + 2*epyn*rescaleFactor, camModel_->w);
 
 
 
@@ -2160,9 +2160,12 @@ inline float DepthMap::doStereoProj(
 	float trackingErrorFac = 0.25f*(1.0f+referenceFrame->initialTrackedResidual);
 
 	// calculate error from geometric noise (wrong camera pose / calibration)
-	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrame->gradients(0), u, v, camModel_->w);
+	Eigen::Vector2f gradsInterp = getInterpolatedElement42(
+		activeKeyframe->gradients(0), u, v, camModel_->w);
 	float geoDispError = (gradsInterp[0]*epxn + gradsInterp[1]*epyn) + DIVISION_EPS;
-	geoDispError = trackingErrorFac*trackingErrorFac*(gradsInterp[0]*gradsInterp[0] + gradsInterp[1]*gradsInterp[1]) / (geoDispError*geoDispError);
+	geoDispError = trackingErrorFac*trackingErrorFac*
+		(gradsInterp[0]*gradsInterp[0] + gradsInterp[1]*gradsInterp[1]) / 
+		(geoDispError*geoDispError);
 
 
 	//geoDispError *= (0.5 + 0.5 *result_idepth) * (0.5 + 0.5 *result_idepth);
@@ -2179,7 +2182,7 @@ inline float DepthMap::doStereoProj(
 			//	printf("geo: %f, photo: %f, alpha: %f\n", sqrt(geoDispError), sqrt(photoDispError), alpha, sqrt(result_var));
 
 
-			//int idDiff = (keyFrame->pyramidID - referenceFrame->id);
+			//int idDiff = (keyframe->pyramidID - referenceFrame->id);
 			//cv::Scalar color = cv::Scalar(0,0, 2*idDiff);// bw
 
 			//cv::Scalar color = cv::Scalar(sqrt(result_var)*2000, 255-sqrt(result_var)*2000, 0);// bw
@@ -2211,7 +2214,7 @@ inline float DepthMap::doStereoProj(
 	result_eplLength = eplLength;
 
 #if DEBUG_SAVE_RESULT_IMS
-	debugImages.results.at<cv::Vec3b>(v, u) =
+	debugImages.results.at<cv::Vec3b>(int(v), int(u)) =
 		cv::Vec3b(0, 255, 0);
 #endif
 

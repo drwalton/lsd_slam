@@ -1,8 +1,8 @@
 add_library(lsd_slam_Viewer
-	KeyFrameDisplay.cpp
-	KeyFrameDisplay.hpp
-	KeyFrameGraphDisplay.cpp
-	KeyFrameGraphDisplay.hpp
+	KeyframeDisplay.cpp
+	KeyframeDisplay.hpp
+	KeyframeGraphDisplay.cpp
+	KeyframeGraphDisplay.hpp
 	keyframeMsg.cpp
 	keyframeMsg.hpp
 	PointCloudViewer.cpp

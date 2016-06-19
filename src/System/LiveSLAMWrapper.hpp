@@ -52,11 +52,13 @@ class LiveSLAMWrapper : public Notifiable
 friend class LiveSLAMWrapperROS;
 public:
 	enum class ThreadingMode {SINGLE, MULTI};
+	enum class LoopClosureMode {ENABLED, DISABLED};
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
 		std::atomic<bool> &running,
 		ThreadingMode threadMode = ThreadingMode::MULTI,
+		LoopClosureMode loopClosureMode = LoopClosureMode::ENABLED,
 		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM,
 		bool saveTrackingInfo = false);
 

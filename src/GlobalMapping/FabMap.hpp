@@ -50,13 +50,13 @@ public:
 	/** Adds the keyframe to the set of frames to compare against and returns
 	 *  its (non-negative) ID in FabMap (different to the keyframe ID).
 	 *  Returns -1 if the frame cannot be added due to an error. */
-// 	int add(KeyFrame* keyframe);
+// 	int add(Keyframe* keyframe);
 	
 	/** Checks if the keyframe is determined to be the same as an already
 	 *  added frame and if yes, returns its ID. If not, returns -1.
-	 *  Does not directly return a KeyFrame pointer to allow for KeyFrames
+	 *  Does not directly return a Keyframe pointer to allow for Keyframes
 	 *  being deleted. */
-// 	int compare(KeyFrame* keyframe);
+// 	int compare(Keyframe* keyframe);
 
 	/** Combination of compare() followed by add() (more efficient). */
 	void compareAndAdd(Frame* keyframe, int* out_newID, int* out_loopID);

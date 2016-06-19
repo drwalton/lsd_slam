@@ -23,8 +23,8 @@
 #define NOMINMAX
 #endif
 
-#include "KeyFrameGraphDisplay.hpp"
-#include "KeyFrameDisplay.hpp"
+#include "KeyframeGraphDisplay.hpp"
+#include "KeyframeDisplay.hpp"
 #include "settings.hpp"
 #include <sstream>
 #include <fstream>
@@ -33,19 +33,19 @@
 namespace lsd_slam
 {
 
-KeyFrameGraphDisplay::KeyFrameGraphDisplay()
+KeyframeGraphDisplay::KeyframeGraphDisplay()
 {
 	flushPointcloud = false;
 	printNumbers = false;
 }
 
-KeyFrameGraphDisplay::~KeyFrameGraphDisplay()
+KeyframeGraphDisplay::~KeyframeGraphDisplay()
 {
 	for(unsigned int i=0;i<keyframes.size();i++)
 		delete keyframes[i];
 }
 
-void KeyFrameGraphDisplay::draw()
+void KeyframeGraphDisplay::draw()
 {
 	dataMutex.lock();
 	numRefreshedAlready = 0;
@@ -140,12 +140,12 @@ void KeyFrameGraphDisplay::draw()
 	dataMutex.unlock();
 }
 
-void KeyFrameGraphDisplay::addMsg(const keyframeMsg *msg)
+void KeyframeGraphDisplay::addMsg(const keyframeMsg *msg)
 {
 	dataMutex.lock();
 	if(keyframesByID.count(msg->id) == 0)
 	{
-		KeyFrameDisplay* disp = new KeyFrameDisplay();
+		KeyframeDisplay* disp = new KeyframeDisplay();
 		keyframesByID[msg->id] = disp;
 		keyframes.push_back(disp);
 
@@ -156,7 +156,7 @@ void KeyFrameGraphDisplay::addMsg(const keyframeMsg *msg)
 	dataMutex.unlock();
 }
 
-void KeyFrameGraphDisplay::addGraphMsg(const keyframeGraphMsg *msg)
+void KeyframeGraphDisplay::addGraphMsg(const keyframeGraphMsg *msg)
 {
 	dataMutex.lock();
 

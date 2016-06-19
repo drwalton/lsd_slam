@@ -42,7 +42,9 @@ namespace lsd_slam
 LiveSLAMWrapper::LiveSLAMWrapper(
 	InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
 	std::atomic<bool> &running,
-	ThreadingMode threadMode, DepthMapInitMode depthMapInitMode,
+	ThreadingMode threadMode, 
+	LoopClosureMode loopClosureMode,
+	DepthMapInitMode depthMapInitMode,
 	bool saveTrackingInfo)
 	:camModel_(imageStream->camModel().clone()), blockTrackUntilMapped(false), running_(running)
 {
@@ -68,7 +70,7 @@ LiveSLAMWrapper::LiveSLAMWrapper(
 	// make Odometry
 	bool singleThread = threadMode == ThreadingMode::SINGLE;
 	//TODO temp. set to false.
-	bool enableSLAM = true;
+	bool enableSLAM = loopClosureMode == LoopClosureMode::ENABLED;
 	monoOdometry = new SlamSystem(*camModel_, enableSLAM, 
 		singleThread, depthMapInitMode, saveTrackingInfo);
 

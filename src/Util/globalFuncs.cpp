@@ -69,10 +69,10 @@ cv::Mat getDepthRainbowPlot(const float* idepth, const float* idepthVar, const f
 	cv::Mat res = cv::Mat(height,width,CV_8UC3);
 	if(gray != 0)
 	{
-		cv::Mat keyFrameImage(height, width, CV_32F, const_cast<float*>(gray));
-		cv::Mat keyFrameImage8u;
-		keyFrameImage.convertTo(keyFrameImage8u, CV_8UC1);
-		cv::cvtColor(keyFrameImage8u, res, CV_GRAY2RGB);
+		cv::Mat keyframeImage(height, width, CV_32F, const_cast<float*>(gray));
+		cv::Mat keyframeImage8u;
+		keyframeImage.convertTo(keyframeImage8u, CV_8UC1);
+		cv::cvtColor(keyframeImage8u, res, CV_GRAY2RGB);
 	}
 	else
 		fillCvMat(&res,cv::Vec3b(255,170,168));
@@ -134,10 +134,10 @@ cv::Mat getVarRedGreenPlot(const float* idepthVar, const float* gray, int width,
 	cv::Mat res = cv::Mat(height,width,CV_8UC3);
 	if(gray != 0)
 	{
-		cv::Mat keyFrameImage(height, width, CV_32F, const_cast<float*>(gray));
-		cv::Mat keyFrameImage8u;
-		keyFrameImage.convertTo(keyFrameImage8u, CV_8UC1);
-		cv::cvtColor(keyFrameImage8u, res, CV_GRAY2RGB);
+		cv::Mat keyframeImage(height, width, CV_32F, const_cast<float*>(gray));
+		cv::Mat keyframeImage8u;
+		keyframeImage.convertTo(keyframeImage8u, CV_8UC1);
+		cv::cvtColor(keyframeImage8u, res, CV_GRAY2RGB);
 	}
 	else
 		fillCvMat(&res,cv::Vec3b(255,170,168));

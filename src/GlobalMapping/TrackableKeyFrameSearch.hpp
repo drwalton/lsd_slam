@@ -38,7 +38,7 @@ namespace lsd_slam
 
 
 class CameraModel;
-class KeyFrameGraph;
+class KeyframeGraph;
 class SE3Tracker;
 class Frame;
 
@@ -52,18 +52,18 @@ struct TrackableKFStruct
 };
 
 /**
- * Given a KeyFrame, tries to find other KeyFrames from a KeyFrameGraph which
+ * Given a Keyframe, tries to find other Keyframes from a KeyframeGraph which
  * can be tracked from this frame (in order to insert new constraints into
  * the graph).
  */
-class TrackableKeyFrameSearch
+class TrackableKeyframeSearch
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	/** Constructor. */
-	TrackableKeyFrameSearch(KeyFrameGraph* graph, const CameraModel &model);
-	~TrackableKeyFrameSearch();
+	TrackableKeyframeSearch(KeyframeGraph* graph, const CameraModel &model);
+	~TrackableKeyframeSearch();
 	
 	/**
 	 * Finds candidates for trackable frames.
@@ -94,7 +94,7 @@ private:
 	std::unordered_map<int, Frame*> fabmapIDToKeyframe;
 	FabMap fabMap;
 #endif
-	KeyFrameGraph* graph;
+	KeyframeGraph* graph;
 	SE3Tracker* tracker;
 
 	float fowX, fowY;

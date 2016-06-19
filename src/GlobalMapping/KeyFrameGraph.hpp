@@ -34,7 +34,7 @@ namespace lsd_slam
 
 
 class Frame;
-class KeyFrameGraph;
+class KeyframeGraph;
 class VertexSim3;
 class EdgeSim3;
 class FramePoseStruct;
@@ -83,22 +83,22 @@ struct KFConstraintStruct
 
 
 /**
- * Graph consisting of KeyFrames and constraints, performing optimization.
+ * Graph consisting of Keyframes and constraints, performing optimization.
  */
-class KeyFrameGraph
+class KeyframeGraph
 {
 friend class IntegrationTest;
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	/** Constructs an empty pose graph. */
-	KeyFrameGraph();
+	KeyframeGraph();
 	
 	/** Deletes the g2o graph. */
-	~KeyFrameGraph();
+	~KeyframeGraph();
 	
-	/** Adds a new KeyFrame to the graph. */
-	void addKeyFrame(Frame* frame);
+	/** Adds a new Keyframe to the graph. */
+	void addKeyframe(Frame* frame);
 	
 	/** Adds a new Frame to the graph. Doesnt actually keep the frame, but only it's pose-struct. */
 	void addFrame(Frame* frame);
@@ -118,7 +118,7 @@ public:
 
 	
 	/** Optimizes the graph. Does not update the keyframe poses,
-	 *  only the vertex poses. You must call updateKeyFramePoses() afterwards. */
+	 *  only the vertex poses. You must call updateKeyframePoses() afterwards. */
 	int optimize(int num_iterations);
 	bool addElementsFromBuffer();
 
@@ -148,9 +148,9 @@ public:
 
 	/** Maps frame ids to keyframes. Contains ALL Keyframes allocated, including the one that currently being created. */
 	/* this is where the shared pointers of Keyframe Frames are kept, so they are not deleted ever */
-	boost::shared_mutex idToKeyFrameMutex;
+	boost::shared_mutex idToKeyframeMutex;
 	std::unordered_map< int, std::shared_ptr<Frame>, std::hash<int>, std::equal_to<int>,
-	Eigen::aligned_allocator< std::pair<const int, std::shared_ptr<Frame> > > > idToKeyFrame;
+	Eigen::aligned_allocator< std::pair<const int, std::shared_ptr<Frame> > > > idToKeyframe;
 
 
 	// contains ALL edges, as soon as they are created

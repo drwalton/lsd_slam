@@ -231,7 +231,7 @@ extern float freeDebugParam5;
 extern float KFDistWeight;
 extern float KFUsageWeight;
 extern int maxLoopClosureCandidates;
-extern int propagateKeyFrameDepthCount;
+extern int propagateKeyframeDepthCount;
 extern float loopclosureStrictness;
 extern float relocalizationTH;
 

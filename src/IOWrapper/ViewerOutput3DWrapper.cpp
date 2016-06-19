@@ -1,9 +1,9 @@
 #include "ViewerOutput3DWrapper.hpp"
 #include "Viewer/PointCloudViewer.hpp"
 #include "DataStructures/Frame.hpp"
-#include "Viewer/KeyFrameDisplay.hpp"
-#include "GlobalMapping/KeyFrameGraph.hpp"
-#include "Viewer/KeyFrameGraphDisplay.hpp"
+#include "Viewer/KeyframeDisplay.hpp"
+#include "GlobalMapping/KeyframeGraph.hpp"
+#include "Viewer/KeyframeGraphDisplay.hpp"
 #include <qapplication.h>
 
 struct Position {
@@ -62,7 +62,7 @@ ViewerOutput3DWrapper::~ViewerOutput3DWrapper()
 	}
 }
 
-void ViewerOutput3DWrapper::publishKeyframeGraph(KeyFrameGraph* graph)
+void ViewerOutput3DWrapper::publishKeyframeGraph(KeyframeGraph* graph)
 {
 	keyframeGraphMsg gMsg;
 

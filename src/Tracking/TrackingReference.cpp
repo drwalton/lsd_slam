@@ -21,7 +21,7 @@
 #include "Tracking/TrackingReference.hpp"
 #include "DataStructures/Frame.hpp"
 #include "DepthEstimation/DepthMapPixelHypothesis.hpp"
-#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "GlobalMapping/KeyframeGraph.hpp"
 #include "util/globalFuncs.hpp"
 #include "IOWrapper/ImageDisplay.hpp"
 #include "CameraModel/ProjCameraModel.hpp"

@@ -53,14 +53,14 @@ struct InputPointDense
 };
 
 // stores a pointcloud associated to a Keyframe.
-class KeyFrameDisplay
+class KeyframeDisplay
 {
 
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	KeyFrameDisplay();
-	~KeyFrameDisplay();
+	KeyframeDisplay();
+	~KeyframeDisplay();
 
 
 	void setFrom(const keyframeMsg *msg);

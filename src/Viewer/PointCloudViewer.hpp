@@ -37,9 +37,9 @@
 class QApplication;
 
 namespace lsd_slam {
-class KeyFrameGraphDisplay;
+class KeyframeGraphDisplay;
 class CameraDisplay;
-class KeyFrameDisplay;
+class KeyframeDisplay;
 
 
 class AnimationObject
@@ -176,10 +176,10 @@ protected:
 private:
 
 	// displays kf-graph
-	KeyFrameGraphDisplay* graphDisplay;
+	KeyframeGraphDisplay* graphDisplay;
 
 	// displays only current keyframe (which is not yet in the graph).
-	KeyFrameDisplay* currentCamDisplay;
+	KeyframeDisplay* currentCamDisplay;
 
 
 

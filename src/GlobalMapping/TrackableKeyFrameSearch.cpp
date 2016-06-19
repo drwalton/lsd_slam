@@ -19,9 +19,9 @@
 */
 
 #include "System/Win32Compatibility.hpp"
-#include "GlobalMapping/TrackableKeyFrameSearch.hpp"
+#include "GlobalMapping/TrackableKeyframeSearch.hpp"
 
-#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "GlobalMapping/KeyframeGraph.hpp"
 #include "DataStructures/Frame.hpp"
 #include "Tracking/SE3Tracker.hpp"
 #include "CameraModel/ProjCameraModel.hpp"
@@ -30,7 +30,7 @@ namespace lsd_slam
 {
 
 
-TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, const CameraModel &model)
+TrackableKeyframeSearch::TrackableKeyframeSearch(KeyframeGraph* graph, const CameraModel &model)
 : graph(graph)
 {
 	tracker = new SE3Tracker(model);
@@ -47,7 +47,7 @@ TrackableKeyFrameSearch::TrackableKeyFrameSearch(KeyFrameGraph* graph, const Cam
 		printf("Relocalization Values: fowX %f, fowY %f\n", fowX, fowY);
 }
 
-TrackableKeyFrameSearch::~TrackableKeyFrameSearch()
+TrackableKeyframeSearch::~TrackableKeyframeSearch()
 {
 	delete tracker;
 }
@@ -55,7 +55,7 @@ TrackableKeyFrameSearch::~TrackableKeyFrameSearch()
 
 
 
-std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > TrackableKeyFrameSearch::findEuclideanOverlapFrames(Frame* frame, float distanceTH, float angleTH, bool checkBothScales)
+std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > TrackableKeyframeSearch::findEuclideanOverlapFrames(Frame* frame, float distanceTH, float angleTH, bool checkBothScales)
 {
 	// basically the maximal angle-difference in viewing direction is angleTH*(average FoV).
 	// e.g. if the FoV is 130°, then it is angleTH*130°.
@@ -104,7 +104,7 @@ std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > Tra
 
 
 
-Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxScore)
+Frame* TrackableKeyframeSearch::findRePositionCandidate(Frame* frame, float maxScore)
 {
     std::vector<TrackableKFStruct, Eigen::aligned_allocator<TrackableKFStruct> > potentialReferenceFrames =
             findEuclideanOverlapFrames(frame, maxScore / (KFDistWeight*KFDistWeight), 0.75);
@@ -180,7 +180,7 @@ Frame* TrackableKeyFrameSearch::findRePositionCandidate(Frame* frame, float maxS
 	}
 }
 
-std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>, Eigen::aligned_allocator< Frame* > > TrackableKeyFrameSearch::findCandidates(Frame* keyframe, Frame* &fabMapResult_out, bool includeFABMAP, bool closenessTH)
+std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>, Eigen::aligned_allocator< Frame* > > TrackableKeyframeSearch::findCandidates(Frame* keyframe, Frame* &fabMapResult_out, bool includeFABMAP, bool closenessTH)
 {
 	std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>, Eigen::aligned_allocator< Frame* > > results;
 
@@ -211,7 +211,7 @@ std::unordered_set<Frame*, std::hash<Frame*>, std::equal_to<Frame*>, Eigen::alig
 	return results;
 }
 
-Frame* TrackableKeyFrameSearch::findAppearanceBasedCandidate(Frame* keyframe)
+Frame* TrackableKeyframeSearch::findAppearanceBasedCandidate(Frame* keyframe)
 {
 #ifdef HAVE_FABMAP
 	if(!useFabMap) return nullptr;

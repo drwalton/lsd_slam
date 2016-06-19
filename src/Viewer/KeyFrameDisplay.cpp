@@ -20,7 +20,7 @@
 
 #define GL_GLEXT_PROTOTYPES 1
 
-#include "KeyFrameDisplay.hpp"
+#include "KeyframeDisplay.hpp"
 #include "CameraModel/CameraModel.hpp"
 #include <stdio.h>
 #include "settings.hpp"
@@ -40,7 +40,7 @@
 namespace lsd_slam
 {
 
-KeyFrameDisplay::KeyFrameDisplay()
+KeyframeDisplay::KeyframeDisplay()
 {
 	originalInput = 0;
 	id = 0;
@@ -56,7 +56,7 @@ KeyFrameDisplay::KeyFrameDisplay()
 }
 
 
-KeyFrameDisplay::~KeyFrameDisplay()
+KeyframeDisplay::~KeyframeDisplay()
 {
 	if(vertexBufferIdValid)
 	{
@@ -69,7 +69,7 @@ KeyFrameDisplay::~KeyFrameDisplay()
 }
 
 
-void KeyFrameDisplay::setFrom(const keyframeMsg *msg)
+void KeyframeDisplay::setFrom(const keyframeMsg *msg)
 {
 	// copy over campose.
 	memcpy(camToWorld.data(), msg->camToWorld.data(), 7*sizeof(float));
@@ -99,7 +99,7 @@ void KeyFrameDisplay::setFrom(const keyframeMsg *msg)
 	glBuffersValid = false;
 }
 
-void KeyFrameDisplay::refreshPC()
+void KeyframeDisplay::refreshPC()
 {
 //	minNearSupport = 9;
 	bool paramsStillGood = my_scaledTH == scaledDepthVarTH &&
@@ -215,7 +215,7 @@ void KeyFrameDisplay::refreshPC()
 
 
 
-void KeyFrameDisplay::drawCam(float lineWidth, float* color)
+void KeyframeDisplay::drawCam(float lineWidth, float* color)
 {
 	if(camModel_.get() == nullptr)
 		return;
@@ -258,7 +258,7 @@ void KeyFrameDisplay::drawCam(float lineWidth, float* color)
 	glPopMatrix();
 }
 
-int KeyFrameDisplay::flushPC(std::ofstream* f)
+int KeyframeDisplay::flushPC(std::ofstream* f)
 {
 
 	MyVertex* tmpBuffer = new MyVertex[camModel_->w*camModel_->h];
@@ -331,7 +331,7 @@ int KeyFrameDisplay::flushPC(std::ofstream* f)
 	return num;
 }
 
-void KeyFrameDisplay::drawPC(float pointSize, float alpha)
+void KeyframeDisplay::drawPC(float pointSize, float alpha)
 {
 	refreshPC();
 

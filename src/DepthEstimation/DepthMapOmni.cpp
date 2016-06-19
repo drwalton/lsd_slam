@@ -220,7 +220,7 @@ float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
 
 float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float gradAlongLine, const vec2 &bestEpDir, 
-	const Eigen::Vector4f *activeKeyFrameGradients,
+	const Eigen::Vector4f *activeKeyframeGradients,
 	float initialTrackedResidual,
 	float sampleDist, bool didSubpixel,
 	OmniCameraModel *model,
@@ -234,7 +234,8 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float trackingErrorFac = 0.25f*(1.0f + initialTrackedResidual);
 
 	// calculate error from geometric noise (wrong camera pose / calibration)
-	Eigen::Vector2f gradsInterp = getInterpolatedElement42(activeKeyFrameGradients, u, v, model->w);
+	Eigen::Vector2f gradsInterp = getInterpolatedElement42(
+		activeKeyframeGradients, u, v, model->w);
 	float geoDispErrorDen = (gradsInterp[0] * bestEpDir[0] + 
 		gradsInterp[1] * bestEpDir[1]) + DIVISION_EPS;
 	if (fabsf(geoDispErrorDen) < DIVISION_EPS) {
@@ -267,7 +268,7 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float *resultIDepth, float *resultVar,
-	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,
+	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyframe,
 	float sampleDist, bool didSubpixel, float tracedLineLen,
 	OmniCameraModel *model,
 	RunningStats *stats)
@@ -284,7 +285,7 @@ float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir
 	}
 
 	*resultVar = findVarOmni(u, v, bestMatchDir, gradAlongLine,
-		bestEpDir, activeKeyFrame->gradients(0), referenceFrame->initialTrackedResidual,
+		bestEpDir, activeKeyframe->gradients(0), referenceFrame->initialTrackedResidual,
 		sampleDist, didSubpixel, model, stats, 1.f / *resultIDepth);
 
 	return 0.f;
@@ -617,14 +618,14 @@ float DepthMap::doStereoOmni(
 	bool saveSearchRangeIms = false;
 #endif
 	bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
-		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+		activeKeyframeImageData, referenceFrameImage, keyframeToReference,
 		stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos,
 		bestMatchLoopC, gradAlongLine,
 		tracedLineLen, bestMatchKeyframe, debugImages.searchRanges,
-		saveSearchRangeIms && debugImages.drawMatchHere(u, v));
+		saveSearchRangeIms && debugImages.drawMatchHere(size_t(u), size_t(v)));
 #else
-	bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, max_idepth,
-		activeKeyFrameImageData, referenceFrameImage, keyframeToReference,
+	bestMatchErr = lsd_slam::doStereoOmniImpl2(u, v, epDir, min_idepth, prior_idepth, 
+		max_idepth, activeKeyframeImageData, referenceFrameImage, keyframeToReference,
 		stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, 
 		bestMatchLoopC, gradAlongLine, tracedLineLen, bestMatchKeyframe);
 #endif
@@ -632,11 +633,12 @@ float DepthMap::doStereoOmni(
 	if (bestMatchErr >= 0.f) {
 		result_idepth = idepth;
 		float var = findVarOmni(u, v, bestMatchPos.normalized(), gradAlongLine,
-				bestEpImDir, activeKeyFrame->gradients(0), referenceFrame->initialTrackedResidual,
+				bestEpImDir, activeKeyframe->gradients(0), 
+				referenceFrame->initialTrackedResidual,
 				GRADIENT_SAMPLE_DIST, false, &oModel, stats, 1.f / idepth);
 		result_var = var;
 		//float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var,
-		//	gradAlongLine, bestEpImDir, referenceFrame, activeKeyFrame,
+		//	gradAlongLine, bestEpImDir, referenceFrame, activeKeyframe,
 		//	GRADIENT_SAMPLE_DIST, false, tracedLineLen, &oModel, stats);
 		//if (r >= 0.f) {
 		//	if (result_idepth != result_idepth) {
@@ -720,10 +722,10 @@ void padEpipolarLineOmni(vec3 *lineStart, vec3 *lineEnd,
 }
 
 bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
-	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel, 
+	const float *activeKeyframeImageData, int width, const OmniCameraModel &oModel, 
 	float u, float v, std::array<float, 5> &valuesToFind, cv::Mat &visIm)
 {
-	valuesToFind[2] = getInterpolatedElement(activeKeyFrameImageData, u, v, width);
+	valuesToFind[2] = getInterpolatedElement(activeKeyframeImageData, u, v, width);
 	float a = 0.f; vec3 dir; vec2 pixel;
 	vec3 otherDir = 2.f*keyframePointDir - epDir;
 	
@@ -732,14 +734,14 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[1] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[1] = getInterpolatedElement(activeKeyframeImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, otherDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*otherDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[0] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[0] = getInterpolatedElement(activeKeyframeImageData, pixel, width);
 
 	a = 0.f;
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
@@ -747,14 +749,14 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[3] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[3] = getInterpolatedElement(activeKeyframeImageData, pixel, width);
 	
 	a += oModel.getEpipolarParamIncrement(a, epDir, keyframePointDir, GRADIENT_SAMPLE_DIST);
 	dir = a*epDir + (1.f - a)*keyframePointDir;
 	if(!oModel.pointInImage(dir)) return false;
 	pixel = oModel.camToPixel(dir);
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
-	valuesToFind[4] = getInterpolatedElement(activeKeyFrameImageData, pixel, width);
+	valuesToFind[4] = getInterpolatedElement(activeKeyframeImageData, pixel, width);
 	
 	return true;
 }
@@ -784,8 +786,8 @@ bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const 
 
 
 	// ===== check epl-grad magnitude ======
-	float gx = activeKeyFrameImageData[idx+1    ] - activeKeyFrameImageData[idx-1    ];
-	float gy = activeKeyFrameImageData[idx+camModel_->w] - activeKeyFrameImageData[idx-camModel_->w];
+	float gx = activeKeyframeImageData[idx+1    ] - activeKeyframeImageData[idx-1    ];
+	float gy = activeKeyframeImageData[idx+camModel_->w] - activeKeyframeImageData[idx-camModel_->w];
 	float eplGradSquared = gx * epx + gy * epy;
 	eplGradSquared = eplGradSquared*eplGradSquared / eplLengthSquared;	// square and norm with epl-length
 
@@ -954,7 +956,8 @@ float doStereoOmniImpl2(
 	const float* const keyframe, const float* referenceFrameImage,
 	const RigidTransform &keyframeToReference,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
-	float &iDepth, vec2 &bestEpImDir, vec3 &bestMatchPos, size_t &bestMatchLoopC, float &gradAlongLine, float &tracedLineLen,
+	float &iDepth, vec2 &bestEpImDir, vec3 &bestMatchPos, 
+	size_t &bestMatchLoopC, float &gradAlongLine, float &tracedLineLen,
 	vec3 &bestMatchKeyframe,
 	cv::Mat &drawMatch, bool drawThisMatch)
 {
@@ -1294,7 +1297,7 @@ float doStereoOmniImpl2(
 	gradAlongLine /= GRADIENT_SAMPLE_DIST*GRADIENT_SAMPLE_DIST;
 
 	// check if interpolated error is OK. use evil hack to allow more error if there is a lot of gradient.
-	if (bestMatchErr > (float)MAX_ERROR_STEREO /* + sqrtf(gradAlongLine)*  20*/) {
+	if (bestMatchErr > (float)MAX_ERROR_STEREO  + sqrtf(gradAlongLine)*  20) {
 		if (enablePrintDebugInfo) stats->num_stereo_invalid_bigErr++;
 		return DepthMapErrCode::ERR_TOO_BIG;
 	}
@@ -1306,8 +1309,10 @@ float doStereoOmniImpl2(
 		throw std::runtime_error("bestEpImDir != bestEpImDir");
 	}
 
-	//TODO TMP
-	iDepth = bestMatchA;// *max_idepth;
+	//TODO Work out whether this is
+	iDepth = bestMatchA *max_idepth;
+	//or
+	//iDepth = bestMatchA;
 	bestMatchLoopC = loopCBest;
 	
 	return bestMatchErr;

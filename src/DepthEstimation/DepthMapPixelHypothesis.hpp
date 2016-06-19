@@ -27,7 +27,7 @@
 namespace lsd_slam
 {
 
-class KeyFrameGraph;
+class KeyframeGraph;
 
 /** Depth hypothesis used in DepthMap.
  *  

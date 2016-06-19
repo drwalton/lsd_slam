@@ -63,6 +63,9 @@ void makeDebugDirectories()
 #if DEBUG_SAVE_FRAME_POINT_CLOUDS
 	makeEmptyDirectory(resourcesDir() + "FramePtClouds/");
 #endif
+#if DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS
+	makeEmptyDirectory(resourcesDir() + "KeyframePropagationPtClouds/");
+#endif
 	std::cout << "Done!" << std::endl;
 }
 
@@ -134,7 +137,7 @@ bool doMapping = true;
 
 int maxLoopClosureCandidates = 10;
 int maxOptimizationIterations = 100;
-int propagateKeyFrameDepthCount = 0;
+int propagateKeyframeDepthCount = 0;
 float loopclosureStrictness = 1.5f;
 float relocalizationTH = 0.7f;
 

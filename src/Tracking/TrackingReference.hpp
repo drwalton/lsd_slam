@@ -30,7 +30,7 @@ namespace lsd_slam
 
 class Frame;
 class DepthMapPixelHypothesis;
-class KeyFrameGraph;
+class KeyframeGraph;
 
 ///\brief Point cloud used to track frame poses.
 ///

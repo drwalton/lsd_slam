@@ -36,7 +36,7 @@ namespace lsd_slam
 
 class DepthMapPixelHypothesis;
 class Frame;
-class KeyFrameGraph;
+class KeyframeGraph;
 class CameraModel;
 
 struct DepthMapDebugSettings
@@ -71,15 +71,15 @@ public:
 	/**
 	 * does propagation and whole-filling-regularization (no observation, for that need to call updateKeyframe()!)
 	 **/
-	void createKeyFrame(Frame* new_keyframe);
+	void createKeyframe(Frame* new_keyframe);
 	
 	/**
 	 * does one fill holes iteration
 	 */
-	void finalizeKeyFrame();
+	void finalizeKeyframe();
 
 	void invalidate();
-	inline bool isValid() {return activeKeyFrame!=0;};
+	inline bool isValid() {return activeKeyframe!=0;};
 
 	int debugPlotDepthMap();
 
@@ -118,10 +118,10 @@ private:
 	// ============= parameter copies for convenience ===========================
 	// these are just copies of the pointers given to this function, for convenience.
 	// these are NOT managed by this object!
-	Frame* activeKeyFrame;
-	boost::shared_lock<boost::shared_mutex> activeKeyFramelock;
-	const float* activeKeyFrameImageData;
-	bool activeKeyFrameIsReactivated;
+	Frame* activeKeyframe;
+	boost::shared_lock<boost::shared_mutex> activeKeyframelock;
+	const float* activeKeyframeImageData;
+	bool activeKeyframeIsReactivated;
 
 	Frame* oldest_referenceFrame;
 	Frame* newest_referenceFrame;
@@ -160,7 +160,7 @@ private:
 	void observeDepth();
 	void observeDepthRow(int yMin, int yMax, RunningStats* stats);
 	bool observeDepthCreate(const int &x, const int &y, const int &idx, RunningStats* const &stats);
-	bool observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyFrameMaxGradBuf, RunningStats* const &stats);
+	bool observeDepthUpdate(const int &x, const int &y, const int &idx, const float* keyframeMaxGradBuf, RunningStats* const &stats);
 	bool makeAndCheckEPLProj(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats);
 	bool makeAndCheckEPLOmni(const int x, const int y, const Frame* const ref,
 		vec3 *epDir, RunningStats* const stats);

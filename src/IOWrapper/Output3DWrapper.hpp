@@ -33,7 +33,7 @@ namespace lsd_slam
 
 class Frame;
 
-class KeyFrameGraph;
+class KeyframeGraph;
 class Frame;
 
 
@@ -50,7 +50,7 @@ public:
 
 
 
-	virtual void publishKeyframeGraph(KeyFrameGraph* graph) {};
+	virtual void publishKeyframeGraph(KeyframeGraph* graph) {};
 
 	// publishes a keyframe. if that frame already existis, it is overwritten, otherwise it is added.
 	virtual void publishKeyframe(Frame* kf) {};

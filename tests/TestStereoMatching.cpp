@@ -28,8 +28,8 @@ int main(int argc, char **argv) {
 	}
 	*/
 
-	projDepthMap.initializeRandomly();
-	omniDepthMap.initializeRandomly();
+	//projDepthMap.initializeRandomly();
+	//omniDepthMap.initializeRandomly();
 
 	return 0;
 }

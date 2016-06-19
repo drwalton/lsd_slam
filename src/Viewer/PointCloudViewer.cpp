@@ -40,8 +40,8 @@
 
 #include "QGLViewer/manipulatedCameraFrame.h"
 
-#include "KeyFrameDisplay.hpp"
-#include "KeyFrameGraphDisplay.hpp"
+#include "KeyframeDisplay.hpp"
+#include "KeyframeGraphDisplay.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -109,8 +109,8 @@ void PointCloudViewer::reset()
 	if(graphDisplay != 0)
 		delete graphDisplay;
 
-	currentCamDisplay = new KeyFrameDisplay();
-	graphDisplay = new KeyFrameGraphDisplay();
+	currentCamDisplay = new KeyframeDisplay();
+	graphDisplay = new KeyframeGraphDisplay();
 
 	KFcurrent = 0;
 	KFLastPCSeq = -1;

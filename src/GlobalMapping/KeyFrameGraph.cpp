@@ -19,7 +19,7 @@
 */
 
 #include "System/Win32Compatibility.hpp"
-#include "GlobalMapping/KeyFrameGraph.hpp"
+#include "GlobalMapping/KeyframeGraph.hpp"
 #include "DataStructures/Frame.hpp"
 
 #include <g2o/core/sparse_optimizer.h>
@@ -65,7 +65,7 @@ KFConstraintStruct::~KFConstraintStruct()
 		delete edge;
 }
 
-KeyFrameGraph::KeyFrameGraph()
+KeyframeGraph::KeyframeGraph()
 : nextEdgeId(0)
 {
 	typedef g2o::BlockSolver_7_3 BlockSolver;
@@ -89,7 +89,7 @@ KeyFrameGraph::KeyFrameGraph()
 
 }
 
-KeyFrameGraph::~KeyFrameGraph()
+KeyframeGraph::~KeyframeGraph()
 {
 	// deletes edges
 	for (KFConstraintStruct* edge : newEdgeBuffer)
@@ -97,7 +97,7 @@ KeyFrameGraph::~KeyFrameGraph()
 
 	// deletes keyframes (by deleting respective shared pointers).
 
-	idToKeyFrame.clear();
+	idToKeyframe.clear();
 
 	// deletes pose structs (their memory is managed by graph)
 	// WARNING: at this point, all Frames have to be deleted, otherwise it night cause segfaults!
@@ -106,7 +106,7 @@ KeyFrameGraph::~KeyFrameGraph()
 }
 
 
-void KeyFrameGraph::addFrame(Frame* frame)
+void KeyframeGraph::addFrame(Frame* frame)
 {
 
 	frame->pose->isRegisteredToGraph = true;
@@ -118,7 +118,7 @@ void KeyFrameGraph::addFrame(Frame* frame)
 	allFramePosesMutex.unlock();
 }
 
-void KeyFrameGraph::dumpMap(std::string folder)
+void KeyframeGraph::dumpMap(std::string folder)
 {
 	printf("DUMP MAP: dumping to %s\n", folder.c_str());
 
@@ -234,7 +234,7 @@ void KeyFrameGraph::dumpMap(std::string folder)
 
 
 
-void KeyFrameGraph::addKeyFrame(Frame* frame)
+void KeyframeGraph::addKeyframe(Frame* frame)
 {
 	if(frame->pose->graphVertex != nullptr)
 		return;
@@ -257,7 +257,7 @@ void KeyFrameGraph::addKeyFrame(Frame* frame)
 
 }
 
-void KeyFrameGraph::insertConstraint(KFConstraintStruct* constraint)
+void KeyframeGraph::insertConstraint(KFConstraintStruct* constraint)
 {
 	EdgeSim3* edge = new EdgeSim3();
 	edge->setId(nextEdgeId);
@@ -296,7 +296,7 @@ void KeyFrameGraph::insertConstraint(KFConstraintStruct* constraint)
 }
 
 
-bool KeyFrameGraph::addElementsFromBuffer()
+bool KeyframeGraph::addElementsFromBuffer()
 {
 	bool added = false;
 
@@ -324,7 +324,7 @@ bool KeyFrameGraph::addElementsFromBuffer()
 	return added;
 }
 
-int KeyFrameGraph::optimize(int num_iterations)
+int KeyframeGraph::optimize(int num_iterations)
 {
 	// Abort if graph is empty, g2o shows an error otherwise
 	if (graph.edges().size() == 0)
@@ -338,7 +338,7 @@ int KeyFrameGraph::optimize(int num_iterations)
 
 }
 
-void KeyFrameGraph::calculateGraphDistancesToFrame(Frame* startFrame, std::unordered_map< Frame*, int >* distanceMap)
+void KeyframeGraph::calculateGraphDistancesToFrame(Frame* startFrame, std::unordered_map< Frame*, int >* distanceMap)
 {
 	distanceMap->insert(std::make_pair(startFrame, 0));
 	

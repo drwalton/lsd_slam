@@ -30,7 +30,7 @@
 
 namespace lsd_slam 
 {
-class KeyFrameDisplay;
+class KeyframeDisplay;
 
 
 struct GraphConstraint
@@ -43,8 +43,8 @@ struct GraphConstraint
 
 struct GraphConstraintPt
 {
-	KeyFrameDisplay* from;
-	KeyFrameDisplay* to;
+	KeyframeDisplay* from;
+	KeyframeDisplay* to;
 	float err;
 };
 
@@ -55,10 +55,10 @@ struct GraphFramePose
 };
 
 
-class KeyFrameGraphDisplay {
+class KeyframeGraphDisplay {
 public:
-	KeyFrameGraphDisplay();
-	virtual ~KeyFrameGraphDisplay();
+	KeyframeGraphDisplay();
+	virtual ~KeyframeGraphDisplay();
 
 	void draw();
 
@@ -70,8 +70,8 @@ public:
 	bool flushPointcloud;
 	bool printNumbers;
 private:
-	std::map<int, KeyFrameDisplay*> keyframesByID;
-	std::vector<KeyFrameDisplay*> keyframes;
+	std::map<int, KeyframeDisplay*> keyframesByID;
+	std::vector<KeyframeDisplay*> keyframes;
 	std::vector<GraphConstraintPt> constraints;
 
 	boost::mutex dataMutex;

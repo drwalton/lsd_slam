@@ -87,7 +87,7 @@ float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
 
 float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float gradAlongLine, const vec2 &bestEpDir,
-	const Eigen::Vector4f *activeKeyFrameGradients,
+	const Eigen::Vector4f *activeKeyframeGradients,
 	float initialTrackedResidual,
 	float sampleDist, bool didSubpixel,
 	OmniCameraModel *model,
@@ -107,13 +107,13 @@ std::array<float, 5> findValuesToSearchFor(
 	cv::Mat &visIm = emptyMat);
 
 bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
-	const float *activeKeyFrameImageData, int width, const OmniCameraModel &oModel,
+	const float *activeKeyframeImageData, int width, const OmniCameraModel &oModel,
 	float u, float v, std::array<float, 5> &valuesToFind,
 	cv::Mat &visIm = emptyMat);
 
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float *resultIDepth, float *resultVar,
-	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyFrame,
+	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyframe,
 	float sampleDist, bool didSubpixel, float tracedLineLen,
 	OmniCameraModel *model,
 	RunningStats *stats);
