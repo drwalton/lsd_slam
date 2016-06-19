@@ -47,6 +47,9 @@ struct DepthMapDebugImages
 
 	ModelLoader framePtCloud;
 
+	ModelLoader prePropagatePointCloud;
+	ModelLoader postPropagatePointCloud;
+
 	bool drawMatchHere(size_t x, size_t y) const;
 	size_t drawIntervalX, drawIntervalY;
 
@@ -68,6 +71,10 @@ struct DepthMapDebugImages
 	void addFramePt(const vec3 &point, const float color);
 	std::mutex framePtMutex;
 
+	void clearPropagatePtClouds();
+	void addPrePropagatePt(const vec3 &point, const float color);
+	void addPostPropagatePt(const vec3 &point, const float color);
+	std::mutex propagatePtMutex;
 
 	static cv::Vec3b getStereoResultVisColor(float err);
 

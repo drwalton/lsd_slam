@@ -44,7 +44,7 @@ void makeDebugDirectories();
 
 
 #if defined(NDEBUG)
-	#define enablePrintDebugInfo false
+	#define enablePrintDebugInfo true
 #else
 	#define enablePrintDebugInfo true
 #endif

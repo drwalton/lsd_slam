@@ -249,8 +249,9 @@ bool DepthMap::makeAndCheckEPLProj(const int x, const int y, const Frame* const 
 	float epx = - camModel_->fx * ref->thisToOther_t[0] + ref->thisToOther_t[2]*(x - camModel_->cx);
 	float epy = - camModel_->fy * ref->thisToOther_t[1] + ref->thisToOther_t[2]*(y - camModel_->cy);
 
-	if(isnan(epx+epy))
+	if (isnan(epx + epy)) {
 		return false;
+	}
 
 
 	// ======== check epl length =========
@@ -325,6 +326,13 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		isGood = true;
 	}
 	if (!isGood) {
+#if DEBUG_SAVE_RESULT_IMS
+		{
+			cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(
+				DepthMapErrCode::EPL_NOT_IN_REF_FRAME);
+			debugImages.results.at<cv::Vec3b>(y, x) = color;
+		}
+#endif
 		return false;
 	}
 
@@ -362,9 +370,22 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 	}
 
 	if (error < 0) {
+#if DEBUG_SAVE_RESULT_IMS
+		{
+			cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(error);
+			debugImages.results.at<cv::Vec3b>(y, x) = color;
+		}
+#endif
 		return false;
 	}
 	if(result_var > MAX_VAR) {
+#if DEBUG_SAVE_RESULT_IMS
+		{
+			cv::Vec3b color = DepthMapDebugImages::getStereoResultVisColor(
+				DepthMapErrCode::ERR_TOO_BIG);
+			debugImages.results.at<cv::Vec3b>(y, x) = color;
+		}
+#endif
 		return false;
 	}
 	
@@ -396,8 +417,15 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		{
 			if(plotStereoImages)
 				debugImageHypothesisHandling.at<cv::Vec3b>(y, x) = cv::Vec3b(0,255,0);	// GREEN FOR skip
+#if DEBUG_SAVE_RESULT_IMS
+	{
+		cv::Vec3b color = cv::Vec3b(0,255,255);
+		debugImages.results.at<cv::Vec3b>(y, x) = color;
+	}
+#endif
 
 			if(enablePrintDebugInfo) stats->num_observe_skip_alreadyGood++;
+
 			return false;
 		}
 
@@ -648,7 +676,9 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 	Eigen::Matrix3f trafoInv_R = oldToNew_SE3.rotationMatrix().matrix().cast<float>();
 
 
-	const bool* trackingWasGood = new_keyframe->getTrackingParent() == activeKeyframe ? new_keyframe->refPixelWasGoodNoCreate() : 0;
+	const bool* trackingWasGood = 
+		new_keyframe->getTrackingParent() == activeKeyframe ? 
+		new_keyframe->refPixelWasGoodNoCreate() : 0;
 
 
 	const float* activeKFImageData = activeKeyframe->image(0);
@@ -670,11 +700,22 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 			if(enablePrintDebugInfo) runningStats.num_prop_attempts++;
 
-			Eigen::Vector3f pn = (trafoInv_R *
-				camModel_->pixelToCam(vec2(x, y))) / source->idepth_smoothed + trafoInv_t;
+			vec3 p = camModel_->pixelToCam(vec2(x, y)) / source->idepth_smoothed;
+			vec3 pn = (trafoInv_R * p) + trafoInv_t;
+#if DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS
+			if (p == p) {
+				debugImages.addPrePropagatePt(camModel_->pixelToCam(vec2(x, y)) / source->idepth_smoothed,
+					activeKeyframeImageData[x + y*camModel_->w]);
+			}
+#endif
 			//Eigen::Vector3f pn = (trafoInv_R * Eigen::Vector3f(x*fxi + cxi,y*fyi + cyi,1.0f)) / source->idepth_smoothed + trafoInv_t;
 
-			float new_idepth = 1.0f / pn[2];
+			float new_idepth;
+			if (camModel_->getType() == CameraModelType::PROJ) {
+				new_idepth = 1.0f / pn[2];
+			} else /* OMNI */ {
+				new_idepth = 1.0f / pn.norm();
+			}
 
 			vec2 uv = camModel_->camToPixel(pn);
 			float u_new = uv[0];
@@ -782,6 +823,11 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 						merged_new_idepth,
 						1.0f/(1.0f/targetBest->idepth_var + 1.0f/new_var),
 						merged_validity);
+
+#if DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS
+				debugImages.addPostPropagatePt(pn,
+					activeKeyframeImageData[x + y*camModel_->w]);
+#endif
 			}
 		}
 
@@ -802,6 +848,18 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 				runningStats.num_prop_color_decreased,
 				runningStats.num_prop_grad_decreased);
 	}
+
+#if DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS
+	std::stringstream ss;
+	ss << resourcesDir() << "KeyframePropagationPtClouds/KF" << activeKeyframe->id() 
+		<< "PRE.ply";
+	debugImages.prePropagatePointCloud.saveFile(ss.str());
+	ss.str(std::string());
+	ss << resourcesDir() << "KeyframePropagationPtClouds/KF" << activeKeyframe->id() 
+		<< "POST.ply";
+	debugImages.postPropagatePointCloud.saveFile(ss.str());
+	debugImages.clearPropagatePtClouds();
+#endif
 }
 
 
@@ -1494,7 +1552,8 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 
 	// make mean inverse depth be one.
 	float sumIdepth=0, numIdepth=0;
-	for(DepthMapPixelHypothesis* source = currentDepthMap; source < currentDepthMap+camModel_->w*camModel_->h; source++)
+	for(DepthMapPixelHypothesis* source = currentDepthMap; 
+		source < currentDepthMap+camModel_->w*camModel_->h; source++)
 	{
 		if(!source->isValid)
 			continue;
@@ -1512,6 +1571,9 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 		source->idepth_var *= rescaleFactor2;
 		source->idepth_var_smoothed *= rescaleFactor2;
 	}
+	//TODO this goes haywire in omni mode, always decreasing. 
+	//In proj mode, stays close to 1, sometimes higher, sometimes lower.
+	std::cout << "RESCALE: " << rescaleFactor << std::endl;
 	activeKeyframe->pose->thisToParent_raw = sim3FromSE3(oldToNew_SE3.inverse(), rescaleFactor);
 	activeKeyframe->pose->invalidateCache();
 
@@ -1660,12 +1722,6 @@ inline float DepthMap::doStereoProj(
 	bool drawThisPixel = debugImages.drawMatchHere(size_t(u), size_t(v));
 #endif
 
-#if DEBUG_SAVE_SEARCH_RANGE_IMS
-	if (drawThisPixel) {
-		cv::circle(debugImages.searchRanges, cv::Point(int(u),int(v)), 2, CV_RGB(255, 0, 0));
-	}
-#endif
-
 	// calculate epipolar line start and end point in old image
 	const ProjCameraModel *pm = static_cast<const ProjCameraModel*>(camModel_.get());
 	Eigen::Vector3f KinvP = Eigen::Vector3f(pm->fxi()*u+pm->cxi(),pm->fyi()*v+pm->cyi(),1.0f);
@@ -1701,6 +1757,20 @@ inline float DepthMap::doStereoProj(
 	float realVal_m2 = getInterpolatedElement(activeKeyframeImageData,u - 2*epxn*rescaleFactor, v - 2*epyn*rescaleFactor, camModel_->w);
 	float realVal_p2 = getInterpolatedElement(activeKeyframeImageData,u + 2*epxn*rescaleFactor, v + 2*epyn*rescaleFactor, camModel_->w);
 
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	if (drawThisPixel) {
+		debugImages.searchRanges.at<cv::Vec3b>(
+			v + epyn*rescaleFactor, u + epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+		debugImages.searchRanges.at<cv::Vec3b>(
+			v - epyn*rescaleFactor, u - epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+		debugImages.searchRanges.at<cv::Vec3b>(
+			v, u) = cv::Vec3b(0, 255, 0);
+		debugImages.searchRanges.at<cv::Vec3b>(
+			v - 2*epyn*rescaleFactor, u - 2*epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+		debugImages.searchRanges.at<cv::Vec3b>(
+			v + 2*epyn*rescaleFactor, u + 2*epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+	}
+#endif
 
 
 //	if(referenceFrame->K_otherToThis_t[2] * max_idepth + pInf[2] < 0.01)
@@ -2162,6 +2232,9 @@ inline float DepthMap::doStereoProj(
 	// calculate error from geometric noise (wrong camera pose / calibration)
 	Eigen::Vector2f gradsInterp = getInterpolatedElement42(
 		activeKeyframe->gradients(0), u, v, camModel_->w);
+	if (gradsInterp[0] == 0 && gradsInterp[1] == 0) {
+		throw 1;
+	}
 	float geoDispError = (gradsInterp[0]*epxn + gradsInterp[1]*epyn) + DIVISION_EPS;
 	geoDispError = trackingErrorFac*trackingErrorFac*
 		(gradsInterp[0]*gradsInterp[0] + gradsInterp[1]*gradsInterp[1]) / 

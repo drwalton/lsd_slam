@@ -77,7 +77,7 @@ float doStereoOmniImpl2(
 	float &idepth,
 	vec2 &bestEpDir, vec3 &bestMatchPos,
 	size_t &bestMatchLoopC,
-	float &gradAlongLine, float &tracedLineLen,
+	float &gradAlongLine, float &initLineLen,
 	vec3 &bestMatchKeyframe,
 	cv::Mat &drawMat = emptyMat,
 	bool showMatch = false);
@@ -104,11 +104,13 @@ std::array<float, 5> findValuesToSearchFor(
 	int x, int y,
 	int width,
 	vec3 &pointDir,
+	vec2 &epImDir,
 	cv::Mat &visIm = emptyMat);
 
 bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyframeImageData, int width, const OmniCameraModel &oModel,
 	float u, float v, std::array<float, 5> &valuesToFind,
+	vec2 &epImDir,
 	cv::Mat &visIm = emptyMat);
 
 float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,

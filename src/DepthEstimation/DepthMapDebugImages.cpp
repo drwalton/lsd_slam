@@ -101,6 +101,30 @@ void DepthMapDebugImages::addFramePt(const vec3 & point, const float color)
 	framePtMutex.unlock();
 }
 
+void DepthMapDebugImages::clearPropagatePtClouds()
+{
+	prePropagatePointCloud.vertices() = std::vector<vec3>();
+	prePropagatePointCloud.vertColors() = std::vector<vec3>();
+	postPropagatePointCloud.vertices() = std::vector<vec3>();
+	postPropagatePointCloud.vertColors() = std::vector<vec3>();
+}
+
+void DepthMapDebugImages::addPrePropagatePt(const vec3 & point, const float color)
+{
+	propagatePtMutex.lock();
+	prePropagatePointCloud.vertices().push_back(point);
+	prePropagatePointCloud.vertColors().push_back(vec3(color, color, color));
+	propagatePtMutex.unlock();
+}
+
+void DepthMapDebugImages::addPostPropagatePt(const vec3 & point, const float color)
+{
+	propagatePtMutex.lock();
+	postPropagatePointCloud.vertices().push_back(point);
+	postPropagatePointCloud.vertColors().push_back(vec3(color, color, color));
+	propagatePtMutex.unlock();
+}
+
 cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 {
 	if (err >= 0.f) {
