@@ -154,56 +154,13 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 }
 void DepthMap::observeDepth()
 {
-#if DEBUG_SAVE_SEARCH_RANGE_IMS
 	{
 		if (activeKeyframeImageData != nullptr) {
 			Frame* refFrame = activeKeyframeIsReactivated ?
 				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearSearchRangesIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
+			debugImages.clearStereoImages(activeKeyframeImageData, refFrame->image(), camModel_.get());
 		}
 	}
-#endif
-#if DEBUG_SAVE_RESULT_IMS
-	{
-		if (activeKeyframeImageData != nullptr) {
-			Frame* refFrame = activeKeyframeIsReactivated ?
-				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearResultIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
-		}
-	}
-#endif
-#if DEBUG_SAVE_IDEPTH_IMS
-	{
-		if (activeKeyframeImageData != nullptr) {
-			Frame* refFrame = activeKeyframeIsReactivated ?
-				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearDepthIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
-		}
-	}
-#endif
-#if DEBUG_SAVE_VAR_IMS
-	{
-		if (activeKeyframeImageData != nullptr) {
-			Frame* refFrame = activeKeyframeIsReactivated ?
-				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearVarIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
-		}
-	}
-#endif
-#if DEBUG_SAVE_FRAME_POINT_CLOUDS
-	{
-		debugImages.clearFramePtCloud();
-	}
-#endif
-#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
-	{
-		if (activeKeyframeImageData != nullptr) {
-			Frame* refFrame = activeKeyframeIsReactivated ?
-				newest_referenceFrame : oldest_referenceFrame;
-			debugImages.clearPixelDisparityIm(activeKeyframeImageData, refFrame->image(), camModel_.get());
-		}
-	}
-#endif
 
 	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, camModel_->h-3, 10);
 
@@ -658,13 +615,16 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 
 	if(new_keyframe->getTrackingParent() != activeKeyframe)
 	{
-		printf("WARNING: propagating depth from frame %d to %d, which was tracked on a different frame (%d).\nWhile this should work, it is not recommended.",
+		printf("WARNING: propagating depth from frame %d to %d, "
+			"which was tracked on a different frame (%d).\n"
+			"While this should work, it is not recommended.",
 				activeKeyframe->id(), new_keyframe->id(),
 				new_keyframe->getTrackingParent()->id());
 	}
 
 	// wipe depthmap
-	for(DepthMapPixelHypothesis* pt = otherDepthMap+camModel_->w*camModel_->h-1; pt >= otherDepthMap; pt--)
+	for(DepthMapPixelHypothesis* pt = otherDepthMap+camModel_->w*camModel_->h-1; 
+		pt >= otherDepthMap; pt--)
 	{
 		pt->isValid = false;
 		pt->blacklisted = 0;
@@ -1092,6 +1052,11 @@ void DepthMap::regularizeDepthMap(bool removeOcclusions, int validityTH)
 
 void DepthMap::initializeRandomly(Frame* new_frame)
 {
+	CameraModelType camType = camModel_->getType();
+	std::unique_ptr<CameraModel> projVersion;
+	if (camType == CameraModelType::OMNI) {
+		projVersion = camModel_->makeProjCamModel();
+	}
 	if (initMode_ == DepthMapInitMode::CONSISTENT) {
 		srand(1);
 	}
@@ -1115,6 +1080,17 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 				} else {
 					idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
 				}
+
+				//TODO only when testing against a proj version!
+				//Correct for difference in depth representations. 
+				// In omni mode, depths represent distances from the camera. To
+				// initialise with the same point cloud as in PROJ mode, need to 
+				// convert.
+				if (camType == CameraModelType::OMNI) {
+					vec3 pos = projVersion->pixelToCam(vec2(x, y), 1.f / idepth);
+					idepth = pos.norm();
+				}
+
 				currentDepthMap[x+y*camModel_->w] = DepthMapPixelHypothesis(
 						idepth,
 						idepth,
@@ -1430,54 +1406,7 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 				runningStats.num_stereo_invalid_bigErr);
 	}
 
-#if DEBUG_SAVE_SEARCH_RANGE_IMS
-	{
-		std::stringstream ss;
-		ss << resourcesDir() << "RangeIms/RangeKF" << activeKeyframe->id() <<
-			"_f" << referenceFrames[0]->id() << ".png";
-		cv::imwrite(ss.str(), debugImages.searchRanges);
-	}
-#endif
-#if DEBUG_SAVE_RESULT_IMS
-	{
-		std::stringstream ss;
-		ss << resourcesDir() << "ResultIms/ResultKF" << activeKeyframe->id() <<
-			"_f" << referenceFrames[0]->id() << ".png";
-		cv::imwrite(ss.str(), debugImages.results);
-	}
-#endif
-#if DEBUG_SAVE_IDEPTH_IMS
-	{
-		std::stringstream ss;
-		ss << resourcesDir() << "DepthIms/DepthKF" << activeKeyframe->id() <<
-			"_f" << referenceFrames[0]->id() << ".png";
-		cv::imwrite(ss.str(), debugImages.depths);
-	}
-#endif
-#if DEBUG_SAVE_VAR_IMS
-	{
-		std::stringstream ss;
-		ss << resourcesDir() << "VarIms/VarKF" << activeKeyframe->id() <<
-			"_f" << referenceFrames[0]->id() << ".png";
-		cv::imwrite(ss.str(), debugImages.vars);
-	}
-#endif
-#if DEBUG_SAVE_FRAME_POINT_CLOUDS
-	{
-		std::stringstream ss;
-		ss << resourcesDir() << "FramePtClouds/CloudKF" << activeKeyframe->id() <<
-			"_f" << referenceFrames[0]->id() << ".ply";
-		debugImages.framePtCloud.saveFile(ss.str());
-	}
-#endif
-#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
-	{
-		std::stringstream ss;
-		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << activeKeyframe->id() <<
-			"_f" << referenceFrames[0]->id() << ".png";
-		cv::imwrite(ss.str(), debugImages.pixelDisparity);
-	}
-#endif
+	debugImages.saveStereoIms(activeKeyframe->id(), referenceFrames[0]->id());
 }
 
 void DepthMap::invalidate()
@@ -1517,8 +1446,8 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 	gettimeofday(&tv_start, NULL);
 
 	//TODO Temporary test: not propagating depth, but instead randomly initialising every time.
-	//propagateDepth(new_keyframe);
-	initializeRandomly(new_keyframe);
+	propagateDepth(new_keyframe);
+	//initializeRandomly(new_keyframe);
 
 	gettimeofday(&tv_end, NULL);
 	msPropagate = 0.9f*msPropagate + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
@@ -1765,15 +1694,15 @@ inline float DepthMap::doStereoProj(
 #if DEBUG_SAVE_SEARCH_RANGE_IMS
 	if (drawThisPixel) {
 		debugImages.searchRanges.at<cv::Vec3b>(
-			v + epyn*rescaleFactor, u + epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+			int(v + epyn*rescaleFactor), int(u + epxn*rescaleFactor)) = cv::Vec3b(0, 255, 0);
 		debugImages.searchRanges.at<cv::Vec3b>(
-			v - epyn*rescaleFactor, u - epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+			int(v - epyn*rescaleFactor), int(u - epxn*rescaleFactor)) = cv::Vec3b(0, 255, 0);
 		debugImages.searchRanges.at<cv::Vec3b>(
-			v, u) = cv::Vec3b(0, 255, 0);
+			int(v), int(u)) = cv::Vec3b(0, 255, 0);
 		debugImages.searchRanges.at<cv::Vec3b>(
-			v - 2*epyn*rescaleFactor, u - 2*epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+			int(v - 2*epyn*rescaleFactor), int(u - 2*epxn*rescaleFactor)) = cv::Vec3b(0, 255, 0);
 		debugImages.searchRanges.at<cv::Vec3b>(
-			v + 2*epyn*rescaleFactor, u + 2*epxn*rescaleFactor) = cv::Vec3b(0, 255, 0);
+			int(v + 2*epyn*rescaleFactor), int(u + 2*epxn*rescaleFactor)) = cv::Vec3b(0, 255, 0);
 	}
 #endif
 
@@ -1998,8 +1927,8 @@ inline float DepthMap::doStereoProj(
 		if (drawThisPixel) {
 			vec3 rgb = 255.f * hueToRgb(0.8f * ee / 325125.f);
 			cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
-			debugImages.searchRanges.at<cv::Vec3b>(cpy + 2 * incy,
-				cpx + 2 * incx + camModel_->w) = rgbB;
+			debugImages.searchRanges.at<cv::Vec3b>(int(cpy + 2 * incy),
+				int(cpx + 2 * incx + camModel_->w)) = rgbB;
 		}
 #endif
 
@@ -2077,7 +2006,7 @@ inline float DepthMap::doStereoProj(
 		vec3 rgb(0, 255.f, 255.f);
 		cv::Vec3b rgbB(uchar(rgb.z()), uchar(rgb.y()), uchar(rgb.x()));
 		debugImages.searchRanges.at<cv::Vec3b>(
-			best_match_y, best_match_x + camModel_->w) = rgbB;
+			int(best_match_y), int(best_match_x + camModel_->w)) = rgbB;
 	}
 #endif
 

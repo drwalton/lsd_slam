@@ -43,14 +43,14 @@ class KeyframeGraph;
 ///
 /// \note As the level zero point cloud is not used for tracking, it is not
 ///       fully calculated. Only the weights are valid on this level!
-class TrackingReference
+class TrackingKeyframe
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	/** Creates an empty TrackingReference with optional preallocation per level. */
-	TrackingReference();
-	~TrackingReference();
+	TrackingKeyframe();
+	~TrackingKeyframe();
 	void importFrame(Frame* source);
 
 	Frame* keyframe;

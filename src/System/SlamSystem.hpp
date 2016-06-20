@@ -46,7 +46,7 @@ using g2o::timeval;
 #endif
 
 
-class TrackingReference;
+class TrackingKeyframe;
 class KeyframeGraph;
 class SE3Tracker;
 class Sim3Tracker;
@@ -135,14 +135,14 @@ private:
 	int singleThreadMappingInterval;
 
 	// ============= EXCLUSIVELY TRACKING THREAD (+ init) ===============
-	TrackingReference* trackingReference; // tracking reference for current keyframe. only used by tracking.
+	TrackingKeyframe* trackingKeyframe; // tracking reference for current keyframe. only used by tracking.
 	SE3Tracker* tracker;
 
 
 
 	// ============= EXCLUSIVELY MAPPING THREAD (+ init) =============
 	DepthMap* map;
-	TrackingReference* mappingTrackingReference;
+	TrackingKeyframe* mappingTrackingReference;
 
 	// during re-localization used
 	std::vector<Frame*> KFForReloc;
@@ -154,8 +154,8 @@ private:
 	TrackableKeyframeSearch* trackableKeyframeSearch;
 	Sim3Tracker* constraintTracker;
 	SE3Tracker* constraintSE3Tracker;
-	TrackingReference* newKFTrackingReference;
-	TrackingReference* candidateTrackingReference;
+	TrackingKeyframe* newKFTrackingReference;
+	TrackingKeyframe* candidateTrackingReference;
 
 
 
@@ -270,7 +270,7 @@ private:
 	void constraintSearchThreadLoopIteration();
 	/** Calculates a scale independent error norm for reciprocal tracking results a and b with associated information matrices. */
 	float tryTrackSim3(
-			TrackingReference* A, TrackingReference* B,
+			TrackingKeyframe* A, TrackingKeyframe* B,
 			int lvlStart, int lvlEnd,
 			bool useSSE,
 			Sim3 &AtoB, Sim3 &BtoA,

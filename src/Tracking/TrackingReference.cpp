@@ -30,7 +30,7 @@ namespace lsd_slam
 {
 
 
-TrackingReference::TrackingReference()
+TrackingKeyframe::TrackingKeyframe()
 {
 	frameID=-1;
 	keyframe = 0;
@@ -44,7 +44,7 @@ TrackingReference::TrackingReference()
 		numData[level] = 0;
 	}
 }
-void TrackingReference::releaseAll()
+void TrackingKeyframe::releaseAll()
 {
 	for (int level = 0; level < PYRAMID_LEVELS; ++ level)
 	{
@@ -57,19 +57,19 @@ void TrackingReference::releaseAll()
 	}
 	wh_allocated = 0;
 }
-void TrackingReference::clearAll()
+void TrackingKeyframe::clearAll()
 {
 	for (int level = 0; level < PYRAMID_LEVELS; ++ level)
 		numData[level] = 0;
 }
-TrackingReference::~TrackingReference()
+TrackingKeyframe::~TrackingKeyframe()
 {
 	boost::unique_lock<boost::mutex> lock(accessMutex);
 	invalidate();
 	releaseAll();
 }
 
-void TrackingReference::importFrame(Frame* sourceKF)
+void TrackingKeyframe::importFrame(Frame* sourceKF)
 {
 	boost::unique_lock<boost::mutex> lock(accessMutex);
 	keyframeLock = sourceKF->getActiveLock();
@@ -87,14 +87,14 @@ void TrackingReference::importFrame(Frame* sourceKF)
 	lock.unlock();
 }
 
-void TrackingReference::invalidate()
+void TrackingKeyframe::invalidate()
 {
 	if(keyframe != 0)
 		keyframeLock.unlock();
 	keyframe = 0;
 }
 
-void TrackingReference::makePointCloud(int level)
+void TrackingKeyframe::makePointCloud(int level)
 {
 	assert(keyframe != 0);
 	boost::unique_lock<boost::mutex> lock(accessMutex);
@@ -130,7 +130,7 @@ void TrackingReference::makePointCloud(int level)
 
 			if(pyrIdepthVarSource[idx] <= 0 || pyrIdepthSource[idx] == 0) continue;
 
-			*posDataPT = (1.0f / pyrIdepthSource[idx]) * model.pixelToCam(vec2(x, y));
+			*posDataPT = model.pixelToCam(vec2(x, y), 1.0f / pyrIdepthSource[idx]);
 			*gradDataPT = pyrGradSource[idx].head<2>();
 			*colorAndVarDataPT = Eigen::Vector2f(pyrColorSource[idx], pyrIdepthVarSource[idx]);
 			*idxPT = idx;

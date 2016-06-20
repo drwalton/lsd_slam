@@ -1,6 +1,7 @@
 #include "DepthMapDebugImages.hpp"
 #include "CameraModel/CameraModel.hpp"
 #include "util/globalFuncs.hpp"
+#include "DepthMapDebugDefines.hpp"
 
 namespace lsd_slam
 {
@@ -16,7 +17,8 @@ void makeDebugCompareIm(cv::Mat &i, const float * keyframe, const float * refFra
 			uchar kfVal = static_cast<uchar>(keyframe[r*camModel->w + c]);
 			uchar refVal = static_cast<uchar>(refFrame[r*camModel->w + c]);
 			rptr[c] = cv::Vec3b(kfVal, kfVal, kfVal);
-			rptr[c + camModel->w] = cv::Vec3b(refVal, refVal, refVal);
+			float p = refVal*.75f + kfVal*.25f;
+			rptr[c + camModel->w] = cv::Vec3b(p,p,p);
 		}
 	}
 }
@@ -35,6 +37,37 @@ void DepthMapDebugImages::clearMatchesIm(const float * keyframe, const float * r
 	makeDebugCompareIm(matches, keyframe, refFrame, camModel);
 }
 
+void DepthMapDebugImages::clearStereoImages(const float * keyframe, const float * refFrame, const CameraModel *camModel)
+{
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	makeDebugCompareIm(searchRanges, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_RESULT_IMS
+	makeDebugCompareIm(results, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_IDEPTH_IMS
+	makeDebugCompareIm(depths, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_VAR_IMS
+	makeDebugCompareIm(vars, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+	clearFramePtCloud();
+#endif
+#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
+	makeDebugCompareIm(pixelDisparity, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
+	makeDebugCompareIm(gradAlongLines, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_GEO_DISP_ERROR_IMS
+	makeDebugCompareIm(geoDispErrs, keyframe, refFrame, camModel);
+#endif
+#if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
+	makeDebugCompareIm(photoDispErrs, keyframe, refFrame, camModel);
+#endif
+}
+
 void DepthMapDebugImages::visualiseMatch(vec2 keyframePos, vec2 referenceFramePos, const CameraModel *model)
 {
 	const int matchDisplayInvChance = 100;
@@ -49,42 +82,16 @@ void DepthMapDebugImages::visualiseMatch(vec2 keyframePos, vec2 referenceFramePo
 	}
 }
 
-void DepthMapDebugImages::clearSearchRangesIm(const float * keyframe, const float * refFrame, const CameraModel *camModel)
-{
-	makeDebugCompareIm(searchRanges, keyframe, refFrame, camModel);
-}
-
-void DepthMapDebugImages::clearResultIm(const float * keyframe, const float * refFrame, const CameraModel * model)
-{
-	makeDebugCompareIm(results, keyframe, refFrame, model);
-}
-
-void DepthMapDebugImages::clearDepthIm(const float * keyframe, const float *refFrame, const CameraModel * model)
-{
-
-	makeDebugCompareIm(depths, keyframe, refFrame, model);
-}
-
 void DepthMapDebugImages::visualisePixelDisparity(size_t x, size_t y, size_t disparity)
 {
 	vec3 rgb = 255*hueToRgb(float(disparity % 4)  / 5.f);
 	pixelDisparity.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 
-void DepthMapDebugImages::clearVarIm(const float * keyframe, const float * refFrame, const CameraModel * model)
-{
-	makeDebugCompareIm(vars, keyframe, refFrame, model);
-}
-
 void DepthMapDebugImages::addVar(size_t x, size_t y, float var)
 {
 	vec3 rgb = 255*hueToRgb(var  / MAX_VAR);
 	vars.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
-}
-
-void DepthMapDebugImages::clearPixelDisparityIm(const float * keyframe, const float * refFrame, const CameraModel * model)
-{
-	makeDebugCompareIm(pixelDisparity, keyframe, refFrame, model);
 }
 
 void DepthMapDebugImages::clearFramePtCloud()
@@ -123,6 +130,101 @@ void DepthMapDebugImages::addPostPropagatePt(const vec3 & point, const float col
 	postPropagatePointCloud.vertices().push_back(point);
 	postPropagatePointCloud.vertColors().push_back(vec3(color, color, color));
 	propagatePtMutex.unlock();
+}
+
+void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
+{
+#if DEBUG_SAVE_SEARCH_RANGE_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "RangeIms/RangeKF" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), searchRanges);
+	}
+#endif
+#if DEBUG_SAVE_RESULT_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "ResultIms/ResultKF" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), results);
+	}
+#endif
+#if DEBUG_SAVE_IDEPTH_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "DepthIms/DepthKF" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), depths);
+	}
+#endif
+#if DEBUG_SAVE_VAR_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "VarIms/VarKF" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), vars);
+	}
+#endif
+#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "FramePtClouds/CloudKF" << kfID <<
+			"_f" << refID << ".ply";
+		framePtCloud.saveFile(ss.str());
+	}
+#endif
+#if DEBUG_SAVE_PIXEL_DISPARITY_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), pixelDisparity);
+	}
+#endif
+
+#if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "GradAlongLineIms/GradAlongLine" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), pixelDisparity);
+	}
+#endif
+#if DEBUG_SAVE_GEO_DISP_ERROR_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "GeoDispErrIms/GeoDispErr" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), pixelDisparity);
+	}
+#endif
+#if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "PhotoDispErrIms/PhotoDispErr" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), pixelDisparity);
+	}
+#endif
+}
+
+void DepthMapDebugImages::addGradAlongLine(size_t x, size_t y, float gradAlongLine)
+{
+	vec3 rgb = 255*hueToRgb(gradAlongLine  / 10'000.f);
+	gradAlongLines.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
+}
+
+void DepthMapDebugImages::addGeoDispError(size_t x, size_t y, float geoDispError)
+{
+	vec3 rgb = 255*hueToRgb(geoDispError  / 1.f);
+	geoDispErrs.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
+}
+
+void DepthMapDebugImages::addPhotoDispError(size_t x, size_t y, float photoDispError)
+{
+	vec3 rgb = 255*hueToRgb(photoDispError  / 1.f);
+	photoDispErrs.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 
 cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
@@ -173,7 +275,7 @@ cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 
 cv::Vec3b DepthMapDebugImages::getIDepthVisColor(float idepth)
 {
-	vec3 rgb = 255*hueToRgb(idepth  * MIN_DEPTH);
+	vec3 rgb = 255*hueToRgb(5.f / idepth);
 	return cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 

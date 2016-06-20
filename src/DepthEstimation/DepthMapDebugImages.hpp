@@ -38,12 +38,13 @@ struct DepthMapDebugImages
 	// Each pixel is assigned a colour indicating success, or alternatively the reason
 	// for failure.
 	cv::Mat results;
-
 	cv::Mat depths;
-
 	cv::Mat vars;
-
 	cv::Mat pixelDisparity;
+
+	cv::Mat gradAlongLines;
+	cv::Mat geoDispErrs;
+	cv::Mat photoDispErrs;
 
 	ModelLoader framePtCloud;
 
@@ -54,6 +55,7 @@ struct DepthMapDebugImages
 	size_t drawIntervalX, drawIntervalY;
 
 	void clearMatchesIm(const float *keyframe, const float *refFrame, const CameraModel *camModel);
+	void clearStereoImages(const float * keyframe, const float * refFrame, const CameraModel * camModel);
 	void visualiseMatch(vec2 keyframePos, vec2 referenceFramePos, const CameraModel *model);
 
 	void clearSearchRangesIm(const float *keyframe, const float *refFrame, const CameraModel *camModel);
@@ -75,6 +77,12 @@ struct DepthMapDebugImages
 	void addPrePropagatePt(const vec3 &point, const float color);
 	void addPostPropagatePt(const vec3 &point, const float color);
 	std::mutex propagatePtMutex;
+
+	void saveStereoIms(int kfID, int refID);
+
+	void addGradAlongLine(size_t x, size_t y, float gradAlongLine);
+	void addGeoDispError(size_t x, size_t y, float geoDispError);
+	void addPhotoDispError(size_t x, size_t y, float photoDispError);
 
 	static cv::Vec3b getStereoResultVisColor(float err);
 

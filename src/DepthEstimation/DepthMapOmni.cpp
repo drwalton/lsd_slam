@@ -116,12 +116,11 @@ bool subpixelMatchOmni(
 	return didSubpixel;
 }
 
-float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
+float DepthMap::findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float gradAlongLine, const vec2 &bestEpDir, 
 	const Eigen::Vector4f *activeKeyframeGradients,
 	float initialTrackedResidual,
 	float sampleDist, bool didSubpixel,
-	OmniCameraModel *model,
 	RunningStats *stats,
 	float depth)
 {
@@ -133,7 +132,7 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 
 	// calculate error from geometric noise (wrong camera pose / calibration)
 	Eigen::Vector2f gradsInterp = getInterpolatedElement42(
-		activeKeyframeGradients, u, v, model->w);
+		activeKeyframeGradients, u, v, camModel_->w);
 	if (gradsInterp[0] == 0 && gradsInterp[1] == 0) {
 		throw 1;
 	}
@@ -164,6 +163,16 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 		std::cout << "Var != Var" << std::endl;
 		throw std::runtime_error("Var != Var!");
 	}
+
+#if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
+	debugImages.addGradAlongLine(u, v, gradAlongLine);
+#endif
+#if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS	
+	debugImages.addPhotoDispError(u, v, photoDispError);
+#endif
+#if DEBUG_SAVE_GEO_DISP_ERROR_IMS	
+	debugImages.addGeoDispError(u, v, geoDispError);
+#endif
 	return var;
 }
 
@@ -210,7 +219,7 @@ float DepthMap::doStereoOmni(
 		float var = findVarOmni(u, v, bestMatchPos.normalized(), gradAlongLine,
 				bestEpImDir, activeKeyframe->gradients(0), 
 				referenceFrame->initialTrackedResidual,
-				GRADIENT_SAMPLE_DIST, false, &oModel, stats, 1.f / idepth);
+				GRADIENT_SAMPLE_DIST, false, stats, 1.f / idepth);
 		result_var = var;
 		//float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var,
 		//	gradAlongLine, bestEpImDir, referenceFrame, activeKeyframe,

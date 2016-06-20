@@ -53,6 +53,7 @@ SE3Tracker::SE3Tracker(const CameraModel &model)
 	//TODO TEMP TESTING WITH PROJ
 	:camModel(model.clone())
 	//:camModel(model.makeOmniCamModel())
+	//:camModel(model.makeProjCamModel())
 {
 	int w = model.w, h = model.h;
 	settings = DenseDepthTrackerSettings();
@@ -276,7 +277,7 @@ SE3 SE3Tracker::trackFrameOnPermaref(
 // tracks a frame.
 // first_frame has depth, second_frame DOES NOT have depth.
 SE3 SE3Tracker::trackFrame(
-		TrackingReference* reference,
+		TrackingKeyframe* trackKeyframe,
 		Frame* frame,
 		const SE3& frameToReference_initialEstimate)
 {
@@ -316,9 +317,13 @@ SE3 SE3Tracker::trackFrame(
 		numCalcResidualCalls[lvl] = 0;
 		numCalcWarpUpdateCalls[lvl] = 0;
 
-		reference->makePointCloud(lvl);
+		trackKeyframe->makePointCloud(lvl);
 
-		callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
+		callOptimized(calcResidualAndBuffers, 
+			(trackKeyframe->posData[lvl], trackKeyframe->colorAndVarData[lvl], 
+				SE3TRACKING_MIN_LEVEL == lvl ? trackKeyframe->pointPosInXYGrid[lvl] : 0,
+				trackKeyframe->numData[lvl], frame, referenceToFrame, lvl, 
+				(plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
 		if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN * (camModel->w>>lvl)*(camModel->h>>lvl))
 		{
 			diverged = true;
@@ -363,7 +368,7 @@ SE3 SE3Tracker::trackFrame(
 
 
 				// re-evaluate residual
-				callOptimized(calcResidualAndBuffers, (reference->posData[lvl], reference->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? reference->pointPosInXYGrid[lvl] : 0, reference->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
+				callOptimized(calcResidualAndBuffers, (trackKeyframe->posData[lvl], trackKeyframe->colorAndVarData[lvl], SE3TRACKING_MIN_LEVEL == lvl ? trackKeyframe->pointPosInXYGrid[lvl] : 0, trackKeyframe->numData[lvl], frame, new_referenceToFrame, lvl, (plotTracking && lvl == SE3TRACKING_MIN_LEVEL)));
 				if(buf_warped_size < MIN_GOODPERALL_PIXEL_ABSMIN* (camModel->w>>lvl)*(camModel->h>>lvl))
 				{
 					diverged = true;
@@ -475,11 +480,11 @@ SE3 SE3Tracker::trackFrame(
 			&& lastGoodCount / (lastGoodCount + lastBadCount) > MIN_GOODPERGOODBAD_PIXEL;
 
 	if(trackingWasGood)
-		reference->keyframe->numFramesTrackedOnThis++;
+		trackKeyframe->keyframe->numFramesTrackedOnThis++;
 
 	frame->initialTrackedResidual = lastResidual / pointUsage;
 	frame->pose->thisToParent_raw = sim3FromSE3(toSophus(referenceToFrame.inverse()),1);
-	frame->pose->trackingParent = reference->keyframe->pose;
+	frame->pose->trackingParent = trackKeyframe->keyframe->pose;
 	return toSophus(referenceToFrame.inverse());
 }
 
@@ -588,44 +593,13 @@ void SE3Tracker::calcResidualAndBuffers_debugFinish(int w)
 	}
 }
 
-#if defined(ENABLE_SSE)
-float SE3Tracker::calcResidualAndBuffersSSE(
-		const Eigen::Vector3f* refPoint,
-		const Eigen::Vector2f* refColVar,
-		int* idxBuf,
-		int refNum,
-		Frame* frame,
-		const Sophus::SE3f& referenceToFrame,
-		int level,
-		bool plotResidual)
-{
-	return calcResidualAndBuffers(refPoint, refColVar, idxBuf, refNum, frame, referenceToFrame, level, plotResidual);
-}
-#endif
-
-#if defined(ENABLE_NEON)
-float SE3Tracker::calcResidualAndBuffersNEON(
-		const Eigen::Vector3f* refPoint,
-		const Eigen::Vector2f* refColVar,
-		int* idxBuf,
-		int refNum,
-		Frame* frame,
-		const Sophus::SE3f& referenceToFrame,
-		int level,
-		bool plotResidual)
-{
-	return calcResidualAndBuffers(refPoint, refColVar, idxBuf, refNum, frame, referenceToFrame, level, plotResidual);
-}
-#endif
-
-
 float SE3Tracker::calcResidualAndBuffers(
-		const Eigen::Vector3f* refPoint,
-		const Eigen::Vector2f* refColVar,
+		const Eigen::Vector3f* kfPoint,
+		const Eigen::Vector2f* kfColorAndVar,
 		int* idxBuf,
 		int refNum,
-		Frame* frame,
-		const Sophus::SE3f& referenceToFrame,
+		Frame* refFrame,
+		const Sophus::SE3f& kfToFrame,
 		int level,
 		bool plotResidual)
 {
@@ -636,22 +610,22 @@ float SE3Tracker::calcResidualAndBuffers(
 		debugImageResiduals.setTo(0);
 
 
-	int w = frame->width(level);
-	int h = frame->height(level);
-	const CameraModel &m = frame->model(level);
+	int w = refFrame->width(level);
+	int h = refFrame->height(level);
+	const CameraModel &m = refFrame->model(level);
 
-	Eigen::Matrix3f rotMat = referenceToFrame.rotationMatrix();
-	Eigen::Vector3f transVec = referenceToFrame.translation();
+	Eigen::Matrix3f kfToFrameRot = kfToFrame.rotationMatrix();
+	Eigen::Vector3f kfToFrameTranslation = kfToFrame.translation();
 
-	const Eigen::Vector3f* refPoint_max = refPoint + refNum;
+	const Eigen::Vector3f* refPoint_max = kfPoint + refNum;
 
-	const Eigen::Vector4f* frame_gradients = frame->gradients(level);
+	const Eigen::Vector4f* refFrameGradients = refFrame->gradients(level);
 
 	int idx = 0;
 
 	float sumResUnweighted = 0;
 
-	bool* isGoodOutBuffer = idxBuf != 0 ? frame->refPixelWasGood() : 0;
+	bool* isGoodOutBuffer = idxBuf != 0 ? refFrame->refPixelWasGood() : 0;
 
 	int goodCount = 0;
 	int badCount = 0;
@@ -662,10 +636,10 @@ float SE3Tracker::calcResidualAndBuffers(
 
 	float usageCount = 0;
 
-	for (; refPoint<refPoint_max; refPoint++, refColVar++, idxBuf++)
+	for (; kfPoint<refPoint_max; kfPoint++, kfColorAndVar++, idxBuf++)
 	{
 
-		Eigen::Vector3f Wxp = rotMat * (*refPoint) + transVec;
+		Eigen::Vector3f Wxp = kfToFrameRot * (*kfPoint) + kfToFrameTranslation;
 		vec2 uv = m.camToPixel(Wxp);
 		float u_new = uv[0];
 		float v_new = uv[1];
@@ -679,16 +653,14 @@ float SE3Tracker::calcResidualAndBuffers(
 			continue;
 		}
 
-		Eigen::Vector3f resInterp = getInterpolatedElement43(frame_gradients, u_new, v_new, w);
+		float c1 = affineEstimation_a * (*kfColorAndVar)[0] + affineEstimation_b;
 
-		float c1 = affineEstimation_a * (*refColVar)[0] + affineEstimation_b;
-		//TODO double check this is correct for OMNI
-		float c2;
-		if (camType == CameraModelType::OMNI) {
-			c2 = resInterp.norm();
-		} else {
-			c2 = resInterp[2];
-		}
+		//N.B. this just gets an interpolated image value at u_new, v_new
+		//This is because the third channel of the frame_gradients is just the input image.
+		Eigen::Vector3f resInterp = getInterpolatedElement43(
+			refFrameGradients, u_new, v_new, w);
+		float c2 = resInterp[2];
+
 		float residual = c1 - c2;
 
 		float weight = fabsf(residual) < 5.0f ? 1 : 5.0f / fabsf(residual);
@@ -721,11 +693,11 @@ float SE3Tracker::calcResidualAndBuffers(
 
 		//Adapting for OMNI vs PROJ
 		if (camType == CameraModelType::OMNI) {
-			*(buf_d + idx) = 1.0f / refPoint->norm();
+			*(buf_d + idx) = 1.0f / kfPoint->norm();
 		} else /* PROJ */ {
-			*(buf_d + idx) = 1.0f / (*refPoint)[2];
+			*(buf_d + idx) = 1.0f / (*kfPoint)[2];
 		}
-		*(buf_idepthVar + idx) = (*refColVar)[1];
+		*(buf_idepthVar + idx) = (*kfColorAndVar)[1];
 		idx++;
 
 
@@ -741,9 +713,9 @@ float SE3Tracker::calcResidualAndBuffers(
 		float depthChange;
 		//Adapting for OMNI vs PROJ
 		if (camType == CameraModelType::OMNI) {
-			depthChange = refPoint->norm() / Wxp.norm();	// if depth becomes larger: pixel becomes "smaller", hence count it less.
+			depthChange = kfPoint->norm() / Wxp.norm();	// if depth becomes larger: pixel becomes "smaller", hence count it less.
 		} else /* PROJ */ {
-			depthChange = (*refPoint)[2] / Wxp[2];	// if depth becomes larger: pixel becomes "smaller", hence count it less.
+			depthChange = (*kfPoint)[2] / Wxp[2];	// if depth becomes larger: pixel becomes "smaller", hence count it less.
 		}
 		usageCount += depthChange < 1 ? depthChange : 1;
 
@@ -753,7 +725,7 @@ float SE3Tracker::calcResidualAndBuffers(
 		{
 			// for debug plot only: find x,y again.
 			// horribly inefficient, but who cares at this point...
-			Eigen::Vector2f point = m.camToPixel((*refPoint));
+			Eigen::Vector2f point = m.camToPixel((*kfPoint));
 			int x = static_cast<int>(point[0]);
 			int y = static_cast<int>(point[1]);
 

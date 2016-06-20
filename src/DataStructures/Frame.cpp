@@ -150,7 +150,7 @@ void Frame::takeReActivationData(DepthMapPixelHypothesis* depthMap)
 
 
 
-void Frame::setPermaRef(TrackingReference* reference)
+void Frame::setPermaRef(TrackingKeyframe* reference)
 {
 	assert(reference->frameID == id());
 	reference->makePointCloud(QUICK_KF_CHECK_LVL);

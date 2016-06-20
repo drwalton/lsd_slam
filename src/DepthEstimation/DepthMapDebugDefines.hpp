@@ -1,10 +1,18 @@
 #pragma once
 
+//Stereo related #defines
 #define DEBUG_SAVE_VAR_IMS 1
 #define DEBUG_SAVE_IDEPTH_IMS 1
 #define DEBUG_SAVE_MATCH_IMS 0
 #define DEBUG_SAVE_SEARCH_RANGE_IMS 1
 #define DEBUG_SAVE_RESULT_IMS 1
 #define DEBUG_SAVE_PIXEL_DISPARITY_IMS 0
+
+//Var calculation related #defines
+#define DEBUG_SAVE_GRAD_ALONG_LINE_IMS 1
+#define DEBUG_SAVE_GEO_DISP_ERROR_IMS 1
+#define DEBUG_SAVE_PHOTO_DISP_ERROR_IMS 1
+
+//Point cloud related #defines
 #define DEBUG_SAVE_FRAME_POINT_CLOUDS 1
 #define DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS 1

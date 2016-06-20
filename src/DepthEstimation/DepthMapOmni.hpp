@@ -70,15 +70,6 @@ float doStereoOmniImpl(
 	cv::Mat &drawMat = emptyMat,
 	bool showMatch = false);
 
-float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
-	float gradAlongLine, const vec2 &bestEpDir,
-	const Eigen::Vector4f *activeKeyframeGradients,
-	float initialTrackedResidual,
-	float sampleDist, bool didSubpixel,
-	OmniCameraModel *model,
-	RunningStats *stats,
-	float depth);
-
 bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyframeImageData, int width, const OmniCameraModel &oModel,
 	float u, float v, std::array<float, 5> &valuesToFind,

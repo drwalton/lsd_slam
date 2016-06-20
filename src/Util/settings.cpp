@@ -46,7 +46,7 @@ void makeDebugDirectories()
 	makeEmptyDirectory(resourcesDir() + "VarIms/");
 #endif
 #if DEBUG_SAVE_IDEPTH_IMS
-	makeEmptyDirectory(resourcesDir() + "IDepthIms/");
+	makeEmptyDirectory(resourcesDir() + "DepthIms/");
 #endif
 #if DEBUG_SAVE_MATCH_IMS
 	makeEmptyDirectory(resourcesDir() + "MatchIms/");
@@ -65,6 +65,15 @@ void makeDebugDirectories()
 #endif
 #if DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS
 	makeEmptyDirectory(resourcesDir() + "KeyframePropagationPtClouds/");
+#endif
+#if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
+	makeEmptyDirectory(resourcesDir() + "GradAlongLineIms/");
+#endif
+#if DEBUG_SAVE_GEO_DISP_ERROR_IMS
+	makeEmptyDirectory(resourcesDir() + "GeoDispErrIms/");
+#endif
+#if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
+	makeEmptyDirectory(resourcesDir() + "PhotoDispErrIms/");
 #endif
 	std::cout << "Done!" << std::endl;
 }

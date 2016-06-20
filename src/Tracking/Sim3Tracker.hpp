@@ -29,7 +29,7 @@
 namespace lsd_slam
 {
 
-class TrackingReference;
+class TrackingKeyframe;
 class Frame;
 class CameraModel;
 
@@ -114,7 +114,7 @@ public:
 
 
 	Sim3 trackFrameSim3(
-			TrackingReference* reference,
+			TrackingKeyframe* reference,
 			Frame* frame,
 			const Sim3& frameToReference_initialEstimate,
 			int startLevel, int finalLevel);
@@ -134,7 +134,7 @@ public:
 private:
 
 	void calcSim3Buffers(
-			const TrackingReference* reference,
+			const TrackingKeyframe* reference,
 			Frame* frame,
 			const Sim3& referenceToFrame,
 			int level,

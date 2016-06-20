@@ -92,8 +92,8 @@ SlamSystem::SlamSystem(const CameraModel &model,
 	// Do not use more than 4 levels for odometry tracking
 	for (int level = 4; level < PYRAMID_LEVELS; ++level)
 		tracker->settings.maxItsPerLvl[level] = 0;
-	trackingReference = new TrackingReference();
-	mappingTrackingReference = new TrackingReference();
+	trackingKeyframe = new TrackingKeyframe();
+	mappingTrackingReference = new TrackingKeyframe();
 
 
 	if(loopClosureEnabled)
@@ -101,8 +101,8 @@ SlamSystem::SlamSystem(const CameraModel &model,
 		trackableKeyframeSearch = new TrackableKeyframeSearch(keyframeGraph,model);
 		constraintTracker = new Sim3Tracker(model);
 		constraintSE3Tracker = new SE3Tracker(model);
-		newKFTrackingReference = new TrackingReference();
-		candidateTrackingReference = new TrackingReference();
+		newKFTrackingReference = new TrackingKeyframe();
+		candidateTrackingReference = new TrackingKeyframe();
 	}
 	else
 	{
@@ -166,7 +166,7 @@ SlamSystem::~SlamSystem()
 
 	delete mappingTrackingReference;
 	delete map;
-	delete trackingReference;
+	delete trackingKeyframe;
 	delete tracker;
 
 	// make shure to reset all shared pointers to all frames before deleting the keyframegraph!
@@ -735,12 +735,12 @@ void SlamSystem::takeRelocalizeResult()
 	loadNewCurrentKeyframe(keyframe);
 
 	currentKeyframeMutex.lock();
-	trackingReference->importFrame(currentKeyframe.get());
+	trackingKeyframe->importFrame(currentKeyframe.get());
 	trackingReferenceFrameSharedPT = currentKeyframe;
 	currentKeyframeMutex.unlock();
 
 	tracker->trackFrame(
-			trackingReference,
+			trackingKeyframe,
 			succFrame.get(),
 			succFrameToKF_init);
 
@@ -748,7 +748,7 @@ void SlamSystem::takeRelocalizeResult()
 	{
 		if(enablePrintDebugInfo && printRelocalizationInfo)
 			printf("RELOCALIZATION FAILED BADLY! discarding result.\n");
-		trackingReference->invalidate();
+		trackingKeyframe->invalidate();
 	}
 	else
 	{
@@ -920,7 +920,8 @@ void SlamSystem::randomInit(uchar* image, double timeStamp, int id)
 
 }
 
-void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilMapped, double timestamp)
+void SlamSystem::trackFrame(
+	uchar* image, unsigned int frameID, bool blockUntilMapped, double timestamp)
 {
 	// Create new frame
 	std::shared_ptr<Frame> trackingNewFrame(new Frame(frameID, *model, timestamp, image));
@@ -937,15 +938,15 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 
 	currentKeyframeMutex.lock();
 	bool my_createNewKeyframe = createNewKeyframe;	// pre-save here, to make decision afterwards.
-	if (trackingReference->keyframe != currentKeyframe.get() ||
+	if (trackingKeyframe->keyframe != currentKeyframe.get() ||
 		currentKeyframe->depthHasBeenUpdatedFlag)
 	{
-		trackingReference->importFrame(currentKeyframe.get());
+		trackingKeyframe->importFrame(currentKeyframe.get());
 		currentKeyframe->depthHasBeenUpdatedFlag = false;
 		trackingReferenceFrameSharedPT = currentKeyframe;
 	}
 
-	FramePoseStruct* trackingReferencePose = trackingReference->keyframe->pose;
+	FramePoseStruct* trackingReferencePose = trackingKeyframe->keyframe->pose;
 	currentKeyframeMutex.unlock();
 
 	// DO TRACKING & Show tracking result.
@@ -964,7 +965,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 	gettimeofday(&tv_start, NULL);
 
 	SE3 newRefToFrame_poseUpdate = tracker->trackFrame(
-		trackingReference,
+		trackingKeyframe,
 		trackingNewFrame.get(),
 		frameToReference_initialEstimate);
 	
@@ -993,7 +994,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 			100 * tracking_lastGoodPerBad,
 			tracker->diverged ? "DIVERGED" : "NOT DIVERGED");
 
-		trackingReference->invalidate();
+		trackingKeyframe->invalidate();
 
 		trackingIsGood = false;
 		nextRelocIdx = -1;
@@ -1099,7 +1100,7 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 
 
 float SlamSystem::tryTrackSim3(
-		TrackingReference* A, TrackingReference* B,
+		TrackingKeyframe* A, TrackingKeyframe* B,
 		int lvlStart, int lvlEnd,
 		bool useSSE,
 		Sim3 &AtoB, Sim3 &BtoA,

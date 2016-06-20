@@ -137,7 +137,7 @@ Sim3Tracker::~Sim3Tracker()
 
 
 Sim3 Sim3Tracker::trackFrameSim3(
-		TrackingReference* reference,
+		TrackingKeyframe* reference,
 		Frame* frame,
 		const Sim3& frameToReference_initialEstimate,
 		int startLevel, int finalLevel)
@@ -368,7 +368,7 @@ Sim3 Sim3Tracker::trackFrameSim3(
 }
 
 void Sim3Tracker::calcSim3Buffers(
-		const TrackingReference* reference,
+		const TrackingKeyframe* reference,
 		Frame* frame,
 		const Sim3& referenceToFrame,
 		int level, bool plotWeights)

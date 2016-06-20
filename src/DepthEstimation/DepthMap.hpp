@@ -178,6 +178,14 @@ private:
 
 	void resetCounters();
 
+	float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
+		float gradAlongLine, const vec2 &bestEpDir,
+		const Eigen::Vector4f *activeKeyframeGradients,
+		float initialTrackedResidual,
+		float sampleDist, bool didSubpixel,
+		RunningStats *stats,
+		float depth);
+
 	//float clocksPropagate, clocksPropagateKF, clocksObserve, msObserve, clocksReg1, clocksReg2, msReg1, msReg2, clocksFinalize;
 };
 

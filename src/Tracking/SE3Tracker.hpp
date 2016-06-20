@@ -29,7 +29,7 @@
 namespace lsd_slam
 {
 
-class TrackingReference;
+class TrackingKeyframe;
 class Frame;
 class CameraModel;
 
@@ -58,7 +58,7 @@ public:
 
 
 	SE3 trackFrame(
-			TrackingReference* reference,
+			TrackingKeyframe* trackKeyframe,
 			Frame* frame,
 			const SE3& frameToReference_initialEstimate);
 	

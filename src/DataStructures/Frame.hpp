@@ -33,7 +33,7 @@ namespace lsd_slam
 {
 
 class DepthMapPixelHypothesis;
-class TrackingReference;
+class TrackingKeyframe;
 /**
  */
 
@@ -80,7 +80,13 @@ public:
 	inline double timestamp() const;
 	
 	inline float* image(int level = 0);
+
+	///\brief Return partial derivatives of the image at each pixel.
+	///\return The partial derivatives. Each is given as a 4-vector v, in 
+	///   the following format; v[0] = dI/dx, v[1] = dI/dy, v[2] = I.
+	///\note v[3] is uninitialised, and should not be used.
 	inline const Eigen::Vector4f* gradients(int level = 0);
+
 	inline const float* maxGradients(int level = 0);
 	inline bool hasIDepthBeenSet() const;
 	inline const float* idepth(int level = 0);
@@ -108,7 +114,7 @@ public:
 	};
 	
 
-	void setPermaRef(TrackingReference* reference);
+	void setPermaRef(TrackingKeyframe* reference);
 	void takeReActivationData(DepthMapPixelHypothesis* depthMap);
 
 
