@@ -302,7 +302,7 @@ int KeyframeDisplay::flushPC(std::ofstream* f)
 			}
 
 
-			Sophus::Vector3f pt = camToWorld * (camModel_->pixelToCam(vec2(x, y)) *depth);
+			Sophus::Vector3f pt = camToWorld * camModel_->pixelToCam(vec2(x, y), depth);
 			tmpBuffer[num].point[0] = pt[0];
 			tmpBuffer[num].point[1] = pt[1];
 			tmpBuffer[num].point[2] = pt[2];

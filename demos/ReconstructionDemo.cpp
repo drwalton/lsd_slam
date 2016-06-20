@@ -33,10 +33,11 @@ int main(int argc, char **argv)
 	std::cout << "Done!" << std::endl;
 
 	//QApplication qapp(argc, argv);
+	std::atomic<bool> startViewerOutputWrapper = false;
 
 	std::cout << "Creating output wrapper..."; std::cout.flush();
 	std::unique_ptr<lsd_slam::ViewerOutput3DWrapper> outWrapper(
-		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480));
+		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480, startViewerOutputWrapper));
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
@@ -44,12 +45,13 @@ int main(int argc, char **argv)
 		lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(),
 			outWrapper->running,
 			lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
-			lsd_slam::LiveSLAMWrapper::LoopClosureMode::ENABLED,
+			lsd_slam::LiveSLAMWrapper::LoopClosureMode::DISABLED,
 			lsd_slam::DepthMapInitMode::CONSTANT,
 			true);
 		std::cout << "Done!" << std::endl;
 
 		std::cout << "Starting SLAM wrapper..." << std::endl;
+		startViewerOutputWrapper = true;
 		slamWrapper.Loop();
 	}
 

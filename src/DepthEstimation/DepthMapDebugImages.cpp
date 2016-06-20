@@ -66,6 +66,9 @@ void DepthMapDebugImages::clearStereoImages(const float * keyframe, const float 
 #if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
 	makeDebugCompareIm(photoDispErrs, keyframe, refFrame, camModel);
 #endif
+#if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
+	makeDebugCompareIm(discretizationErrs, keyframe, refFrame, camModel);
+#endif
 }
 
 void DepthMapDebugImages::visualiseMatch(vec2 keyframePos, vec2 referenceFramePos, const CameraModel *model)
@@ -207,6 +210,14 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 		cv::imwrite(ss.str(), photoDispErrs);
 	}
 #endif
+#if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "DiscretizeErrIms/DiscretizeErr" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), discretizationErrs);
+	}
+#endif
 }
 
 void DepthMapDebugImages::addGradAlongLine(size_t x, size_t y, float gradAlongLine)
@@ -225,6 +236,12 @@ void DepthMapDebugImages::addPhotoDispError(size_t x, size_t y, float photoDispE
 {
 	vec3 rgb = 255*hueToRgb(photoDispError  / 1.f);
 	photoDispErrs.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
+}
+
+void DepthMapDebugImages::addDiscretizationError(size_t x, size_t y, float discretizationErr)
+{
+	vec3 rgb = 255*hueToRgb(discretizationErr  / 1.f);
+	discretizationErrs.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 
 cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)

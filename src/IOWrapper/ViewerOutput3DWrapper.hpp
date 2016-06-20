@@ -33,7 +33,8 @@ namespace lsd_slam {
 class ViewerOutput3DWrapper : public Output3DWrapper
 {
 public:
-	ViewerOutput3DWrapper(bool showViewer, int width, int height);
+	ViewerOutput3DWrapper(bool showViewer, int width, int height,
+		std::atomic<bool> &start);
 	virtual ~ViewerOutput3DWrapper();
 
 	virtual void publishKeyframeGraph(KeyframeGraph* graph);

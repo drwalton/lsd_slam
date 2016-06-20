@@ -45,6 +45,7 @@ struct DepthMapDebugImages
 	cv::Mat gradAlongLines;
 	cv::Mat geoDispErrs;
 	cv::Mat photoDispErrs;
+	cv::Mat discretizationErrs;
 
 	ModelLoader framePtCloud;
 
@@ -76,6 +77,8 @@ struct DepthMapDebugImages
 	void addGradAlongLine(size_t x, size_t y, float gradAlongLine);
 	void addGeoDispError(size_t x, size_t y, float geoDispError);
 	void addPhotoDispError(size_t x, size_t y, float photoDispError);
+
+	void addDiscretizationError(size_t x, size_t y, float discretizationErr);
 
 	static cv::Vec3b getStereoResultVisColor(float err);
 

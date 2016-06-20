@@ -5,6 +5,7 @@
 #include "GlobalMapping/KeyframeGraph.hpp"
 #include "Viewer/KeyframeGraphDisplay.hpp"
 #include <qapplication.h>
+#include <atomic>
 
 struct Position {
 	float x, y, z;
@@ -31,12 +32,14 @@ struct PoseStamped {
 
 namespace lsd_slam {
 
-ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height)
+ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height,
+	std::atomic<bool> &start)
 	:publishLevel_(0), viewer_(nullptr)
 {
 	running = true;
 	if (showViewer) {
-		viewerThread_ = std::thread([this](){
+		viewerThread_ = std::thread([this, &start](){
+			while (!start);
 			std::cout << "Launching viewer thread...\n";
 			int argc = 1; 
 			char* argv = const_cast<char*>("app");
@@ -53,6 +56,7 @@ ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int hei
 			std::cout << "Terminating viewer thread...\n";
 		});
 	}
+
 }
 
 ViewerOutput3DWrapper::~ViewerOutput3DWrapper()

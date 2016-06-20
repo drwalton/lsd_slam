@@ -579,7 +579,8 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		// increase Skip!
 		if(result_eplLength < MIN_EPL_LENGTH_CROP)
 		{
-			float inc = activeKeyframe->numFramesTrackedOnThis / (float)(activeKeyframe->numMappedOnThis+5);
+			float inc = activeKeyframe->numFramesTrackedOnThis / 
+				(float)(activeKeyframe->numMappedOnThis+5);
 			if(inc < 3) inc = 3;
 
 			inc +=  ((int)(result_eplLength*10000)%2);
@@ -1086,10 +1087,12 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 				// In omni mode, depths represent distances from the camera. To
 				// initialise with the same point cloud as in PROJ mode, need to 
 				// convert.
+				/*
 				if (camType == CameraModelType::OMNI) {
 					vec3 pos = projVersion->pixelToCam(vec2(x, y), 1.f / idepth);
 					idepth = pos.norm();
 				}
+				*/
 
 				currentDepthMap[x+y*camModel_->w] = DepthMapPixelHypothesis(
 						idepth,
@@ -1445,8 +1448,8 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 	gettimeofday(&tv_start, NULL);
 
 	//TODO Temporary test: not propagating depth, but instead randomly initialising every time.
-	propagateDepth(new_keyframe);
-	//initializeRandomly(new_keyframe);
+	//propagateDepth(new_keyframe);
+	initializeRandomly(new_keyframe);
 
 	gettimeofday(&tv_end, NULL);
 	msPropagate = 0.9f*msPropagate + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
@@ -2138,13 +2141,9 @@ inline float DepthMap::doStereoProj(
 		float dot2 = KinvP.dot(referenceFrame->otherToThis_R_row2);
 
 		idnew_best_match = (dot1 - oldY*dot2) / nominator;
-		alpha = incy*pm->fyi()*(dot1*referenceFrame->otherToThis_t[2] - dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
-
+		alpha = incy*pm->fyi()*(dot1*referenceFrame->otherToThis_t[2] - 
+			dot2*referenceFrame->otherToThis_t[1]) / (nominator*nominator);
 	}
-
-
-
-
 
 	if(idnew_best_match < 0)
 	{
@@ -2178,7 +2177,8 @@ inline float DepthMap::doStereoProj(
 
 	// final error consists of a small constant part (discretization error),
 	// geometric and photometric error.
-	result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist +  geoDispError + photoDispError);	// square to make variance
+	float discretizationError = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist);
+	result_var = discretizationError +  geoDispError + photoDispError;	// square to make variance
 #if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
 	debugImages.addGradAlongLine(size_t(u), size_t(v), gradAlongLine);
 #endif
@@ -2187,6 +2187,9 @@ inline float DepthMap::doStereoProj(
 #endif
 #if DEBUG_SAVE_GEO_DISP_ERROR_IMS	
 	debugImages.addGeoDispError(size_t(u), size_t(v), geoDispError);
+#endif
+#if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
+	debugImages.addDiscretizationError(size_t(u), size_t(v), discretizationError);
 #endif
 
 	if(plotStereoImages)

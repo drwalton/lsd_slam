@@ -121,6 +121,7 @@ float DepthMap::findVarOmni(const float u, const float v, const vec3 &bestMatchD
 	const Eigen::Vector4f *activeKeyframeGradients,
 	float initialTrackedResidual,
 	float sampleDist, bool didSubpixel,
+	float alpha,
 	RunningStats *stats,
 	float depth)
 {
@@ -154,10 +155,12 @@ float DepthMap::findVarOmni(const float u, const float v, const vec3 &bestMatchD
 		throw std::runtime_error("geoDispErr NAN");
 	}
 
+
 	// final error consists of a small constant part (discretization error),
 	// geometric and photometric error.
-	float var = depth*depth*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist
-		+ geoDispError + photoDispError);	// square to make variance
+	float discretizationError = 0.25f * alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*
+		sampleDist*sampleDist);
+	float var = discretizationError	+ geoDispError + photoDispError;// square to make variance
 
 	if (var != var) {
 		std::cout << "Var != Var" << std::endl;
@@ -172,6 +175,9 @@ float DepthMap::findVarOmni(const float u, const float v, const vec3 &bestMatchD
 #endif
 #if DEBUG_SAVE_GEO_DISP_ERROR_IMS	
 	debugImages.addGeoDispError(size_t(u), size_t(v), geoDispError);
+#endif
+#if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
+	debugImages.addDiscretizationError(size_t(u), size_t(v), discretizationError);
 #endif
 	return var;
 }
@@ -194,6 +200,7 @@ float DepthMap::doStereoOmni(
 	float gradAlongLine, initLineLen;
 	float bestMatchErr;
 	float idepth;
+	float alpha;
 	size_t bestMatchLoopC;
 #if DEBUG_SAVE_SEARCH_RANGE_IMS || DEBUG_SAVE_RESULT_IMS
 #if DEBUG_SAVE_SEARCH_RANGE_IMS
@@ -205,21 +212,22 @@ float DepthMap::doStereoOmni(
 		activeKeyframeImageData, referenceFrameImage, keyframeToReference,
 		stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos,
 		bestMatchLoopC, gradAlongLine,
-		initLineLen, bestMatchKeyframe, debugImages.searchRanges,
+		initLineLen, bestMatchKeyframe, alpha, debugImages.searchRanges,
 		saveSearchRangeIms && debugImages.drawMatchHere(size_t(u), size_t(v)));
 #else
 	bestMatchErr = lsd_slam::doStereoOmniImpl(u, v, epDir, min_idepth, prior_idepth, 
 		max_idepth, activeKeyframeImageData, referenceFrameImage, keyframeToReference,
 		stats, oModel, referenceFrame->width(), idepth, bestEpImDir, bestMatchPos, 
-		bestMatchLoopC, gradAlongLine, initLineLen, bestMatchKeyframe);
+		bestMatchLoopC, gradAlongLine, initLineLen, bestMatchKeyframe, alpha);
 #endif
 
 	if (bestMatchErr >= 0.f) {
 		result_idepth = idepth;
+
 		float var = findVarOmni(u, v, bestMatchPos.normalized(), gradAlongLine,
 				bestEpImDir, activeKeyframe->gradients(0), 
 				referenceFrame->initialTrackedResidual,
-				GRADIENT_SAMPLE_DIST, false, stats, 1.f / idepth);
+				GRADIENT_SAMPLE_DIST, false, alpha, stats, 1.f / idepth);
 		result_var = var;
 		//float r = findDepthAndVarOmni(u, v, bestMatchPos, &result_idepth, &result_var,
 		//	gradAlongLine, bestEpImDir, referenceFrame, activeKeyframe,
@@ -473,6 +481,7 @@ float doStereoOmniImpl(
 	float &iDepth, vec2 &bestEpImDir, vec3 &bestMatchPos, 
 	size_t &bestMatchLoopC, float &gradAlongLine, float &initLineLen,
 	vec3 &bestMatchKeyframe,
+	float &alpha,
 	cv::Mat &drawMatch, bool drawThisMatch)
 {
 	if (!(max_idepth > min_idepth)) {
@@ -498,6 +507,14 @@ float doStereoOmniImpl(
 	//Find line endpoints in keyframe, reference frame.
 	vec3 lineCloseRf = keyframeToReference * vec3(lineDirKf / max_idepth);
 	vec3 lineInfRf = keyframeToReference.rotation * lineDirKf;
+	if (drawThisMatch) {
+		if (drawMatch.cols == width * 2) {
+			vec2 infPix = oModel.camToPixel(lineInfRf);
+			drawMatch.at<cv::Vec3b>(int(infPix.y()), int(infPix.x() + width)) =
+				cv::Vec3b(0,255,0);
+		}
+	}
+
 	float lineStartAlpha = min_idepth / max_idepth, lineEndAlpha = 1.f;
 	vec3 lineCloseDirRf = lineCloseRf.normalized();
 	vec3 lineFarDirRf;
@@ -521,7 +538,7 @@ float doStereoOmniImpl(
 		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 	float lineLen = (lineFarPixRf - lineClosePixRf).norm();
-	initLineLen = lineLen;
+	initLineLen = lineLen + 2;
 
 	//Extend line, if it isn't long enough
 	if (lineLen < MIN_EPL_LENGTH_CROP+2) {
@@ -827,10 +844,12 @@ float doStereoOmniImpl(
 	}
 
 	//TODO Work out whether this is
-	iDepth = bestMatchA *max_idepth;
+	iDepth = bestMatchA * max_idepth;
 	//or
 	//iDepth = bestMatchA;
 	bestMatchLoopC = loopCBest;
+	float invDepthInterval = (lineEndAlpha - lineStartAlpha) *max_idepth;
+	alpha =  invDepthInterval / float(loopC);
 	
 	return bestMatchErr;
 }

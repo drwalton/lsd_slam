@@ -67,6 +67,7 @@ float doStereoOmniImpl(
 	size_t &bestMatchLoopC,
 	float &gradAlongLine, float &initLineLen,
 	vec3 &bestMatchKeyframe,
+	float &alpha,
 	cv::Mat &drawMat = emptyMat,
 	bool showMatch = false);
 

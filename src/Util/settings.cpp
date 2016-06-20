@@ -75,6 +75,9 @@ void makeDebugDirectories()
 #if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
 	makeEmptyDirectory(resourcesDir() + "PhotoDispErrIms/");
 #endif
+#if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
+	makeEmptyDirectory(resourcesDir() + "DiscretizeErrIms/");
+#endif
 	std::cout << "Done!" << std::endl;
 }
 

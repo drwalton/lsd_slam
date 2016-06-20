@@ -178,11 +178,14 @@ private:
 
 	void resetCounters();
 
+	///\brief Work out variance when the Omnidirectional model is used.
+	///\param alpha alpha:= inv depth interval / epipolar line length
 	float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 		float gradAlongLine, const vec2 &bestEpDir,
 		const Eigen::Vector4f *activeKeyframeGradients,
 		float initialTrackedResidual,
 		float sampleDist, bool didSubpixel,
+		float alpha,
 		RunningStats *stats,
 		float depth);
 
