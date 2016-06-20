@@ -35,4 +35,6 @@ resources/
 build/
 xcode/
 
+.qglviewer.xml
+
 

@@ -70,9 +70,6 @@ float doStereoOmniImpl(
 	cv::Mat &drawMat = emptyMat,
 	bool showMatch = false);
 
-float findInvDepthOmni(const float u, const float v, const vec3 &bestMatchDir,
-	OmniCameraModel *model, RigidTransform refToKeyframe, RunningStats *stats);
-
 float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	float gradAlongLine, const vec2 &bestEpDir,
 	const Eigen::Vector4f *activeKeyframeGradients,
@@ -81,19 +78,6 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	OmniCameraModel *model,
 	RunningStats *stats,
 	float depth);
-
-///\brief Return 5 floating-point values, centered around the given point, 
-///       along the respective epipolar curve (values should be one pixel apart).
-///\note Values advance along the line towards the epipole direction.
-std::array<float, 5> findValuesToSearchFor(
-	const RigidTransform &keyframeToReference,
-	const OmniCameraModel &model,
-	const float* keyframe,
-	int x, int y,
-	int width,
-	vec3 &pointDir,
-	vec2 &epImDir,
-	cv::Mat &visIm = emptyMat);
 
 bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	const float *activeKeyframeImageData, int width, const OmniCameraModel &oModel,

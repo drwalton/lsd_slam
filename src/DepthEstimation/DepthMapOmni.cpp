@@ -167,31 +167,6 @@ float findVarOmni(const float u, const float v, const vec3 &bestMatchDir,
 	return var;
 }
 
-float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
-	float *resultIDepth, float *resultVar,
-	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyframe,
-	float sampleDist, bool didSubpixel, float initLineLen,
-	OmniCameraModel *model,
-	RunningStats *stats)
-{
-	RigidTransform referenceToKeyframe;
-	referenceToKeyframe.rotation = referenceFrame->thisToOther_R;
-	referenceToKeyframe.translation = referenceFrame->thisToOther_t;
-	*resultIDepth = findInvDepthOmni(u, v, bestMatchDir, model,
-		referenceToKeyframe, stats);
-
-	if (*resultIDepth < 0.f) {
-		//Error code returned, return this code.
-		return *resultIDepth;
-	}
-
-	*resultVar = findVarOmni(u, v, bestMatchDir, gradAlongLine,
-		bestEpDir, activeKeyframe->gradients(0), referenceFrame->initialTrackedResidual,
-		sampleDist, didSubpixel, model, stats, 1.f / *resultIDepth);
-
-	return 0.f;
-}
-
 float DepthMap::doStereoOmni(
 	const float u, const float v, const vec3 &epDir,
 	const float min_idepth, const float prior_idepth, float max_idepth,
@@ -352,7 +327,7 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	if(!visIm.empty()) visIm.at<cv::Vec3b>(int(pixel.y()), int(pixel.x())) = cv::Vec3b(0,255,0);
 	valuesToFind[3] = getInterpolatedElement(activeKeyframeImageData, pixel, width);
 
-	int idx = u+v*oModel.w;
+	int idx = static_cast<int>(u+v*oModel.w);
 	float epx = pixel.x() - u;
 	float epy = pixel.y() - v;
 	epImDir.x() = epx; epImDir.y() = epy;

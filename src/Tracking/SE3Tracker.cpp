@@ -51,8 +51,8 @@ namespace lsd_slam
 
 SE3Tracker::SE3Tracker(const CameraModel &model)
 	//TODO TEMP TESTING WITH PROJ
-	//:camModel(model.clone())
-	:camModel(model.makeOmniCamModel())
+	:camModel(model.clone())
+	//:camModel(model.makeOmniCamModel())
 {
 	int w = model.w, h = model.h;
 	settings = DenseDepthTrackerSettings();
@@ -116,6 +116,7 @@ float SE3Tracker::checkPermaRefOverlap(
 		Frame* reference,
 		const SE3 &referenceToFrameOrg)
 {
+	CameraModelType camType = camModel->getType();
 	Sophus::SE3f referenceToFrame = referenceToFrameOrg.cast<float>();
 	boost::unique_lock<boost::mutex> lock2 = boost::unique_lock<boost::mutex>(reference->permaRef_mutex);
 
@@ -138,8 +139,13 @@ float SE3Tracker::checkPermaRefOverlap(
 		float v_new = uv[1];
 		if ((u_new > 0 && v_new > 0 && u_new < w2 && v_new < h2))
 		{
-			//TODO check this, make sure it's OK for OMNI
-			float depthChange = (*refPoint)[2] / Wxp[2];
+			//Adapting for OMNI vs PROJ
+			float depthChange;
+			if (camType == CameraModelType::OMNI) {
+				depthChange = refPoint->norm() / Wxp.norm();
+			} else /* PROJ */ {
+				depthChange = (*refPoint)[2] / Wxp[2];
+			}
 			usageCount += depthChange < 1 ? depthChange : 1;
 		}
 	}
@@ -623,6 +629,7 @@ float SE3Tracker::calcResidualAndBuffers(
 		int level,
 		bool plotResidual)
 {
+	CameraModelType camType = camModel->getType();
 	calcResidualAndBuffers_debugStart();
 
 	if (plotResidual)
@@ -675,8 +682,13 @@ float SE3Tracker::calcResidualAndBuffers(
 		Eigen::Vector3f resInterp = getInterpolatedElement43(frame_gradients, u_new, v_new, w);
 
 		float c1 = affineEstimation_a * (*refColVar)[0] + affineEstimation_b;
-		//TODO check this is OK for OMNI
-		float c2 = resInterp[2];
+		//TODO double check this is correct for OMNI
+		float c2;
+		if (camType == CameraModelType::OMNI) {
+			c2 = resInterp.norm();
+		} else {
+			c2 = resInterp[2];
+		}
 		float residual = c1 - c2;
 
 		float weight = fabsf(residual) < 5.0f ? 1 : 5.0f / fabsf(residual);
@@ -707,8 +719,12 @@ float SE3Tracker::calcResidualAndBuffers(
 		//}
 		*(buf_warped_residual + idx) = residual;
 
-		//TODO change this for OMNI
-		*(buf_d + idx) = 1.0f / (*refPoint)[2];
+		//Adapting for OMNI vs PROJ
+		if (camType == CameraModelType::OMNI) {
+			*(buf_d + idx) = 1.0f / refPoint->norm();
+		} else /* PROJ */ {
+			*(buf_d + idx) = 1.0f / (*refPoint)[2];
+		}
 		*(buf_idepthVar + idx) = (*refColVar)[1];
 		idx++;
 
@@ -722,8 +738,13 @@ float SE3Tracker::calcResidualAndBuffers(
 		else
 			badCount++;
 
-		//TODO change this for OMNI
-		float depthChange = (*refPoint)[2] / Wxp[2];	// if depth becomes larger: pixel becomes "smaller", hence count it less.
+		float depthChange;
+		//Adapting for OMNI vs PROJ
+		if (camType == CameraModelType::OMNI) {
+			depthChange = refPoint->norm() / Wxp.norm();	// if depth becomes larger: pixel becomes "smaller", hence count it less.
+		} else /* PROJ */ {
+			depthChange = (*refPoint)[2] / Wxp[2];	// if depth becomes larger: pixel becomes "smaller", hence count it less.
+		}
 		usageCount += depthChange < 1 ? depthChange : 1;
 
 

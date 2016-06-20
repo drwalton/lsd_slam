@@ -1515,7 +1515,11 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 
 	struct timeval tv_start, tv_end;
 	gettimeofday(&tv_start, NULL);
-	propagateDepth(new_keyframe);
+
+	//TODO Temporary test: not propagating depth, but instead randomly initialising every time.
+	//propagateDepth(new_keyframe);
+	initializeRandomly(new_keyframe);
+
 	gettimeofday(&tv_end, NULL);
 	msPropagate = 0.9f*msPropagate + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
 	nPropagate++;
@@ -1573,6 +1577,7 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 	}
 	//TODO this goes haywire in omni mode, always decreasing. 
 	//In proj mode, stays close to 1, sometimes higher, sometimes lower.
+	//This is symptom, rather than cause: this means average depth is increasing.
 	std::cout << "RESCALE: " << rescaleFactor << std::endl;
 	activeKeyframe->pose->thisToParent_raw = sim3FromSE3(oldToNew_SE3.inverse(), rescaleFactor);
 	activeKeyframe->pose->invalidateCache();
