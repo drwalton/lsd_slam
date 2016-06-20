@@ -57,10 +57,10 @@ SlamSystem::SlamSystem(const CameraModel &model,
 	: model(model.clone()),
 	loopClosureEnabled(enableLoopClosure),
 	plotTracking(false),
-	relocalizer(model),
 	singleThread(singleThread),
 	singleThreadMappingInterval(1),
-	saveTrackingInfo(saveTrackingInfo)
+	saveTrackingInfo(saveTrackingInfo),
+	relocalizer(model)
 {
 	if(model.w%16 != 0 || model.h%16!=0)
 	{

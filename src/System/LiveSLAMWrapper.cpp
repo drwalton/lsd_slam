@@ -46,7 +46,9 @@ LiveSLAMWrapper::LiveSLAMWrapper(
 	LoopClosureMode loopClosureMode,
 	DepthMapInitMode depthMapInitMode,
 	bool saveTrackingInfo)
-	:camModel_(imageStream->camModel().clone()), blockTrackUntilMapped(false), running_(running)
+	:blockTrackUntilMapped(false),
+	running_(running),
+	camModel_(imageStream->camModel().clone())
 {
 	this->imageStream = imageStream;
 	this->outputWrapper = outputWrapper;

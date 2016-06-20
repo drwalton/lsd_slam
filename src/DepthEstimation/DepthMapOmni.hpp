@@ -62,18 +62,6 @@ float doStereoOmniImpl(
 	const float* const keyframe, const float* referenceFrameImage,
 	const RigidTransform &keyframeToReference,
 	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
-	vec2 &bestEpDir, vec3 &bestMatchPos, float &gradAlongLine, float &tracedLineLen,
-	vec3 &bestMatchKeyframe,
-	cv::Mat &drawMat = emptyMat,
-	bool showMatch = false);
-
-
-float doStereoOmniImpl2(
-	const float u, const float v, const vec3 &epDir,
-	const float min_idepth, const float prior_idepth, float max_idepth,
-	const float* const keyframe, const float* referenceFrameImage,
-	const RigidTransform &keyframeToReference,
-	RunningStats* stats, const OmniCameraModel &oModel, size_t width,
 	float &idepth,
 	vec2 &bestEpDir, vec3 &bestMatchPos,
 	size_t &bestMatchLoopC,
@@ -112,62 +100,5 @@ bool getValuesToFindOmni(const vec3 &keyframePointDir, const vec3 &epDir,
 	float u, float v, std::array<float, 5> &valuesToFind,
 	vec2 &epImDir,
 	cv::Mat &visIm = emptyMat);
-
-float findDepthAndVarOmni(const float u, const float v, const vec3 &bestMatchDir,
-	float *resultIDepth, float *resultVar,
-	float gradAlongLine, const vec2 &bestEpDir, const Frame *referenceFrame, Frame *activeKeyframe,
-	float sampleDist, bool didSubpixel, float tracedLineLen,
-	OmniCameraModel *model,
-	RunningStats *stats);
-
-struct Ray {
-	vec3 origin;
-	vec3 dir;
-	std::string to_string() const;
-};
-std::ostream &operator <<(std::ostream &s, const Ray &r);
-
-struct RayIntersectionResult {
-	enum Outcome {
-		VALID, BEHIND, PARALLEL
-	};
-	Outcome valid;
-	float distance;
-	vec3 position;
-	std::string to_string() const;
-};
-std::ostream &operator <<(std::ostream &s, const RayIntersectionResult &r);
-
-RayIntersectionResult computeRayIntersection(const Ray &r1, const Ray &r2);
-
-
-enum class MakePaddedLineErrorCode {
-	SUCCESS, FAIL_NEAR_EPIPOLE, FAIL_TOO_LONG, FAIL_OUT_OF_IMAGE, FAIL_TOO_SHORT,
-	FAIL_TOO_STEEP
-};
-///\brief Generate a padded epipolar line, of a specified minimum length.
-///       Return the line in the keyframe and reference frames' FoRs.
-///\return Error code: 
-///\param u Pixel location in the keyframe.
-///\param v Pixel location in the keyframe.
-///\param meanIDepth Expected inverse depth
-///\param minIDepth Min inverse depth (i.e. max depth). Defines endpoint of line.
-///\param maxIDepth Max inverse depth (i.e. min depth). Defines endpoint of line.
-///\param requiredLineLen Required length of the line in the reference frame image,
-///       where length is given in pixels.
-///\param model Camera model
-///\param keyframeToReference Transform from the keyframes FoR to that of the reference.
-///\param[out] keyframeLine The line in the FoR of the keyframe.
-///\param[out] refframeLine The line in the FoR of the reference frame.
-///\note Can fail if chosen pixel location is too close to one of the epipoles.
-MakePaddedLineErrorCode makePaddedEpipolarLineOmni(float u, float v,
-	float meanIDepth, float minIDepth, float maxIDepth,
-	float requiredLineLen,
-	const OmniCameraModel &model,
-	const RigidTransform &keyframeToReference,
-	vec3 *keyframeDir,
-	LineSeg3d *keyframeLine,
-	LineSeg3d *refframeLine,
-	OmniEpLine2d *refframeLinePix);
 
 }

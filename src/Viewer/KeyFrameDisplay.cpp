@@ -86,8 +86,11 @@ void KeyframeDisplay::setFrom(const keyframeMsg *msg)
 	{
 		if(msg->pointcloud.size() != 0)
 		{
-			printf("WARNING: PC with points, but number of points not right! (is %lu, should be %lu*%dx%d=%u)\n",
-					msg->pointcloud.size(), sizeof(InputPointDense), camModel_->w, camModel_->h, camModel_->w*camModel_->h*sizeof(InputPointDense));
+			printf("WARNING: PC with points, but number of points not right!"
+				" (is %lu, should be %lu*%dx%d=%u)\n",
+					msg->pointcloud.size(), sizeof(InputPointDense),
+					int(camModel_->w), int(camModel_->h),
+					uint(camModel_->w*camModel_->h*sizeof(InputPointDense)));
 		}
 	}
 	else

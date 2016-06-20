@@ -20,8 +20,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#ifndef SOPHUS_RXSO3_HPP
-#define RXSO3_HPP
+#pragma once
 
 #include "sophus.hpp"
 #include "so3.hpp"
@@ -834,5 +833,3 @@ protected:
 };
 
 }
-
-#endif // SOPHUS_RXSO3_HPP
