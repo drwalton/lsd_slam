@@ -146,7 +146,7 @@ private:
 			float &result_idepth, float &result_var, float &result_eplLength,
 			RunningStats* const stats);
 
-	float DepthMap::doStereoOmni(
+	float doStereoOmni(
 		const float u, const float v, const vec3 &epDir,
 		const float min_idepth, const float prior_idepth, float max_idepth,
 		const Frame* const referenceFrame, const float* referenceFrameImage,

@@ -138,6 +138,7 @@ float SE3Tracker::checkPermaRefOverlap(
 		float v_new = uv[1];
 		if ((u_new > 0 && v_new > 0 && u_new < w2 && v_new < h2))
 		{
+			//TODO check this, make sure it's OK for OMNI
 			float depthChange = (*refPoint)[2] / Wxp[2];
 			usageCount += depthChange < 1 ? depthChange : 1;
 		}
@@ -674,6 +675,7 @@ float SE3Tracker::calcResidualAndBuffers(
 		Eigen::Vector3f resInterp = getInterpolatedElement43(frame_gradients, u_new, v_new, w);
 
 		float c1 = affineEstimation_a * (*refColVar)[0] + affineEstimation_b;
+		//TODO check this is OK for OMNI
 		float c2 = resInterp[2];
 		float residual = c1 - c2;
 
@@ -705,6 +707,7 @@ float SE3Tracker::calcResidualAndBuffers(
 		//}
 		*(buf_warped_residual + idx) = residual;
 
+		//TODO change this for OMNI
 		*(buf_d + idx) = 1.0f / (*refPoint)[2];
 		*(buf_idepthVar + idx) = (*refColVar)[1];
 		idx++;
@@ -719,6 +722,7 @@ float SE3Tracker::calcResidualAndBuffers(
 		else
 			badCount++;
 
+		//TODO change this for OMNI
 		float depthChange = (*refPoint)[2] / Wxp[2];	// if depth becomes larger: pixel becomes "smaller", hence count it less.
 		usageCount += depthChange < 1 ? depthChange : 1;
 
@@ -736,6 +740,7 @@ float SE3Tracker::calcResidualAndBuffers(
 			{
 				setPixelInCvMat(&debugImageOldImageSource, getGrayCvPixel((float)resInterp[2]),
 					static_cast<int>(u_new + 0.5f), static_cast<int>(v_new + 0.5f), (camModel->w / w));
+				//TODO change this for OMNI (not urgent).
 				setPixelInCvMat(&debugImageOldImageWarped, getGrayCvPixel(
 					(float)resInterp[2]), x, y, (camModel->w / w));
 			}

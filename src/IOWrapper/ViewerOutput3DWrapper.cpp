@@ -39,7 +39,7 @@ ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int hei
 		viewerThread_ = std::thread([this](){
 			std::cout << "Launching viewer thread...\n";
 			int argc = 1; 
-			char* argv = "app";
+			char* argv = const_cast<char*>("app");
 			QApplication qapp(argc, &argv);
 			PointCloudViewer viewer;
 			viewer_ = &viewer;

@@ -464,6 +464,7 @@ void Sim3Tracker::calcSim3Buffers(
 
 
 		float c1 = affineEstimation_a * (*refColVar)[0] + affineEstimation_b;
+		//TODO change this for OMNI
 		float c2 = resInterp[2];
 		float residual_p = c1 - c2;
 
@@ -483,6 +484,7 @@ void Sim3Tracker::calcSim3Buffers(
 		int idx_rounded = (int)(u_new+0.5f) + w*(int)(v_new+0.5f);
 		float var_frameDepth = frame_idepthVar[idx_rounded];
 		float ref_idepth;
+		//Adapt depth interpretation for OMNI vs PROJ camera models
 		if (isOmni) {
 			ref_idepth = 1.0f / Wxp.norm();
 			*(buf_d + idx) = 1.0f / refPoint->norm();
@@ -513,6 +515,7 @@ void Sim3Tracker::calcSim3Buffers(
 			int x = static_cast<int>(point.x());
 			int y = static_cast<int>(point.y());
 
+			//TODO change this for OMNI (not urgent).
 			setPixelInCvMat(&debugImageOldImageSource,getGrayCvPixel((float)resInterp[2]),
 				static_cast<int>(u_new+0.5f),static_cast<int>(v_new+0.5f),(camModel->w/w));
 			setPixelInCvMat(&debugImageOldImageWarped,getGrayCvPixel((float)resInterp[2]),x,y,(camModel->w/w));
@@ -540,6 +543,7 @@ void Sim3Tracker::calcSim3Buffers(
 
 		idx++;
 
+		//Adapting depth calculation for OMNI.
 		float depthChange;
 		if (isOmni) {
 			depthChange = refPoint->norm() / Wxp.norm();

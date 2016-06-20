@@ -886,10 +886,13 @@ void SlamSystem::gtDepthInit(uchar* image, float* depth, double timeStamp, int i
 
 void SlamSystem::randomInit(uchar* image, double timeStamp, int id)
 {
-	printf("Doing Random initialization!\n");
+	std::cout << "Doing Random initialization!" << std::endl;
 
-	if(!doMapping)
-		printf("WARNING: mapping is disabled, but we just initialized... THIS WILL NOT WORK! Set doMapping to true.\n");
+	if(!doMapping) {
+		std::cout << "WARNING: mapping is disabled, but we just initialized... "
+			"THIS WILL NOT WORK! Set doMapping to true." << std::endl;
+		throw std::runtime_error("Mapping disabled when initialising.");
+	}
 
 
 	currentKeyframeMutex.lock();
@@ -934,7 +937,8 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 
 	currentKeyframeMutex.lock();
 	bool my_createNewKeyframe = createNewKeyframe;	// pre-save here, to make decision afterwards.
-	if (trackingReference->keyframe != currentKeyframe.get() || currentKeyframe->depthHasBeenUpdatedFlag)
+	if (trackingReference->keyframe != currentKeyframe.get() ||
+		currentKeyframe->depthHasBeenUpdatedFlag)
 	{
 		trackingReference->importFrame(currentKeyframe.get());
 		currentKeyframe->depthHasBeenUpdatedFlag = false;
@@ -946,12 +950,14 @@ void SlamSystem::trackFrame(uchar* image, unsigned int frameID, bool blockUntilM
 
 	// DO TRACKING & Show tracking result.
 	if (enablePrintDebugInfo && printThreadingInfo)
-		printf("TRACKING %d on %d\n", trackingNewFrame->id(), trackingReferencePose->frameID);
+		printf("TRACKING %d on %d\n", trackingNewFrame->id(),
+		trackingReferencePose->frameID);
 
 
 	poseConsistencyMutex.lock_shared();
 	SE3 frameToReference_initialEstimate = se3FromSim3(
-		trackingReferencePose->getCamToWorld().inverse() * keyframeGraph->allFramePoses.back()->getCamToWorld());
+		trackingReferencePose->getCamToWorld().inverse() *
+		keyframeGraph->allFramePoses.back()->getCamToWorld());
 	poseConsistencyMutex.unlock_shared();
 
 	struct timeval tv_start, tv_end;
