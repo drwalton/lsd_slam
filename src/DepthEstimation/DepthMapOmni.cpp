@@ -165,13 +165,13 @@ float DepthMap::findVarOmni(const float u, const float v, const vec3 &bestMatchD
 	}
 
 #if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
-	debugImages.addGradAlongLine(u, v, gradAlongLine);
+	debugImages.addGradAlongLine(size_t(u), size_t(v), gradAlongLine);
 #endif
 #if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS	
-	debugImages.addPhotoDispError(u, v, photoDispError);
+	debugImages.addPhotoDispError(size_t(u), size_t(v), photoDispError);
 #endif
 #if DEBUG_SAVE_GEO_DISP_ERROR_IMS	
-	debugImages.addGeoDispError(u, v, geoDispError);
+	debugImages.addGeoDispError(size_t(u), size_t(v), geoDispError);
 #endif
 	return var;
 }

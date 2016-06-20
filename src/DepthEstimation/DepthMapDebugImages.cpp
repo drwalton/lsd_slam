@@ -188,7 +188,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 		std::stringstream ss;
 		ss << resourcesDir() << "GradAlongLineIms/GradAlongLine" << kfID <<
 			"_f" << refID << ".png";
-		cv::imwrite(ss.str(), pixelDisparity);
+		cv::imwrite(ss.str(), gradAlongLines);
 	}
 #endif
 #if DEBUG_SAVE_GEO_DISP_ERROR_IMS
@@ -196,7 +196,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 		std::stringstream ss;
 		ss << resourcesDir() << "GeoDispErrIms/GeoDispErr" << kfID <<
 			"_f" << refID << ".png";
-		cv::imwrite(ss.str(), pixelDisparity);
+		cv::imwrite(ss.str(), geoDispErrs);
 	}
 #endif
 #if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
@@ -204,7 +204,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 		std::stringstream ss;
 		ss << resourcesDir() << "PhotoDispErrIms/PhotoDispErr" << kfID <<
 			"_f" << refID << ".png";
-		cv::imwrite(ss.str(), pixelDisparity);
+		cv::imwrite(ss.str(), photoDispErrs);
 	}
 #endif
 }

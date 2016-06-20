@@ -1258,7 +1258,6 @@ void DepthMap::resetCounters()
 	runningStats.num_observe_skip_alreadyGood=0;
 	runningStats.num_observe_addSkip=0;
 
-
 	runningStats.num_observe_blacklisted=0;
 }
 
@@ -2180,6 +2179,15 @@ inline float DepthMap::doStereoProj(
 	// final error consists of a small constant part (discretization error),
 	// geometric and photometric error.
 	result_var = alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*sampleDist*sampleDist +  geoDispError + photoDispError);	// square to make variance
+#if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
+	debugImages.addGradAlongLine(size_t(u), size_t(v), gradAlongLine);
+#endif
+#if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS	
+	debugImages.addPhotoDispError(size_t(u), size_t(v), photoDispError);
+#endif
+#if DEBUG_SAVE_GEO_DISP_ERROR_IMS	
+	debugImages.addGeoDispError(size_t(u), size_t(v), geoDispError);
+#endif
 
 	if(plotStereoImages)
 	{

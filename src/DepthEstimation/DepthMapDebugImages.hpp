@@ -58,16 +58,9 @@ struct DepthMapDebugImages
 	void clearStereoImages(const float * keyframe, const float * refFrame, const CameraModel * camModel);
 	void visualiseMatch(vec2 keyframePos, vec2 referenceFramePos, const CameraModel *model);
 
-	void clearSearchRangesIm(const float *keyframe, const float *refFrame, const CameraModel *camModel);
-	void clearResultIm(const float *keyframe, const float *refFrame, const CameraModel *model);
-
-	void clearDepthIm(const float *keyframe, const float *refFrame, const CameraModel *model);
 	void visualisePixelDisparity(size_t x, size_t y, size_t disparity);
 
-	void clearVarIm(const float *keyframe, const float *refFrame, const CameraModel *model);
 	void addVar(size_t x, size_t y, float var);
-
-	void clearPixelDisparityIm(const float *keyframe, const float *refFrame, const CameraModel *model);
 
 	void clearFramePtCloud();
 	void addFramePt(const vec3 &point, const float color);
