@@ -39,7 +39,7 @@ vec3 OmniCameraModel::pixelToCam(const vec2 &p, float d) const
 	float p2 = pn.x()*pn.x() + pn.y()*pn.y();
 	float num = e + sqrtf(1.f + (1 - e*e)*p2);
 	vec3 dir = (vec3(pn.x(), pn.y(), 1.f) * num / (1.f + p2)) - vec3(0.f, 0.f, e);
-	return dir / d;
+	return dir * d;
 }
 
 
