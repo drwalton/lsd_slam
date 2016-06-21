@@ -48,8 +48,8 @@ DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
 	:camModel_(model.clone()), 
 	//:camModel_(model.makeProjCamModel()), 
 	initMode_(mode),
-	activeKeyframeImageData(nullptr),
-	debugImages(model.getTypeName())
+	debugImages(model.getTypeName()),
+	activeKeyframeImageData(nullptr)
 {
 	int w = camModel_->w, h = camModel_->h;
 	activeKeyframe = 0;

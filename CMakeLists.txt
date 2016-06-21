@@ -13,7 +13,7 @@ find_package(Eigen3 REQUIRED)
 find_package(G2O REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(Boost COMPONENTS System Thread REQUIRED)
+find_package(Boost COMPONENTS System Thread Filesystem REQUIRED)
 find_package(libtiff REQUIRED)
 find_package(Assimp REQUIRED)
 

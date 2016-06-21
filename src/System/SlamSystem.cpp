@@ -59,8 +59,8 @@ SlamSystem::SlamSystem(const CameraModel &model,
 	plotTracking(false),
 	singleThread(singleThread),
 	singleThreadMappingInterval(1),
-	saveTrackingInfo(saveTrackingInfo),
-	relocalizer(model)
+	relocalizer(model),
+	saveTrackingInfo(saveTrackingInfo)
 {
 	if(model.w%16 != 0 || model.h%16!=0)
 	{
@@ -183,6 +183,7 @@ SlamSystem::~SlamSystem()
 
 
 	Util::closeAllWindows();
+	
 }
 
 void SlamSystem::setVisualization(Output3DWrapper* outputWrapper)
