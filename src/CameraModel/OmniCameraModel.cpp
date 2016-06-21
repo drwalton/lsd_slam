@@ -155,6 +155,10 @@ vec2 OmniCameraModel::getFovAngles() const
 
 bool OmniCameraModel::pixelLocValid(const vec2 &p) const
 {
+	// First check point lies inside image
+	if(p.x() < 0 || p.x() > w-1 || p.y() < 0 || p.y() > h-1) return false;
+	
+	// Next check point is inside valid image circle
 	vec2 d = p - c;
 	return d.norm() < r && p.x() < w && p.x() > 0.f && p.y() < h && p.y() > 0.f;
 }

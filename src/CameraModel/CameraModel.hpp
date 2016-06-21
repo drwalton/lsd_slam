@@ -48,6 +48,15 @@ public:
 	virtual vec2 getFovAngles() const = 0;
 
 	static std::unique_ptr<CameraModel> loadFromFile(const std::string &filename);
+	
+	///\brief Check if a pixel location corresponds to a valid location in the
+	/// image.
+	///\note For projective camera models, this just checks that the point is
+	/// within the image width and height. For omnidirectional models, it also
+	/// checks that the point is inside the valid image circle (typically set
+	/// to the
+	/// <a href="https://en.wikipedia.org/wiki/Image_circle">image circle</a>
+	/// of the lens).
 	virtual bool pixelLocValid(const vec2 &loc) const = 0;
 
 	virtual std::string getTypeName() const = 0;
