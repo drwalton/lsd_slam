@@ -1448,8 +1448,8 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 	gettimeofday(&tv_start, NULL);
 
 	//TODO Temporary test: not propagating depth, but instead randomly initialising every time.
-	//propagateDepth(new_keyframe);
-	initializeRandomly(new_keyframe);
+	propagateDepth(new_keyframe);
+	//initializeRandomly(new_keyframe);
 
 	gettimeofday(&tv_end, NULL);
 	msPropagate = 0.9f*msPropagate + 0.1f*((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
