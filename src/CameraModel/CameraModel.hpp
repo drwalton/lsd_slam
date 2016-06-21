@@ -50,6 +50,7 @@ public:
 	static std::unique_ptr<CameraModel> loadFromFile(const std::string &filename);
 	virtual bool pixelLocValid(const vec2 &loc) const = 0;
 
+	virtual std::string getTypeName() const = 0;
 
 	virtual std::unique_ptr<CameraModel> makeProjCamModel() const = 0;
 	virtual std::unique_ptr<CameraModel> makeOmniCamModel() const = 0;

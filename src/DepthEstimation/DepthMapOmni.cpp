@@ -158,7 +158,7 @@ float DepthMap::findVarOmni(const float u, const float v, const vec3 &bestMatchD
 
 	// final error consists of a small constant part (discretization error),
 	// geometric and photometric error.
-	float discretizationError = 0.25f * alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*
+	float discretizationError = /*0.25f * */ alpha*alpha*((didSubpixel ? 0.05f : 0.5f)*
 		sampleDist*sampleDist);
 	float var = discretizationError	+ geoDispError + photoDispError;// square to make variance
 
@@ -843,12 +843,9 @@ float doStereoOmniImpl(
 		throw std::runtime_error("bestEpImDir != bestEpImDir");
 	}
 
-	//TODO Work out whether this is
 	iDepth = bestMatchA * max_idepth;
-	//or
-	//iDepth = bestMatchA;
 	bestMatchLoopC = loopCBest;
-	float invDepthInterval = (lineEndAlpha - lineStartAlpha) *max_idepth;
+	float invDepthInterval = (lineEndAlpha - lineStartAlpha) * max_idepth;
 	alpha =  invDepthInterval / float(loopC);
 	
 	return bestMatchErr;

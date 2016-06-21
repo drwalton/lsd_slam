@@ -22,6 +22,7 @@
 #include <opencv2/opencv.hpp>
 #include <boost/bind.hpp>
 #include "DepthEstimation/DepthMapDebugDefines.hpp"
+#include "CameraModel/CameraModel.hpp"
 #include "globalFuncs.hpp"
 
 
@@ -39,46 +40,48 @@ std::string resourcesDir() {
 	return dir;
 }
 
-void makeDebugDirectories()
+void makeDebugDirectories(const CameraModel *m)
 {
 	std::cout << "Clearing debug directories..."; std::cout.flush();
 #if DEBUG_SAVE_VAR_IMS
-	makeEmptyDirectory(resourcesDir() + "VarIms/");
+	makeEmptyDirectory(resourcesDir() + "VarIms" + m->getTypeName() +  "/");
 #endif
 #if DEBUG_SAVE_IDEPTH_IMS
-	makeEmptyDirectory(resourcesDir() + "DepthIms/");
+	makeEmptyDirectory(resourcesDir() + "DepthIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_MATCH_IMS
-	makeEmptyDirectory(resourcesDir() + "MatchIms/");
+	makeEmptyDirectory(resourcesDir() + "MatchIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_SEARCH_RANGE_IMS
-	makeEmptyDirectory(resourcesDir() + "RangeIms/");
+	makeEmptyDirectory(resourcesDir() + "RangeIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_RESULT_IMS
-	makeEmptyDirectory(resourcesDir() + "ResultIms/");
+	makeEmptyDirectory(resourcesDir() + "ResultIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_PIXEL_DISPARITY_IMS
-	makeEmptyDirectory(resourcesDir() + "PixelDispIms/");
+	makeEmptyDirectory(resourcesDir() + "PixelDispIms" + m->getTypeName() + "/");
 #endif
-#if DEBUG_SAVE_FRAME_POINT_CLOUDS
-	makeEmptyDirectory(resourcesDir() + "FramePtClouds/");
+#if DEBUG_SAVE_FRAME_STEREO_POINT_CLOUDS
+	makeEmptyDirectory(resourcesDir() + "FramePtClouds" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_KEYFRAME_PROPAGATION_CLOUDS
-	makeEmptyDirectory(resourcesDir() + "KeyframePropagationPtClouds/");
+	makeEmptyDirectory(resourcesDir() + "KeyframePropagationPtClouds" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
-	makeEmptyDirectory(resourcesDir() + "GradAlongLineIms/");
+	makeEmptyDirectory(resourcesDir() + "GradAlongLineIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_GEO_DISP_ERROR_IMS
-	makeEmptyDirectory(resourcesDir() + "GeoDispErrIms/");
+	makeEmptyDirectory(resourcesDir() + "GeoDispErrIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
-	makeEmptyDirectory(resourcesDir() + "PhotoDispErrIms/");
+	makeEmptyDirectory(resourcesDir() + "PhotoDispErrIms" + m->getTypeName() + "/");
 #endif
 #if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
-	makeEmptyDirectory(resourcesDir() + "DiscretizeErrIms/");
+	makeEmptyDirectory(resourcesDir() + "DiscretizeErrIms" + m->getTypeName() + "/");
 #endif
-	std::cout << "Done!" << std::endl;
+#if DEBUG_SAVE_KEYFRAME_POINT_CLOUDS_EACH_FRAME
+	makeEmptyDirectory(resourcesDir() + "KeyframePtClouds" + m->getTypeName() + "/");
+#endif
 }
 
 bool autoRun = true;

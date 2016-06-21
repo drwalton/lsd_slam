@@ -111,6 +111,11 @@ CameraModelType OmniCameraModel::getType() const
 	return CameraModelType::OMNI;
 }
 
+std::string OmniCameraModel::getTypeName() const
+{
+	return "Omni";
+}
+
 std::unique_ptr<CameraModel> OmniCameraModel::clone() const
 {
 	return std::unique_ptr<CameraModel>(new OmniCameraModel(*this));

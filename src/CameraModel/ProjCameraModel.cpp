@@ -58,6 +58,11 @@ CameraModelType ProjCameraModel::getType() const
 	return CameraModelType::PROJ;
 }
 
+std::string ProjCameraModel::getTypeName() const
+{
+	return "Proj";
+}
+
 std::unique_ptr<CameraModel> ProjCameraModel::clone() const
 {
 	return std::unique_ptr<CameraModel>(new ProjCameraModel(*this));

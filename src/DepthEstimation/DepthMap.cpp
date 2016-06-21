@@ -48,7 +48,8 @@ DepthMap::DepthMap(const CameraModel &model, DepthMapInitMode mode)
 	:camModel_(model.clone()), 
 	//:camModel_(model.makeProjCamModel()), 
 	initMode_(mode),
-	activeKeyframeImageData(nullptr)
+	activeKeyframeImageData(nullptr),
+	debugImages(model.getTypeName())
 {
 	int w = camModel_->w, h = camModel_->h;
 	activeKeyframe = 0;
@@ -538,7 +539,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 #if DEBUG_SAVE_VAR_IMS
 		debugImages.addVar(x, y, result_var);
 #endif
-#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+#if DEBUG_SAVE_FRAME_STEREO_POINT_CLOUDS
 		{
 			float depth = 1.f / result_idepth;
 			if (std::isfinite(depth)) {
@@ -1409,6 +1410,11 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	}
 
 	debugImages.saveStereoIms(activeKeyframe->id(), referenceFrames[0]->id());
+#if DEBUG_SAVE_KEYFRAME_POINT_CLOUDS_EACH_FRAME
+	debugImages.saveKeyframeDepthMap(activeKeyframe->idepth(0), activeKeyframe->image(0),
+		camModel_.get(),
+		activeKeyframe->id(), referenceFrames[0]->id());
+#endif 
 }
 
 void DepthMap::invalidate()
@@ -1439,8 +1445,6 @@ void DepthMap::createKeyframe(Frame* new_keyframe)
 		keyframeImage.convertTo(debugImageHypothesisPropagation, CV_8UC1);
 		cv::cvtColor(debugImageHypothesisPropagation, debugImageHypothesisPropagation, CV_GRAY2RGB);
 	}
-
-
 
 	SE3 oldToNew_SE3 = se3FromSim3(new_keyframe->pose->thisToParent_raw).inverse();
 

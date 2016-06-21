@@ -23,8 +23,9 @@ void makeDebugCompareIm(cv::Mat &i, const float * keyframe, const float * refFra
 	}
 }
 
-DepthMapDebugImages::DepthMapDebugImages()
-	:drawIntervalX(10), drawIntervalY(10)
+
+DepthMapDebugImages::DepthMapDebugImages(const std::string & modelName)
+	:drawIntervalX(10), drawIntervalY(10), modelName(modelName)
 {}
 
 bool DepthMapDebugImages::drawMatchHere(size_t x, size_t y) const
@@ -51,7 +52,7 @@ void DepthMapDebugImages::clearStereoImages(const float * keyframe, const float 
 #if DEBUG_SAVE_VAR_IMS
 	makeDebugCompareIm(vars, keyframe, refFrame, camModel);
 #endif
-#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+#if DEBUG_SAVE_FRAME_STEREO_POINT_CLOUDS
 	clearFramePtCloud();
 #endif
 #if DEBUG_SAVE_PIXEL_DISPARITY_IMS
@@ -111,6 +112,30 @@ void DepthMapDebugImages::addFramePt(const vec3 & point, const float color)
 	framePtMutex.unlock();
 }
 
+void DepthMapDebugImages::saveKeyframeDepthMap(const float * idepths, 
+	const float *colors,
+	const CameraModel * camModel, int keyframeID, int refFrameID)
+{
+	keyframePtCloud.vertColors() = keyframePtCloud.vertices() = std::vector<vec3>();
+	for (size_t y = 0; y < camModel->h; ++y) {
+		for (size_t x = 0; x < camModel->w; ++x) {
+			size_t idx = x + y*camModel->w;
+			float depth = 1.f / idepths[idx];
+			if (depth > 0.f && std::isnormal(depth)) {
+				vec3 pt = camModel->pixelToCam(vec2(x, y), depth);
+				keyframePtCloud.vertices().push_back(pt);
+				float c = colors[idx];
+				keyframePtCloud.vertColors().push_back(vec3(c, c, c));
+			}
+		}
+	}
+
+	std::stringstream ss;
+	ss << resourcesDir() << "KeyframePtClouds" + modelName + "/CloudKF" 
+		<< keyframeID << "_f" << refFrameID << ".ply";
+	keyframePtCloud.saveFile(ss.str());
+}
+
 void DepthMapDebugImages::clearPropagatePtClouds()
 {
 	prePropagatePointCloud.vertices() = std::vector<vec3>();
@@ -140,7 +165,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_SEARCH_RANGE_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "RangeIms/RangeKF" << kfID <<
+		ss << resourcesDir() << "RangeIms" + modelName + "/RangeKF" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), searchRanges);
 	}
@@ -148,7 +173,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_RESULT_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "ResultIms/ResultKF" << kfID <<
+		ss << resourcesDir() << "ResultIms" + modelName + "/ResultKF" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), results);
 	}
@@ -156,7 +181,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_IDEPTH_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "DepthIms/DepthKF" << kfID <<
+		ss << resourcesDir() << "DepthIms" + modelName + "/DepthKF" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), depths);
 	}
@@ -164,15 +189,15 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_VAR_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "VarIms/VarKF" << kfID <<
+		ss << resourcesDir() << "VarIms" + modelName + "/VarKF" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), vars);
 	}
 #endif
-#if DEBUG_SAVE_FRAME_POINT_CLOUDS
+#if DEBUG_SAVE_FRAME_STEREO_POINT_CLOUDS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "FramePtClouds/CloudKF" << kfID <<
+		ss << resourcesDir() << "FramePtClouds" + modelName + "/CloudKF" << kfID <<
 			"_f" << refID << ".ply";
 		framePtCloud.saveFile(ss.str());
 	}
@@ -180,7 +205,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_PIXEL_DISPARITY_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "PixelDispIms/PixelDispKF" << kfID <<
+		ss << resourcesDir() << "PixelDispIms" + modelName + "/PixelDispKF" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), pixelDisparity);
 	}
@@ -189,7 +214,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_GRAD_ALONG_LINE_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "GradAlongLineIms/GradAlongLine" << kfID <<
+		ss << resourcesDir() << "GradAlongLineIms" + modelName + "/GradAlongLine" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), gradAlongLines);
 	}
@@ -197,7 +222,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_GEO_DISP_ERROR_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "GeoDispErrIms/GeoDispErr" << kfID <<
+		ss << resourcesDir() << "GeoDispErrIms" + modelName + "/GeoDispErr" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), geoDispErrs);
 	}
@@ -205,7 +230,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_PHOTO_DISP_ERROR_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "PhotoDispErrIms/PhotoDispErr" << kfID <<
+		ss << resourcesDir() << "PhotoDispErrIms" + modelName +"/PhotoDispErr" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), photoDispErrs);
 	}
@@ -213,7 +238,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 #if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
 	{
 		std::stringstream ss;
-		ss << resourcesDir() << "DiscretizeErrIms/DiscretizeErr" << kfID <<
+		ss << resourcesDir() << "DiscretizeErrIms" + modelName +"/DiscretizeErr" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), discretizationErrs);
 	}

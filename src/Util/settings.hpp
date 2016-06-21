@@ -24,12 +24,13 @@
 #include <string>
 
 
-
 namespace lsd_slam
 {
 
+class CameraModel;
+
 std::string resourcesDir();
-void makeDebugDirectories();
+void makeDebugDirectories(const CameraModel *m);
 
 #define ALIGN __attribute__((__aligned__(16)))
 #define SSEE(val,idx) (*(((float*)&val)+idx))

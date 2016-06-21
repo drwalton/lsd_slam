@@ -9,13 +9,12 @@
 
 int main(int argc, char **argv)
 {
-	lsd_slam::makeDebugDirectories();
-
 	if (argc < 3) {
 		std::cout << "Usage: ReconstructionDemo: [calibrationfile] [input]\n"
 			"Input can either be a video file, or a number, specifying a live camera." << std::endl;
 		return 1;
 	}
+
 
 	std::cout << "Opening stream: \"" << argv[2] << "\"..."; std::cout.flush();
 	lsd_slam::OpenCVImageStream stream;
@@ -27,6 +26,8 @@ int main(int argc, char **argv)
 	stream.setCalibration(lsd_slam::resourcesDir() + argv[1]);
 	std::cout << "Done!" << std::endl;
 	std::cout << "Loaded calibration:\n" << stream.camModel() << std::endl;
+
+	lsd_slam::makeDebugDirectories(&stream.camModel());
 
 	std::cout << "Running stream..."; std::cout.flush();
 	stream.run();

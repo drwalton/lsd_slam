@@ -75,6 +75,8 @@ public:
 
 	virtual CameraModelType getType() const;
 
+	virtual std::string getTypeName() const;
+
 	virtual std::unique_ptr<CameraModel> clone() const;
 
 	const vec2 fovAngles;

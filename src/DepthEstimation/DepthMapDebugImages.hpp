@@ -25,7 +25,7 @@ const float SKIP_BAD_TRACKING = -10;
 
 struct DepthMapDebugImages
 {
-	explicit DepthMapDebugImages();
+	explicit DepthMapDebugImages(const std::string &modelName);
 
 	//Shows the keyframe and ref frame side by side, and lines joining matched pixels.
 	cv::Mat matches; 
@@ -48,6 +48,7 @@ struct DepthMapDebugImages
 	cv::Mat discretizationErrs;
 
 	ModelLoader framePtCloud;
+	ModelLoader keyframePtCloud;
 
 	ModelLoader prePropagatePointCloud;
 	ModelLoader postPropagatePointCloud;
@@ -67,6 +68,10 @@ struct DepthMapDebugImages
 	void addFramePt(const vec3 &point, const float color);
 	std::mutex framePtMutex;
 
+	void saveKeyframeDepthMap(
+		const float *idepths, const float *colors, const CameraModel *camModel,
+		int keyframeID, int refFrameID);
+
 	void clearPropagatePtClouds();
 	void addPrePropagatePt(const vec3 &point, const float color);
 	void addPostPropagatePt(const vec3 &point, const float color);
@@ -83,6 +88,8 @@ struct DepthMapDebugImages
 	static cv::Vec3b getStereoResultVisColor(float err);
 
 	static cv::Vec3b getIDepthVisColor(float idepth);
+
+	const std::string modelName;
 };
 
 }

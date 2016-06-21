@@ -22,6 +22,7 @@ public:
 		createPyramidCameraModels(int nLevels) const;
 
 	virtual CameraModelType getType() const;
+	virtual std::string getTypeName() const;
 
 	const mat3 K, Kinv;
 
