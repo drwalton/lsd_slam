@@ -32,28 +32,25 @@ int main(int argc, char **argv)
 	stream.run();
 	std::cout << "Done!" << std::endl;
 
-	//QApplication qapp(argc, argv);
-	std::atomic<bool> startViewerOutputWrapper = false;
+	QApplication qapp(argc, argv);
 
 	std::cout << "Creating output wrapper..."; std::cout.flush();
-	std::unique_ptr<lsd_slam::ViewerOutput3DWrapper> outWrapper(
-		new lsd_slam::ViewerOutput3DWrapper(true, 640, 480, startViewerOutputWrapper));
+	lsd_slam::ViewerOutput3DWrapper outWrapper(true, 640, 480);
 	std::cout << "Done!" << std::endl;
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
-	{
-		lsd_slam::LiveSLAMWrapper slamWrapper(&stream, outWrapper.get(),
-			outWrapper->running,
-			lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
-			lsd_slam::LiveSLAMWrapper::LoopClosureMode::ENABLED,
-			lsd_slam::DepthMapInitMode::CONSTANT,
-			true);
-		std::cout << "Done!" << std::endl;
+	lsd_slam::LiveSLAMWrapper slamWrapper(&stream, &outWrapper,
+		lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
+		lsd_slam::LiveSLAMWrapper::LoopClosureMode::ENABLED,
+		lsd_slam::DepthMapInitMode::CONSTANT,
+		true);
 
-		std::cout << "Starting SLAM wrapper..." << std::endl;
-		startViewerOutputWrapper = true;
-		slamWrapper.Loop();
-	}
+	std::cout << "Starting SLAM wrapper..." << std::endl;
+	slamWrapper.start();
+	std::cout << "Done!" << std::endl;
+	std::cout << "Starting QT App loop..." << std::endl;
+	qapp.exec();
+	slamWrapper.stop();
 
 	std::cout << "Stopping stream..."; std::cout.flush();
 	stream.stop();

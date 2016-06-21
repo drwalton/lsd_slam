@@ -24,7 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include <atomic>
+#include <thread>
 
 #include "IOWrapper/Timestamp.hpp"
 #include "IOWrapper/NotifyBuffer.hpp"
@@ -56,7 +56,6 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	LiveSLAMWrapper(InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
-		std::atomic<bool> &running,
 		ThreadingMode threadMode = ThreadingMode::MULTI,
 		LoopClosureMode loopClosureMode = LoopClosureMode::ENABLED,
 		DepthMapInitMode depthMapInitMode = DepthMapInitMode::RANDOM,
@@ -66,8 +65,9 @@ public:
 	~LiveSLAMWrapper();
 	
 	
-	/** Runs the main processing loop. Will never return. */
-	void Loop();
+	void start();
+
+	void stop();
 	
 	/** Requests a reset from a different thread. */
 	void requestReset();
@@ -91,7 +91,10 @@ public:
 	bool plotTracking() const;
 
 private:
-	std::atomic<bool> &running_;
+	bool running_;
+	std::thread mainSlamLoopThread_;
+	/** Runs the main processing loop. Will never return. */
+	void Loop();
 	
 	InputImageStream* imageStream;
 	Output3DWrapper* outputWrapper;

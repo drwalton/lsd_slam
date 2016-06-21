@@ -32,38 +32,23 @@ struct PoseStamped {
 
 namespace lsd_slam {
 
-ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height,
-	std::atomic<bool> &start)
+ViewerOutput3DWrapper::ViewerOutput3DWrapper(bool showViewer, int width, int height)
 	:publishLevel_(0), viewer_(nullptr)
 {
-	running = true;
 	if (showViewer) {
-		viewerThread_ = std::thread([this, &start](){
-			while (!start);
-			std::cout << "Launching viewer thread...\n";
-			int argc = 1; 
-			char* argv = const_cast<char*>("app");
-			QApplication qapp(argc, &argv);
-			PointCloudViewer viewer;
-			viewer_ = &viewer;
-			viewer.show();
-			if (glewInit() != GLEW_OK) {
-				throw std::runtime_error("GLEW INIT FAILED");
-			}
-			qapp.exec();
-			viewer_ = nullptr;
-			running = false;
-			std::cout << "Terminating viewer thread...\n";
-		});
+		viewer_.reset(new PointCloudViewer());
+		viewer_->show();
+#ifdef _WIN32
+		if (glewInit() != GLEW_OK) {
+			throw std::runtime_error("GLEW INIT FAILED");
+		}
+#endif //_WIN32
 	}
 
 }
 
 ViewerOutput3DWrapper::~ViewerOutput3DWrapper()
 {
-	if (viewerThread_.joinable()) {
-		viewerThread_.join();
-	}
 }
 
 void ViewerOutput3DWrapper::publishKeyframeGraph(KeyframeGraph* graph)

@@ -41,13 +41,11 @@ namespace lsd_slam
 
 LiveSLAMWrapper::LiveSLAMWrapper(
 	InputImageStream* imageStream, Output3DWrapper* outputWrapper, 
-	std::atomic<bool> &running,
 	ThreadingMode threadMode, 
 	LoopClosureMode loopClosureMode,
 	DepthMapInitMode depthMapInitMode,
 	bool saveTrackingInfo)
 	:blockTrackUntilMapped(false),
-	running_(running),
 	camModel_(imageStream->camModel().clone())
 {
 	this->imageStream = imageStream;
@@ -92,6 +90,20 @@ LiveSLAMWrapper::~LiveSLAMWrapper()
 		outFile->close();
 		delete outFile;
 	}
+}
+
+void LiveSLAMWrapper::start()
+{
+	running_ = true;
+	mainSlamLoopThread_ = std::thread([&]() {
+		Loop();
+	});
+}
+
+void LiveSLAMWrapper::stop()
+{
+	running_ = false;
+	mainSlamLoopThread_.join();
 }
 
 void LiveSLAMWrapper::Loop()
