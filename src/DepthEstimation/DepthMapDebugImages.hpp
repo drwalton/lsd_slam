@@ -46,6 +46,7 @@ struct DepthMapDebugImages
 	cv::Mat geoDispErrs;
 	cv::Mat photoDispErrs;
 	cv::Mat discretizationErrs;
+	cv::Mat eplLengths;
 
 	ModelLoader framePtCloud;
 	ModelLoader keyframePtCloud;

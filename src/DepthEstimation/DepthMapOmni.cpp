@@ -505,7 +505,7 @@ float doStereoOmniImpl(
 	}
 
 	//Find line endpoints in keyframe, reference frame.
-	vec3 lineCloseRf = keyframeToReference * vec3(lineDirKf / max_idepth);
+	vec3 lineCloseRf = keyframeToReference * vec3(lineDirKf * (1.f / max_idepth));
 	vec3 lineInfRf = keyframeToReference.rotation * lineDirKf;
 	if (drawThisMatch) {
 		if (drawMatch.cols == width * 2) {
@@ -538,7 +538,11 @@ float doStereoOmniImpl(
 		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 	float lineLen = (lineFarPixRf - lineClosePixRf).norm();
-	initLineLen = lineLen + 2;
+	//TODO lineLen seems to be too short in OMNI mode - look into why!
+
+	//TODO see if this is appropriate.
+	initLineLen = lineLen;
+	//initLineLen = lineLen + 2;
 
 	//Extend line, if it isn't long enough
 	if (lineLen < MIN_EPL_LENGTH_CROP+2) {
@@ -845,7 +849,7 @@ float doStereoOmniImpl(
 
 	iDepth = bestMatchA * max_idepth;
 	bestMatchLoopC = loopCBest;
-	float invDepthInterval = (lineEndAlpha - lineStartAlpha) * max_idepth;
+	float invDepthInterval = (a - lineStartAlpha) * max_idepth;
 	alpha =  invDepthInterval / float(loopC);
 	
 	return bestMatchErr;

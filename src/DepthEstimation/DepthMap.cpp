@@ -449,6 +449,13 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 
 
 		diff = result_idepth - target->idepth_smoothed;
+#if DEBUG_SAVE_EPL_LENGTH_IMS
+		{
+			vec3 rgb = 255*hueToRgb(result_eplLength  / 3.f);
+			cv::Vec3b color(rgb[2], rgb[1], rgb[0]);
+			debugImages.eplLengths.at<cv::Vec3b>(y, x) = color;
+		}
+#endif
 	}
 	else {
 		error = -2;

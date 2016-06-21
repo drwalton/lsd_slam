@@ -70,6 +70,9 @@ void DepthMapDebugImages::clearStereoImages(const float * keyframe, const float 
 #if DEBUG_SAVE_DISCRETIZATION_ERROR_IMS
 	makeDebugCompareIm(discretizationErrs, keyframe, refFrame, camModel);
 #endif
+#if DEBUG_SAVE_EPL_LENGTH_IMS
+	makeDebugCompareIm(eplLengths, keyframe, refFrame, camModel);
+#endif
 }
 
 void DepthMapDebugImages::visualiseMatch(vec2 keyframePos, vec2 referenceFramePos, const CameraModel *model)
@@ -241,6 +244,14 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 		ss << resourcesDir() << "DiscretizeErrIms" + modelName +"/DiscretizeErr" << kfID <<
 			"_f" << refID << ".png";
 		cv::imwrite(ss.str(), discretizationErrs);
+	}
+#endif
+#if DEBUG_SAVE_EPL_LENGTH_IMS
+	{
+		std::stringstream ss;
+		ss << resourcesDir() << "EplLengths" + modelName +"/EplLength" << kfID <<
+			"_f" << refID << ".png";
+		cv::imwrite(ss.str(), eplLengths);
 	}
 #endif
 }

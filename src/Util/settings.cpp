@@ -82,6 +82,9 @@ void makeDebugDirectories(const CameraModel *m)
 #if DEBUG_SAVE_KEYFRAME_POINT_CLOUDS_EACH_FRAME
 	makeEmptyDirectory(resourcesDir() + "KeyframePtClouds" + m->getTypeName() + "/");
 #endif
+#if DEBUG_SAVE_EPL_LENGTH_IMS
+	makeEmptyDirectory(resourcesDir() + "EplLengths" + m->getTypeName() + "/");
+#endif
 }
 
 bool autoRun = true;
