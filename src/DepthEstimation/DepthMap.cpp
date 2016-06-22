@@ -110,6 +110,9 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 	for(int y=yMin;y<yMax; y++)
 		for(size_t x=3;x<camModel_->w-3;x++)
 		{
+			if (!camModel_->pixelLocValid(vec2(x, y))) {
+				continue;
+			}
 			int idx = x+y*camModel_->w;
 			DepthMapPixelHypothesis* target = currentDepthMap+idx;
 			bool hasHypothesis = target->isValid;

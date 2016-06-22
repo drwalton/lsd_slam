@@ -24,6 +24,7 @@ int main(int argc, char **argv)
 	if (boost::filesystem::is_directory(path)) {
 		lsd_slam::DirectoryImageStream *dirImStream = new lsd_slam::DirectoryImageStream();
 		imageStream.reset(dirImStream);
+		dirImStream->dropFrames = false;
 		dirImStream->openDirectory(fullPathStr);
 	} else if (boost::filesystem::is_regular_file(path)) {
 		lsd_slam::OpenCVImageStream *cvImStream = new lsd_slam::OpenCVImageStream();
@@ -59,9 +60,9 @@ int main(int argc, char **argv)
 
 	std::cout << "Creating SLAM wrapper..."; std::cout.flush();
 	lsd_slam::LiveSLAMWrapper slamWrapper(imageStream.get(), &outWrapper,
-		lsd_slam::LiveSLAMWrapper::ThreadingMode::MULTI,
+		lsd_slam::LiveSLAMWrapper::ThreadingMode::SINGLE,
 		lsd_slam::LiveSLAMWrapper::LoopClosureMode::ENABLED,
-		lsd_slam::DepthMapInitMode::RANDOM,
+		lsd_slam::DepthMapInitMode::CONSTANT,
 		true);
 
 	std::cout << "Starting SLAM wrapper..." << std::endl;
