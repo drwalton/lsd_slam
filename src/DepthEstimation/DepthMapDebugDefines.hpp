@@ -1,13 +1,13 @@
 #pragma once
 
 // *** Stereo related #defines ***
-#define DEBUG_SAVE_VAR_IMS 1
+#define DEBUG_SAVE_VAR_IMS 0
 #define DEBUG_SAVE_IDEPTH_IMS 0
 #define DEBUG_SAVE_MATCH_IMS 0
 #define DEBUG_SAVE_SEARCH_RANGE_IMS 0
-#define DEBUG_SAVE_RESULT_IMS 0
+#define DEBUG_SAVE_RESULT_IMS 1
 #define DEBUG_SAVE_PIXEL_DISPARITY_IMS 0
-#define DEBUG_SAVE_EPL_LENGTH_IMS 1
+#define DEBUG_SAVE_EPL_LENGTH_IMS 0
 
 // *** Var calculation related #defines ***
 //Save visualisations of components of variance

@@ -160,7 +160,7 @@ bool OmniCameraModel::pixelLocValid(const vec2 &p) const
 	
 	// Next check point is inside valid image circle
 	vec2 d = p - c;
-	return d.norm() < r && p.x() < w && p.x() > 0.f && p.y() < h && p.y() > 0.f;
+	return d.norm() < r;
 }
 
 bool OmniCameraModel::pointInImage(const vec3 &p) const

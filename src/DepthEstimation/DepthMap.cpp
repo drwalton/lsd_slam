@@ -585,7 +585,9 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 				VALIDITY_COUNTER_MAX+absGrad*(VALIDITY_COUNTER_MAX_VARIABLE)/255.0f);
 
 		// increase Skip!
-		if(result_eplLength < MIN_EPL_LENGTH_CROP)
+		//TODO look into adapting this for omni.
+		//if(result_eplLength < MIN_EPL_LENGTH_CROP && camModel_->getType() != CameraModelType::OMNI)
+		if(false)
 		{
 			float inc = activeKeyframe->numFramesTrackedOnThis / 
 				(float)(activeKeyframe->numMappedOnThis+5);
@@ -1090,23 +1092,11 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 					idepth = 0.5f + 1.0f * ((rand() % 100001) / 100000.0f);
 				}
 
-				//TODO only when testing against a proj version!
-				//Correct for difference in depth representations. 
-				// In omni mode, depths represent distances from the camera. To
-				// initialise with the same point cloud as in PROJ mode, need to 
-				// convert.
-				/*
-				if (camType == CameraModelType::OMNI) {
-					vec3 pos = projVersion->pixelToCam(vec2(x, y), 1.f / idepth);
-					idepth = pos.norm();
-				}
-				*/
-
 				currentDepthMap[x+y*camModel_->w] = DepthMapPixelHypothesis(
 						idepth,
 						idepth,
-						VAR_RANDOM_INIT_INITIAL,
-						VAR_RANDOM_INIT_INITIAL,
+						VAR_RANDOM_INIT_INITIAL*0.25,
+						VAR_RANDOM_INIT_INITIAL*0.25,
 						20);
 			}
 			else

@@ -6,6 +6,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <cmath>
+#include <Eigen/Core>
 
 #include "DepthMapDebugDefines.hpp"
 
@@ -505,7 +506,6 @@ float doStereoOmniImpl(
 	}
 
 	//Find line endpoints in keyframe, reference frame.
-	//TODO check over this, make doubly sure it's OK.
 	vec3 lineCloseRf = keyframeToReference * vec3(lineDirKf * (1.f / max_idepth));
 	vec3 lineInfRf = keyframeToReference.rotation * lineDirKf;
 	if (drawThisMatch) {
