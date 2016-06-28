@@ -315,6 +315,9 @@ cv::Vec3b DepthMapDebugImages::getStereoResultVisColor(float err)
 		//Dark Blue: Line ended up too long when tracing.
 		return cv::Vec3b(128, 0, 0);
 	}
+	else if(err == DepthMapErrCode::KEYFRAME_VALUES_NOT_OBTAINABLE) {
+		return cv::Vec3b(0,0,0);
+	}
 
 	//TODO other colours
 	else if (err == DepthMapErrCode::SKIP_BAD_TRACKING) {

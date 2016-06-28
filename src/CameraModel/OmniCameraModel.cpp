@@ -134,7 +134,7 @@ std::unique_ptr<CameraModel> OmniCameraModel::makeOmniCamModel() const
 vec2 OmniCameraModel::getFovAngles() const
 {
 	vec2 fovAngles;
-	vec3 maxX = pixelToCam(vec2(w, h / 2));
+	vec3 maxX = pixelToCam(c + r*vec2(1,0));
 
 	float thetaX = atan2f(maxX.z(), maxX.x());
 	if (maxX.z() < 0.f) {
@@ -143,7 +143,7 @@ vec2 OmniCameraModel::getFovAngles() const
 		fovAngles.x() = static_cast<float>(M_PI) - (2.f*thetaX);
 	}
 
-	vec3 maxY = pixelToCam(vec2(w / 2, h));
+	vec3 maxY = pixelToCam(c + r*vec2(0,1));
 	float thetaY = atan2f(maxY.z(), maxY.y());
 	if (maxY.z() < 0.f) {
 		fovAngles.y() = 2.f*thetaY + static_cast<float>(M_PI);

@@ -12,6 +12,7 @@ class CameraModel;
 
 namespace DepthMapErrCode
 {
+const float KEYFRAME_VALUES_NOT_OBTAINABLE = -8;
 const float EPL_NOT_IN_REF_FRAME = -1;
 const float WINNER_NOT_CLEAR = -2;
 const float ERR_TOO_BIG = -3;

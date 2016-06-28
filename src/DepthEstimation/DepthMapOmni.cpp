@@ -604,7 +604,7 @@ float doStereoOmniImpl(
 	if(!valuesToFindFound) {
 		//5 values centered around point not available.
 		//TODO use better err code.
-		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
+		return DepthMapErrCode::KEYFRAME_VALUES_NOT_OBTAINABLE;
 	}
 
 	//=======BEGIN LINE SEARCH CODE=======
