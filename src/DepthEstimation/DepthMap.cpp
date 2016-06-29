@@ -1089,7 +1089,8 @@ void DepthMap::initializeRandomly(Frame* new_frame)
 	{
 		for(size_t x=1;x<camModel_->w-1;x++)
 		{
-			if(maxGradients[x+y*camModel_->w] > MIN_ABS_GRAD_CREATE)
+			if(maxGradients[x+y*camModel_->w] > MIN_ABS_GRAD_CREATE &&
+				camModel_->pixelLocValid(vec2(x,y)))
 			{
 				float idepth;
 				if (initMode_ == DepthMapInitMode::CONSTANT) {
