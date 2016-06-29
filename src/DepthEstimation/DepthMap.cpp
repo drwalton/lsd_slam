@@ -330,6 +330,11 @@ bool DepthMap::observeDepthCreate(const int &x, const int &y, const int &idx, Ru
 		if(enablePrintDebugInfo) stats->num_observe_blacklisted++;
 	}
 
+	if (error == DepthMapErrCode::START_TOO_NEAR_EPIPOLE) {
+		//Invalidate this point - it started too near an epipole.
+		*target = DepthMapPixelHypothesis();
+	}
+
 	if (error < 0) {
 #if DEBUG_SAVE_RESULT_IMS
 		{
@@ -448,6 +453,12 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 				min_idepth, target->idepth_smoothed, max_idepth,
 				refFrame, refFrame->image(0),
 				result_idepth, result_var, result_eplLength, stats);
+			if (error == DepthMapErrCode::START_TOO_NEAR_EPIPOLE) {
+				//If this is the first new frame, invalidate.
+				if (refFrame->id() == 2) {
+					*target = DepthMapPixelHypothesis();
+				}
+			}
 		}
 
 
@@ -471,6 +482,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 		debugImages.results.at<cv::Vec3b>(y, x) = color;
 	}
 #endif
+
 
 	// if oob: (really out of bounds)
 	if(error == -1)
