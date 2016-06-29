@@ -20,6 +20,7 @@ const float NAN_MAKING_EPL = -4;
 const float PADDED_EPL_NOT_IN_REF_FRAME = -5;
 const float START_TOO_NEAR_EPIPOLE = -6;
 const float TRACED_LINE_TOO_LONG = -7;
+const float EPL_GRAD = -9;
 
 const float SKIP_BAD_TRACKING = -10;
 }

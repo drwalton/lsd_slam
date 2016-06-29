@@ -604,7 +604,7 @@ bool DepthMap::observeDepthUpdate(const int &x, const int &y, const int &idx, co
 				inc *= 3;
 
 			if (camModel_->getType() == CameraModelType::OMNI) {
-				inc /= 4;
+				//inc /= 2;
 			}
 
 			target->nextStereoFrameMinID = refFrame->id() + inc;

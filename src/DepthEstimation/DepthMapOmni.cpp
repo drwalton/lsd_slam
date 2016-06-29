@@ -421,58 +421,6 @@ bool DepthMap::makeAndCheckEPLOmni(const int x, const int y, const Frame* const 
 	return true;
 }
 
-std::array<float, 5> findValuesToSearchFor(
-	const RigidTransform &keyframeToReference,
-	const OmniCameraModel &model,
-	const float* keyframe,
-	int x, int y,
-	int width,
-	vec3 &pointDir,
-	cv::Mat &visIm)
-{
-	pointDir = model.pixelToCam(vec2(x, y));
-	vec3 epipoleDir = -keyframeToReference.translation.normalized();
-
-	float a = 0.f;
-	//Advance two pixels from point toward epipole.
-	a += model.getEpipolarParamIncrement(a, epipoleDir, pointDir);
-	vec3 fwdDir1 = a*epipoleDir + (1.f - a)*pointDir;
-	a += model.getEpipolarParamIncrement(a, epipoleDir, pointDir);
-	vec3 fwdDir2 = a*epipoleDir + (1.f - a)*pointDir;
-
-	//Advance two pixels from point away from epipole.
-	a = 0.f;
-	vec3 otherDir = 2.f*pointDir - epipoleDir;
-	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
-	vec3 bwdDir1 = a*otherDir + (1.f - a)*pointDir;
-	a += model.getEpipolarParamIncrement(a, otherDir, pointDir);
-	vec3 bwdDir2 = a*otherDir + (1.f - a)*pointDir;
-	
-	if (!visIm.empty()) {
-		vec2 pix = model.camToPixel(bwdDir2);
-		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
-		pix = model.camToPixel(bwdDir1);
-		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
-		pix = model.camToPixel(pointDir);
-		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 255);
-		pix = model.camToPixel(fwdDir1);
-		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
-		pix = model.camToPixel(fwdDir2);
-		visIm.at<cv::Vec3b>(int(pix.y()), int(pix.x())) = cv::Vec3b(0, 255, 0);
-	}
-	
-	//Find values of keyframe at these points.
-	std::array<float, 5> vals = {
-		{getInterpolatedElement(keyframe, model.camToPixel(bwdDir2), width),
-		getInterpolatedElement(keyframe, model.camToPixel(bwdDir1), width),
-		getInterpolatedElement(keyframe, model.camToPixel(pointDir), width),
-		getInterpolatedElement(keyframe, model.camToPixel(fwdDir1), width),
-		getInterpolatedElement(keyframe, model.camToPixel(fwdDir2), width)}
-	};
-
-	return vals;
-}
-
 float doStereoOmniImpl(
 	const float u, const float v, const vec3 &epDir,
 	const float min_idepth, const float prior_idepth, float max_idepth,
@@ -504,6 +452,8 @@ float doStereoOmniImpl(
 		if (enablePrintDebugInfo) ++stats->num_observe_skipped_small_epl;
 		return DepthMapErrCode::START_TOO_NEAR_EPIPOLE;
 	}
+	
+	
 
 	//Find line endpoints in keyframe, reference frame.
 	vec3 lineCloseRf = keyframeToReference * vec3(lineDirKf * (1.f / max_idepth));
@@ -539,11 +489,9 @@ float doStereoOmniImpl(
 		return DepthMapErrCode::EPL_NOT_IN_REF_FRAME;
 	}
 	float lineLen = (lineFarPixRf - lineClosePixRf).norm();
-	//TODO lineLen seems to be too short in OMNI mode - look into why!
+	
 
-	//TODO see if this is appropriate.
 	initLineLen = lineLen;
-	//initLineLen = lineLen + 2;
 
 	//Extend line, if it isn't long enough
 	if (lineLen < MIN_EPL_LENGTH_CROP+2) {
@@ -606,6 +554,34 @@ float doStereoOmniImpl(
 		//TODO use better err code.
 		return DepthMapErrCode::KEYFRAME_VALUES_NOT_OBTAINABLE;
 	}
+	
+	
+	//TODO proper check (Gradient, etc.)
+	/*
+	// ===== check epl-grad magnitude ======
+	int idx = static_cast<int>(u+v*oModel.w);
+	float gx = keyframe[idx+1] -
+		keyframe[idx-1];
+	float gy = keyframe[idx+oModel.w] -
+		keyframe[idx-oModel.w];
+	float eplGradSquared = gx * epImDirKf.x() + gy * epImDirKf.y();
+	// square and norm with epl-length
+	eplGradSquared = eplGradSquared*eplGradSquared / (lineLen*lineLen);
+
+	if(eplGradSquared < MIN_EPL_GRAD_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_grad++;
+		return DepthMapErrCode::EPL_GRAD;
+	}
+
+
+	// ===== check epl-grad angle ======
+	if(eplGradSquared / (gx*gx+gy*gy) < MIN_EPL_ANGLE_SQUARED)
+	{
+		if(enablePrintDebugInfo) stats->num_observe_skipped_small_epl_angle++;
+		return DepthMapErrCode::EPL_GRAD;
+	}
+	*/
 
 	//=======BEGIN LINE SEARCH CODE=======
 	std::array<vec3, 5> lineDir;
