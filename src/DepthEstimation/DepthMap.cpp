@@ -113,7 +113,7 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 			if (!camModel_->pixelLocValid(vec2(x, y))) {
 				continue;
 			}
-			int idx = x+y*camModel_->w;
+			size_t idx = x+y*camModel_->w;
 			DepthMapPixelHypothesis* target = currentDepthMap+idx;
 			bool hasHypothesis = target->isValid;
 
@@ -202,7 +202,7 @@ void DepthMap::observeDepth()
 
 bool DepthMap::makeAndCheckEPLProj(const int x, const int y, const Frame* const ref, float* pepx, float* pepy, RunningStats* const stats)
 {
-	int idx = x+y*camModel_->w;
+	size_t idx = x+y*camModel_->w;
 
 	// ======= make epl ========
 	// calculate the plane spanned by the two camera centers and the point (x,y,1)
@@ -723,7 +723,7 @@ void DepthMap::propagateDepth(Frame* new_keyframe)
 				continue;
 			}
 
-			int newIDX = (int)(u_new+0.5f) + ((int)(v_new+0.5f))*camModel_->w;
+			size_t newIDX = (int)(u_new+0.5f) + ((int)(v_new+0.5f))*camModel_->w;
 			float destAbsGrad = newKFMaxGrad[newIDX];
 
 			if(trackingWasGood != 0)
@@ -861,7 +861,7 @@ void DepthMap::regularizeDepthMapFillHolesRow(int yMin, int yMax, RunningStats* 
 	{
 		for(size_t x=3;x<camModel_->w-2;x++)
 		{
-			int idx = x+y*camModel_->w;
+			size_t idx = x+y*camModel_->w;
 			DepthMapPixelHypothesis* dest = otherDepthMap + idx;
 			if(dest->isValid) continue;
 			if(keyframeMaxGradBuf[idx]<MIN_ABS_GRAD_DECREASE) continue;
@@ -946,7 +946,7 @@ void DepthMap::buildRegIntegralBuffer()
 	int* validityIntegralBufferPT = validityIntegralBuffer;
 	int* validityIntegralBufferPT_T = validityIntegralBuffer+camModel_->w;
 
-	int wh = camModel_->h*camModel_->w;
+	size_t wh = camModel_->h*camModel_->w;
 	for(int idx=camModel_->w;idx<wh;idx++)
 		*(validityIntegralBufferPT_T++) += *(validityIntegralBufferPT++);
 

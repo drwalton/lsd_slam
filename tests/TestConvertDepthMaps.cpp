@@ -21,9 +21,9 @@ int main(int argc, char **argv) {
 	depthMapOmniToProj(testIm, convImProj, model.get());
 	depthMapProjToOmni(convImProj, convImOmni, model.get());
 
-	cv::Mat inputMat(model->h, model->w, CV_32FC1, testIm);
-	cv::Mat projMat(model->h, model->w, CV_32FC1, convImProj);
-	cv::Mat omniMat(model->h, model->w, CV_32FC1, convImOmni);
+	cv::Mat inputMat(int(model->h), int(model->w), CV_32FC1, testIm);
+	cv::Mat projMat(int(model->h), int(model->w), CV_32FC1, convImProj);
+	cv::Mat omniMat(int(model->h), int(model->w), CV_32FC1, convImOmni);
 	cv::imshow("INPUT", inputMat / 2.f);
 	cv::imshow("PROJ VERSION", projMat / 2.f);
 	cv::imshow("OMNI VERSION", omniMat / 2.f);

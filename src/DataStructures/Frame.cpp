@@ -475,8 +475,8 @@ void Frame::buildImage(int level)
 	if(enablePrintDebugInfo && printFrameBuildDebugInfo)
 		printf("CREATE Image lvl %d for frame %d\n", level, id());
 
-	int width = data.models[level - 1]->w;
-	int height = data.models[level - 1]->h;
+	size_t width = data.models[level - 1]->w;
+	size_t height = data.models[level - 1]->h;
 	const float* source = data.image[level - 1];
 
 	if (data.image[level] == 0)
@@ -484,7 +484,7 @@ void Frame::buildImage(int level)
 			this->width(level) * this->height(level));
 	float* dest = data.image[level];
 
-	int wh = width*height;
+	size_t wh = width*height;
 	const float* s;
 	for(int y=0;y<wh;y+=width*2)
 	{

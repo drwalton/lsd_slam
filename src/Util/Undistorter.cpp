@@ -159,19 +159,19 @@ void UndistorterNop::undistort(const cv::Mat& image, cv::OutputArray result) con
 
 int UndistorterNop::getOutputWidth() const
 {
-	return width_;
+	return int(width_);
 }
 int UndistorterNop::getOutputHeight() const
 {
-	return height_;
+	return int(height_);
 }
 int UndistorterNop::getInputWidth() const
 {
-	return width_;
+	return int(width_);
 }
 int UndistorterNop::getInputHeight() const
 {
-	return height_;
+	return int(height_);
 }
 
 bool UndistorterNop::isValid() const
@@ -199,19 +199,19 @@ void UndistorterResize::undistort(const cv::Mat& image, cv::OutputArray result) 
 
 int UndistorterResize::getOutputWidth() const
 {
-	return outWidth_;
+	return int(outWidth_);
 }
 int UndistorterResize::getOutputHeight() const
 {
-	return outHeight_;
+	return int(outHeight_);
 }
 int UndistorterResize::getInputWidth() const
 {
-	return inWidth_;
+	return int(inWidth_);
 }
 int UndistorterResize::getInputHeight() const
 {
-	return inHeight_;
+	return int(inHeight_);
 }
 
 bool UndistorterResize::isValid() const

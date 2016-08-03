@@ -40,8 +40,8 @@ std::vector<std::unique_ptr<CameraModel> >
 				+ std::to_string(nLevels) + "-level pyramid - not divisible!");
 		}
 		
-		int newW = models.back()->w / 2;
-		int newH = models.back()->h / 2;
+		size_t newW = models.back()->w / 2;
+		size_t newH = models.back()->h / 2;
 		float newFx = models.back()->fx * 0.5f;
 		float newFy = models.back()->fy * 0.5f;
 		float newCx = (this->cx + 0.5f) / static_cast<float>(1 << level) - 0.5f;
