@@ -16,9 +16,13 @@ find_package(OpenGL REQUIRED)
 find_package(Boost COMPONENTS System Thread Filesystem REQUIRED)
 find_package(libtiff REQUIRED)
 find_package(Assimp REQUIRED)
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Xml REQUIRED)
+find_package(Qt5OpenGL REQUIRED)
+find_package(Qt5Widgets REQUIRED)
 
 if(WIN32)
-	link_directories("${Boost_INCLUDE_DIR}/lib32-msvc-14.0")
+	link_directories("${Boost_INCLUDE_DIR}/lib64-msvc-12.0")
 endif(WIN32)
 
 if(NOT WIN32)
@@ -32,6 +36,7 @@ endif(NOT WIN32)
 find_package(X11 REQUIRED)
 find_package(QGLViewer REQUIRED)
 message("QOPENGL: ${QT_QTOPENGL_INCLUDE_DIR}")
+message("QT: ${Qt5Core_INCLUDE_DIRS}")
 include_directories("${QT_QTOPENGL_INCLUDE_DIR}/..")
 
 set(CMAKE_AUTOMOC ON)
@@ -49,6 +54,9 @@ include_directories(
 	${G2O_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIRS}
 	${libtiff_INCLUDE_DIRS}
+	${Qt5Core_INCLUDE_DIRS}
+	${Qt5OpenGL_INCLUDE_DIRS}
+	${Qt5Xml_INCLUDE_DIRS}
 )
 
 message("OPENCV libs: Debug: ${OPENCV_LIBRARIES}, Release: ${OPENCV_LIBRARIESD}")

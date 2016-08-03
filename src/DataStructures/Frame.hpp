@@ -278,12 +278,12 @@ inline int Frame::id() const
 
 inline int Frame::width(int level) const
 {
-	return data.models[level]->w;
+	return int(data.models[level]->w);
 }
 
 inline int Frame::height(int level) const
 {
-	return data.models[level]->h;
+	return int(data.models[level]->h);
 }
 
 inline const CameraModel &Frame::model(int level) const
@@ -370,8 +370,8 @@ inline bool* Frame::refPixelWasGood()
 
 		if(data.refPixelWasGood == 0)
 		{
-			int width = data.models[SE3TRACKING_MIN_LEVEL]->w;
-			int height = data.models[SE3TRACKING_MIN_LEVEL]->h;
+			int width = int(data.models[SE3TRACKING_MIN_LEVEL]->w);
+			int height = int(data.models[SE3TRACKING_MIN_LEVEL]->h);
 			data.refPixelWasGood = (bool*)FrameMemory::getInstance().getBuffer(sizeof(bool) * width * height);
 
 			memset(data.refPixelWasGood, 0xFFFFFFFF, sizeof(bool) * (width * height));

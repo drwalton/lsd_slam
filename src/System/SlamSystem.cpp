@@ -1399,8 +1399,8 @@ int SlamSystem::findConstraintsForNewKeyframes(Frame* newKeyframe, bool forcePar
 
 
 
-	int closeAll = closeCandidates.size();
-	int farAll = farCandidates.size();
+	size_t closeAll = closeCandidates.size();
+	size_t farAll = farCandidates.size();
 
 	// erase the ones that we tried already before (close)
 	for(std::unordered_set<Frame*>::iterator c = closeCandidates.begin(); c != closeCandidates.end();)

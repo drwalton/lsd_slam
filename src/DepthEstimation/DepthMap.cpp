@@ -134,21 +134,21 @@ void DepthMap::observeDepthRow(int yMin, int yMax, RunningStats* stats)
 				//Avoid using - this pixel has been blacklisted after failing stereo
 				// too often.
 #if DEBUG_SAVE_RESULT_IMS
-				debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(0,0,0);
+				debugImages.results.at<cv::Vec3b>(y, int(x)) = cv::Vec3b(0,0,0);
 #endif
 				continue;
 			}
 
 			//Set all pixels used as input to a stereo procedure to white initially.
 #if DEBUG_SAVE_RESULT_IMS
-			debugImages.results.at<cv::Vec3b>(y, x) = cv::Vec3b(255,255,255);
+			debugImages.results.at<cv::Vec3b>(y, int(x)) = cv::Vec3b(255,255,255);
 #endif
 
 			bool success;
 			if(!hasHypothesis)
-				success = observeDepthCreate(x, y, idx, stats);
+				success = observeDepthCreate(int(x), y, idx, stats);
 			else
-				success = observeDepthUpdate(x, y, idx, keyframeMaxGradBuf, stats);
+				success = observeDepthUpdate(int(x), y, idx, keyframeMaxGradBuf, stats);
 
 			if(success)
 				successes++;
@@ -166,7 +166,7 @@ void DepthMap::observeDepth()
 		}
 	}
 
-	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, camModel_->h-3, 10);
+	threadReducer.reduce(boost::bind(&DepthMap::observeDepthRow, this, _1, _2, _3), 3, int(camModel_->h)-3, 10);
 
 	if(enablePrintDebugInfo && printObserveStatistics)
 	{
@@ -910,7 +910,7 @@ void DepthMap::regularizeDepthMapFillHoles()
 	runningStats.num_reg_created=0;
 
 	memcpy(otherDepthMap,currentDepthMap,camModel_->w*camModel_->h*sizeof(DepthMapPixelHypothesis));
-	threadReducer.reduce(boost::bind(&DepthMap::regularizeDepthMapFillHolesRow, this, _1, _2, _3), 3, camModel_->h-2, 10);
+	threadReducer.reduce(boost::bind(&DepthMap::regularizeDepthMapFillHolesRow, this, _1, _2, _3), 3, int(camModel_->h)-2, 10);
 	if(enablePrintDebugInfo && printFillHolesStatistics)
 		printf("FillHoles (discreteDepth): %d created\n",
 				runningStats.num_reg_created);
@@ -1639,7 +1639,7 @@ int DepthMap::debugPlotDepthMap()
 	for(size_t y=0;y<camModel_->h;y++)
 		for(size_t x=0;x<camModel_->w;x++)
 		{
-			int idx = x + y*camModel_->w;
+			size_t idx = x + y*camModel_->w;
 
 			if(currentDepthMap[idx].blacklisted < MIN_BLACKLIST && debugDisplay == 2)
 				debugImageDepth.at<cv::Vec3b>(y,x) = cv::Vec3b(0,0,255);
@@ -1872,10 +1872,10 @@ inline float DepthMap::doStereoProj(
 	float cpx = pFar[0];
 	float cpy =  pFar[1];
 
-	float val_cp_m2 = getInterpolatedElement(referenceFrameImage,cpx-2.0f*incx, cpy-2.0f*incy, camModel_->w);
-	float val_cp_m1 = getInterpolatedElement(referenceFrameImage,cpx-incx, cpy-incy, camModel_->w);
-	float val_cp = getInterpolatedElement(referenceFrameImage,cpx, cpy, camModel_->w);
-	float val_cp_p1 = getInterpolatedElement(referenceFrameImage,cpx+incx, cpy+incy, camModel_->w);
+	float val_cp_m2 = getInterpolatedElement(referenceFrameImage,cpx-2.0f*incx, cpy-2.0f*incy, int(camModel_->w));
+	float val_cp_m1 = getInterpolatedElement(referenceFrameImage,cpx-incx, cpy-incy, int(camModel_->w));
+	float val_cp = getInterpolatedElement(referenceFrameImage,cpx, cpy, int(camModel_->w));
+	float val_cp_p1 = getInterpolatedElement(referenceFrameImage,cpx+incx, cpy+incy, int(camModel_->w));
 	float val_cp_p2;
 
 

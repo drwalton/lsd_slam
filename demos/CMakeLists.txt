@@ -1,15 +1,17 @@
 add_executable(ReconstructionDemo ReconstructionDemo.cpp)
 set_target_properties(ReconstructionDemo PROPERTIES FOLDER Demos)
 set(QT_LIBRARIES_RELEASE
-	${QT_QTCORE_LIBRARY_RELEASE}
-	${QT_QTGUI_LIBRARY_RELEASE}
-	${QT_QTOPENGL_LIBRARY_RELEASE}
+	${Qt5Core_LIBRARIES}
+	${Qt5Widgets_LIBRARIES}
+	${Qt5OpenGL_LIBRARIES}
 	)
 set(QT_LIBRARIES_DEBUG
-	${QT_QTCORE_LIBRARY_DEBUG}
-	${QT_QTGUI_LIBRARY_DEBUG}
-	${QT_QTOPENGL_LIBRARY_DEBUG}
+	${Qt5Core_LIBRARIES}
+	${Qt5Widgets_LIBRARIES}
+	${Qt5OpenGL_LIBRARIES}
 	)
+
+message("QT RELEASE: ${QT_LIBRARIES_RELEASE}")
 
 link_libs_exec_debug(ReconstructionDemo G2O_LIBRARIES G2O_LIBRARIES_DEBUG)
 if(NOT WIN32)

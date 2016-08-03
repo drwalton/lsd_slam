@@ -258,7 +258,7 @@ void DepthMapDebugImages::saveStereoIms(int kfID, int refID)
 
 void DepthMapDebugImages::addGradAlongLine(size_t x, size_t y, float gradAlongLine)
 {
-	vec3 rgb = 255*hueToRgb(gradAlongLine  / 10'000.f);
+	vec3 rgb = 255*hueToRgb(gradAlongLine  / 10000.f);
 	gradAlongLines.at<cv::Vec3b>(y,x) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);
 }
 
